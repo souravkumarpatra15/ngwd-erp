@@ -386,7 +386,7 @@
                   <?php endif; ?>
                 </div>
 
-                <div class="mb-4">
+                <div class="mb-1">
                   <label class="form-label fw-semibold small">Password</label>
                   <div class="input-group">
                     <span class="input-group-text">
@@ -402,6 +402,13 @@
                       <i class="bi bi-eye" id="eyeIcon"></i>
                     </button>
                   </div>
+                </div>
+
+                <div class="d-flex justify-content-end mb-3">
+                  <a href="<?= base_url('forgot-password') ?>"
+                    class="small text-decoration-none">
+                    Forgot Password?
+                  </a>
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-login w-100">

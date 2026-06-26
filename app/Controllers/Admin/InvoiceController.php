@@ -1,95 +1,208 @@
 <?php
 namespace App\Controllers\Admin;
+
 use App\Controllers\BaseController;
 use App\Models\InvoiceModel;
 use App\Models\InvoiceItemModel;
 use App\Models\ClientModel;
+use App\Models\ProjectModel;
 use App\Services\PDFService;
 use App\Services\EmailService;
 use App\Services\WhatsAppService;
 use App\Services\PaymentService;
 
+/**
+ * InvoiceController — adds missing delete(), void(), and cancel()
+ */
 class InvoiceController extends BaseController
 {
-    protected $invoiceModel;
-    protected $itemModel;
+    protected InvoiceModel $im;
 
-    public function __construct() {
-        $this->invoiceModel = new InvoiceModel();
-        $this->itemModel    = new InvoiceItemModel();
+    public function __construct()
+    {
+        $this->im = new InvoiceModel();
     }
 
-    public function index() { return view('admin/invoices/index', ['title'=>'Invoices']); }
-
-    public function datatable() {
-        $result = $this->invoiceModel->getDataTable($this->request->getGet('search')['value']??'',$this->request->getGet('start')??0,$this->request->getGet('length')??10,$this->request->getGet('status')??'');
-        return $this->response->setJSON(['draw'=>intval($this->request->getGet('draw')),'recordsTotal'=>$result['total'],'recordsFiltered'=>$result['filtered'],'data'=>$result['data']]);
+    public function index()
+    {
+        return view('admin/invoices/index', ['title' => 'Invoices']);
     }
 
-    public function create() {
-        return view('admin/invoices/create', ['title'=>'Create Invoice','clients'=>(new ClientModel())->findAll(),'default_tax'=>$this->settings['tax_percent']??18,'default_terms'=>$this->settings['invoice_terms']??'']);
+    public function datatable()
+    {
+        $draw   = $this->request->getGet('draw');
+        $start  = (int) $this->request->getGet('start');
+        $length = (int) $this->request->getGet('length');
+        $search = $this->request->getGet('search')['value'] ?? '';
+        $status = $this->request->getGet('status') ?? '';
+        $result = $this->im->getDataTable($search, $start, $length, $status);
+        return $this->response->setJSON([
+            'draw'            => $draw,
+            'recordsTotal'    => $result['total'],
+            'recordsFiltered' => $result['filtered'],
+            'data'            => $result['data'],
+        ]);
     }
 
-    public function store() {
-        $db = \Config\Database::connect();
-        $db->transStart();
-        $items    = $this->request->getPost('items');
-        $subtotal = 0;
-        foreach ($items as $item) $subtotal += ($item['quantity'] * $item['unit_price']);
-        $taxPct  = (float)($this->request->getPost('tax_percent') ?? 0);
-        $taxAmt  = $subtotal * ($taxPct / 100);
-        $discount = (float)($this->request->getPost('discount') ?? 0);
-        $total   = $subtotal + $taxAmt - $discount;
-        $invoiceNo = sprintf('%s/%s/%05d', $this->settings['invoice_prefix']??'NGWD', date('Y'), $this->invoiceModel->countAll()+1);
-        $invoiceId = $this->invoiceModel->insert(['invoice_number'=>$invoiceNo,'client_id'=>$this->request->getPost('client_id'),'project_id'=>$this->request->getPost('project_id')?:null,'milestone_id'=>$this->request->getPost('milestone_id')?:null,'invoice_date'=>$this->request->getPost('invoice_date'),'due_date'=>$this->request->getPost('due_date'),'subtotal'=>$subtotal,'tax_percent'=>$taxPct,'tax_amount'=>$taxAmt,'discount'=>$discount,'total'=>$total,'is_gst'=>$this->request->getPost('is_gst')?1:0,'notes'=>$this->request->getPost('notes'),'terms'=>$this->request->getPost('terms'),'status'=>'draft','created_by'=>session()->get('user_id')]);
-        foreach ($items as $order => $item) {
-            $this->itemModel->insert(['invoice_id'=>$invoiceId,'description'=>$item['description'],'quantity'=>$item['quantity'],'unit_price'=>$item['unit_price'],'total'=>$item['quantity']*$item['unit_price'],'sort_order'=>$order]);
+    public function create()
+    {
+        return view('admin/invoices/create', [
+            'title'        => 'Create Invoice',
+            'clients'      => (new ClientModel())->findAll(),
+            'tax_percent'  => $this->settings['tax_percent'] ?? 18,
+            'default_terms'=> $this->settings['invoice_terms'] ?? '',
+        ]);
+    }
+
+    public function store()
+    {
+        $post = $this->request->getPost();
+        $invoiceData = [
+            'invoice_number' => $this->generateNumber($this->settings['invoice_prefix'] ?? 'INV', $this->im),
+            'client_id'      => $post['client_id'],
+            'project_id'     => $post['project_id'] ?: null,
+            'milestone_id'   => $post['milestone_id'] ?: null,
+            'invoice_date'   => $post['invoice_date'],
+            'due_date'       => $post['due_date'],
+            'subtotal'       => $post['subtotal'],
+            'tax_percent'    => $post['tax_percent'],
+            'tax_amount'     => $post['tax_amount'],
+            'discount'       => $post['discount'] ?? 0,
+            'total'          => $post['total'],
+            'paid_amount'    => 0,
+            'is_gst'         => $post['is_gst'] ?? 0,
+            'notes'          => $post['notes'] ?? '',
+            'terms'          => $post['terms'] ?? '',
+            'status'         => 'draft',
+            'created_by'     => session()->get('user_id'),
+        ];
+        $id = $this->im->insert($invoiceData);
+
+        // Line items
+        $iim = new InvoiceItemModel();
+        foreach (($post['items'] ?? []) as $item) {
+            $iim->insert([
+                'invoice_id'  => $id,
+                'description' => $item['description'],
+                'quantity'    => $item['quantity'],
+                'rate'        => $item['rate'],
+                'amount'      => $item['amount'],
+            ]);
         }
-        $db->transComplete();
-        $this->logActivity('invoices', $invoiceId, 'created', 'Invoice '.$invoiceNo);
-        return redirect()->to("admin/invoices/$invoiceId")->with('success', 'Invoice created: '.$invoiceNo);
+        $this->logActivity('invoices', $id, 'create', "Created invoice {$invoiceData['invoice_number']}");
+        return redirect()->to("admin/invoices/$id")->with('success', 'Invoice created!');
     }
 
-    public function show($id) {
-        return view('admin/invoices/show', ['title'=>'Invoice','invoice'=>$this->invoiceModel->getWithDetails($id),'items'=>$this->itemModel->where('invoice_id',$id)->orderBy('sort_order')->findAll()]);
+    public function show($id)
+    {
+        $invoice = $this->im->getWithDetails($id);
+        $items   = (new InvoiceItemModel())->where('invoice_id', $id)->findAll();
+        return view('admin/invoices/show', ['title' => 'Invoice', 'invoice' => $invoice, 'items' => $items]);
     }
 
-    public function edit($id) {
-        return view('admin/invoices/edit', ['title'=>'Edit Invoice','invoice'=>$this->invoiceModel->getWithDetails($id),'items'=>$this->itemModel->where('invoice_id',$id)->orderBy('sort_order')->findAll(),'clients'=>(new ClientModel())->findAll()]);
+    public function edit($id)
+    {
+        return view('admin/invoices/edit', [
+            'title'    => 'Edit Invoice',
+            'invoice'  => $this->im->find($id),
+            'items'    => (new InvoiceItemModel())->where('invoice_id', $id)->findAll(),
+            'clients'  => (new ClientModel())->findAll(),
+        ]);
     }
 
-    public function update($id) {
-        $data = $this->request->getPost(); unset($data['csrf_test_name'],$data['items']);
-        $this->invoiceModel->update($id, $data);
-        return redirect()->to("admin/invoices/$id")->with('success','Invoice updated!');
+    public function update($id)
+    {
+        $post = $this->request->getPost();
+        unset($post['csrf_test_name']);
+        $this->im->update($id, $post);
+
+        // Rebuild line items
+        $iim = new InvoiceItemModel();
+        $iim->where('invoice_id', $id)->delete();
+        foreach (($post['items'] ?? []) as $item) {
+            $iim->insert(array_merge($item, ['invoice_id' => $id]));
+        }
+        $this->logActivity('invoices', $id, 'update', 'Updated invoice');
+        return redirect()->to("admin/invoices/$id")->with('success', 'Updated!');
     }
 
-    public function generatePDF($id) {
-        $invoice = $this->invoiceModel->getWithDetails($id);
-        $items   = $this->itemModel->where('invoice_id',$id)->orderBy('sort_order')->findAll();
+    // ── NEW: delete invoice ────────────────────────────────────
+    public function delete($id)
+    {
+        $inv = $this->im->find($id);
+        if (!$inv) {
+            return $this->jsonError('Invoice not found.');
+        }
+        if (in_array($inv['status'], ['paid', 'partial'])) {
+            return $this->jsonError('Cannot delete a paid or partially paid invoice. Void it instead.');
+        }
+        (new InvoiceItemModel())->where('invoice_id', $id)->delete();
+        $this->im->delete($id);
+        $this->logActivity('invoices', $id, 'delete', "Deleted invoice {$inv['invoice_number']}");
+        return $this->jsonSuccess('Invoice deleted.');
+    }
+
+    // ── NEW: void invoice ──────────────────────────────────────
+    public function void($id)
+    {
+        $inv = $this->im->find($id);
+        if (!$inv) {
+            return $this->jsonError('Invoice not found.');
+        }
+        if ($inv['status'] === 'paid') {
+            return $this->jsonError('Cannot void a fully paid invoice. Process a refund through payments.');
+        }
+        $this->im->update($id, ['status' => 'cancelled']);
+        $this->logActivity('invoices', $id, 'void', "Voided invoice {$inv['invoice_number']}");
+        return $this->jsonSuccess('Invoice voided.');
+    }
+
+    public function generatePDF($id)
+    {
+        $invoice = $this->im->getWithDetails($id);
+        $items   = (new InvoiceItemModel())->where('invoice_id', $id)->findAll();
         return (new PDFService())->generateInvoice($invoice, $items, $this->settings);
     }
 
-    public function sendEmail($id) {
-        $invoice = $this->invoiceModel->getWithDetails($id);
-        $items   = $this->itemModel->where('invoice_id',$id)->findAll();
-        $pdf     = (new PDFService())->generateInvoicePDF($invoice, $items, $this->settings);
-        $result  = (new EmailService())->sendInvoice($invoice, $pdf);
-        if ($result) { $this->invoiceModel->update($id,['status'=>'sent','sent_at'=>date('Y-m-d H:i:s')]); return $this->jsonSuccess('Invoice emailed!'); }
-        return $this->jsonError('Failed to send email');
+    public function sendEmail($id)
+    {
+        $invoice = $this->im->getWithDetails($id);
+        $items   = (new InvoiceItemModel())->where('invoice_id', $id)->findAll();
+        $path    = (new PDFService())->generateInvoicePDF($invoice, $items, $this->settings);
+        $res     = (new EmailService())->sendInvoice($invoice, $path);
+        if ($res) {
+            $this->im->update($id, ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);
+            return $this->jsonSuccess('Invoice emailed!');
+        }
+        return $this->jsonError('Failed to send email.');
     }
 
-    public function sendWhatsApp($id) {
-        $invoice = $this->invoiceModel->getWithDetails($id);
-        $msg = "Dear {$invoice['client_name']},\n\nInvoice *{$invoice['invoice_number']}* for ₹".number_format($invoice['total'],2)." is ready.\nDue: {$invoice['due_date']}\nDownload: ".base_url("admin/invoices/pdf/$id")."\n\nThank you!\n".($this->settings['company_name']??'');
-        $result = (new WhatsAppService())->sendMessage($invoice['client_whatsapp'], $msg);
-        if ($result) { $this->invoiceModel->update($id,['status'=>'sent','sent_at'=>date('Y-m-d H:i:s')]); return $this->jsonSuccess('WhatsApp sent!'); }
-        return $this->jsonError('Failed to send');
+    public function sendWhatsApp($id)
+    {
+        $inv = $this->im->getWithDetails($id);
+        $msg = "Invoice *{$inv['invoice_number']}*\nAmount: ₹" . number_format($inv['total'], 2) . "\nDue: {$inv['due_date']}\n\n" . ($this->settings['company_name'] ?? '');
+        $res = (new WhatsAppService())->sendMessage($inv['client_whatsapp'], $msg);
+        if ($res) {
+            $this->im->update($id, ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);
+            return $this->jsonSuccess('WhatsApp sent!');
+        }
+        return $this->jsonError('Failed.');
     }
 
-    public function generatePaymentLink($id) {
-        $invoice = $this->invoiceModel->getWithDetails($id);
-        $order = (new PaymentService())->createOrder($invoice['balance_due'], 'invoice', $id, $invoice['client_id']);
-        return $order ? $this->jsonSuccess('Link generated',['url'=>base_url("portal/pay/$id"),'order'=>$order]) : $this->jsonError('Failed to create link');
+    public function generatePaymentLink($id)
+    {
+        $inv   = $this->im->getWithDetails($id);
+        $order = (new PaymentService())->createOrder(
+            (float) $inv['total'] - (float) $inv['paid_amount'],
+            'invoice', $id, $inv['client_id']
+        );
+        if (!$order) {
+            return $this->jsonError('Could not create Razorpay order.');
+        }
+        return $this->jsonSuccess('Order created', [
+            'order_id'    => $order['id'],
+            'amount'      => $order['amount'],
+            'razorpay_key'=> $this->settings['razorpay_key'] ?? '',
+        ]);
     }
 }

@@ -79,6 +79,10 @@
         <a href="<?= base_url('admin/hostings') ?>" class="sidebar-link <?= isActive('admin/hostings') ?>">
           <i class="bi bi-server"></i> Hosting</a>
 
+        <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Associates</div>
+        <a href="<?= base_url('admin/users') ?>" class="sidebar-link <?= isActive('admin/users') ?>">
+          <i class="bi bi-people"></i> Users</a>
+
         <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Other</div>
         <a href="<?= base_url('admin/documents') ?>" class="sidebar-link <?= isActive('admin/documents') ?>">
           <i class="bi bi-folder"></i> Documents</a>
@@ -148,6 +152,7 @@
               <i class="bi bi-chevron-down small text-muted"></i>
             </a>
             <ul class="dropdown-menu dropdown-menu-end shadow">
+              <li><a class="dropdown-item" href="<?= base_url('admin/profile') ?>"><i class="bi bi-people me-2"></i>My Profile</a></li>
               <li><a class="dropdown-item" href="<?= base_url('admin/settings') ?>"><i class="bi bi-gear me-2"></i>Settings</a></li>
               <li>
                 <hr class="dropdown-divider">

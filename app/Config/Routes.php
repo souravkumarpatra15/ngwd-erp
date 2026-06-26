@@ -13,6 +13,12 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
     $routes->get('logout', 'Auth\LoginController::logout');
     $routes->get('admin/search', 'Admin\SearchController::index');
 
+    // Password Reset
+    $routes->get('forgot-password', 'Auth\ForgotPasswordController::index');
+    $routes->post('forgot-password', 'Auth\ForgotPasswordController::sendLink');
+    $routes->get('reset-password/(:segment)', 'Auth\ForgotPasswordController::resetForm/$1');
+    $routes->post('reset-password/(:segment)', 'Auth\ForgotPasswordController::resetPassword/$1');
+
     // ── Admin ──────────────────────────────────────────────────
     $routes->group('admin', ['filter' => 'adminauth'], function ($routes) {
         $routes->get('/', 'Admin\DashboardController::index');
@@ -80,6 +86,8 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->get('agreements/pdf/(:num)', 'Admin\AgreementController::generatePDF/$1');
         $routes->post('agreements/send-email/(:num)', 'Admin\AgreementController::sendEmail/$1');
         $routes->post('agreements/send-whatsapp/(:num)', 'Admin\AgreementController::sendWhatsApp/$1');
+        $routes->post('agreements/delete/(:num)', 'Admin\AgreementController::delete/$1');
+        $routes->post('agreements/status/(:num)', 'Admin\AgreementController::updateStatus/$1');
 
         // Milestones
         $routes->get('milestones', 'Admin\MilestoneController::index');
@@ -109,6 +117,8 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('invoices/send-email/(:num)', 'Admin\InvoiceController::sendEmail/$1');
         $routes->post('invoices/send-whatsapp/(:num)', 'Admin\InvoiceController::sendWhatsApp/$1');
         $routes->post('invoices/payment-link/(:num)', 'Admin\InvoiceController::generatePaymentLink/$1');
+        $routes->post('invoices/delete/(:num)', 'Admin\InvoiceController::delete/$1');
+        $routes->post('invoices/void/(:num)', 'Admin\InvoiceController::void/$1');
 
         // Domains
         $routes->get('domains', 'Admin\DomainController::index');
@@ -161,6 +171,21 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         // Settings
         $routes->get('settings', 'Admin\SettingController::index');
         $routes->post('settings/save/(:alpha)', 'Admin\SettingController::save/$1');
+
+        // Profile
+        $routes->get('profile', 'Admin\ProfileController::index');
+        $routes->post('profile/update', 'Admin\ProfileController::update');
+        $routes->post('profile/change-password', 'Admin\ProfileController::changePassword');
+
+        // User Management
+        $routes->get('users', 'Admin\UserManagementController::index');
+        $routes->get('users/create', 'Admin\UserManagementController::create');
+        $routes->post('users/store', 'Admin\UserManagementController::store');
+        $routes->get('users/edit/(:num)', 'Admin\UserManagementController::edit/$1');
+        $routes->post('users/update/(:num)', 'Admin\UserManagementController::update/$1');
+        $routes->post('users/delete/(:num)', 'Admin\UserManagementController::delete/$1');
+        $routes->post('users/toggle-active/(:num)', 'Admin\UserManagementController::toggleActive/$1');
+        
     });
 
     // ── Client Portal ──────────────────────────────────────────
