@@ -101,13 +101,16 @@ document.addEventListener("click", function (e) {
 
   if (!link) return;
 
-  const href = link.getAttribute("href");
+  const href = link.getAttribute("href") || "";
 
   if (
     !href ||
     href === "#" ||
+    href.startsWith("#") ||
     href.startsWith("javascript:") ||
     link.hasAttribute("data-no-loader") ||
+    link.hasAttribute("data-bs-toggle") ||
+    link.getAttribute("role") === "tab" ||
     link.getAttribute("target") === "_blank"
   ) {
     return;
