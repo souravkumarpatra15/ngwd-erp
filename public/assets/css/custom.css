@@ -1,0 +1,265 @@
+:root {
+  --sidebar-w: 240px;
+  --radius: 10px;
+}
+
+.card {
+  border-radius: var(--radius) !important;
+}
+
+.card-hover {
+  transition: box-shadow .2s, transform .2s;
+}
+
+.card-hover:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .1) !important;
+  transform: translateY(-2px);
+}
+
+.btn {
+  border-radius: 8px;
+}
+
+.btn-xs {
+  padding: 2px 7px;
+  font-size: 11px;
+  border-radius: 5px;
+}
+
+.form-control,
+.form-select {
+  border-radius: 8px;
+}
+
+.badge {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.bg-purple {
+  background-color: #6f42c1 !important;
+}
+
+.text-purple {
+  color: #6f42c1 !important;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  color: rgba(255, 255, 255, .7);
+  text-decoration: none;
+  font-size: 13px;
+  transition: all .15s;
+  border-radius: 6px;
+  margin: 1px 8px;
+}
+
+.sidebar-link:hover,
+.sidebar-link.active {
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+}
+
+.sidebar-link i {
+  width: 16px;
+  font-size: 14px;
+}
+
+.table th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  font-weight: 600;
+  color: #6c757d;
+}
+
+.table td {
+  vertical-align: middle;
+}
+
+.kanban-board {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 16px;
+}
+
+.kanban-col {
+  min-width: 240px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.kanban-col-header {
+  font-weight: 600;
+  font-size: 12px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.kanban-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: grab;
+  border: 1px solid #eee;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+  font-size: 12px;
+  transition: box-shadow .15s;
+}
+
+.kanban-card:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .12);
+}
+
+.progress {
+  border-radius: 50px;
+}
+
+.progress-bar {
+  border-radius: 50px;
+}
+
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+
+@media print {
+
+  #sidebar,
+  .navbar,
+  footer,
+  .btn {
+    display: none !important;
+  }
+
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+}
+
+[data-bs-theme="dark"] body {
+  background: #1a1a2e;
+}
+
+[data-bs-theme="dark"] .card {
+  background: #16213e;
+  border-color: #0f3460;
+}
+
+[data-bs-theme="dark"] .navbar {
+  background: #16213e !important;
+  border-color: #0f3460 !important;
+}
+
+.login-logo {
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.sidebar-logo {
+  width: 38px;
+  height: 38px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #cbd5e1;
+  padding: 9px 16px;
+  text-decoration: none;
+  font-size: 14px;
+  border-radius: 8px;
+  margin: 2px 8px;
+}
+
+.sidebar-link:hover,
+.sidebar-link.active {
+  background: rgba(255, 255, 255, .08);
+  color: #fff;
+}
+
+.ng-confirm-modal {
+  border: 0;
+  border-radius: 26px;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, .28);
+}
+
+.ng-confirm-modal::before {
+  content: "";
+  height: 7px;
+  display: block;
+  background: linear-gradient(90deg, #ef4444, #f59e0b);
+}
+
+.ng-confirm-icon {
+  width: 78px;
+  height: 78px;
+  margin: 32px auto 10px;
+  border-radius: 26px;
+  background: linear-gradient(135deg, #fee2e2, #fff7ed);
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  box-shadow: 0 16px 35px rgba(239, 68, 68, .18);
+}
+
+.ng-confirm-modal .btn {
+  border-radius: 14px;
+  font-weight: 700;
+  padding-top: 11px;
+  padding-bottom: 11px;
+}
+
+.ng-confirm-modal .btn-light {
+  background: #f3f4f6;
+  border: 0;
+  color: #374151;
+}
+
+.ng-confirm-modal .btn-danger {
+  border: 0;
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  box-shadow: 0 12px 26px rgba(239, 68, 68, .28);
+}

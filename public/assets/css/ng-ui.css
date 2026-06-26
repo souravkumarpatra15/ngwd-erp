@@ -1,0 +1,462 @@
+/* ==========================================
+      NGWebD Premium Loader
+========================================== */
+
+#ngLoader {
+  position: fixed;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 999999;
+  overflow: hidden;
+
+  background:
+    radial-gradient(circle at top left, #7c3aed33, transparent 30%),
+    radial-gradient(circle at bottom right, #f59e0b33, transparent 35%),
+    rgba(10, 15, 30, .92);
+
+  backdrop-filter: blur(18px);
+}
+
+#ngLoader.show {
+  display: flex;
+}
+
+/* Floating Background */
+
+#ngLoader::before,
+#ngLoader::after {
+  content: "";
+  position: absolute;
+  width: 350px;
+  height: 350px;
+  border-radius: 50%;
+  filter: blur(90px);
+  animation: blobMove 8s infinite alternate;
+}
+
+#ngLoader::before {
+  background: #7c3aed;
+  left: -80px;
+  top: -80px;
+}
+
+#ngLoader::after {
+  background: #f59e0b;
+  right: -80px;
+  bottom: -80px;
+}
+
+/* Card */
+
+.ng-loader-box {
+
+  position: relative;
+  width: 280px;
+
+  padding: 40px 30px;
+
+  border-radius: 30px;
+
+  background: rgba(255, 255, 255, .08);
+
+  backdrop-filter: blur(25px);
+
+  border: 1px solid rgba(255, 255, 255, .12);
+
+  text-align: center;
+
+  overflow: hidden;
+
+  box-shadow:
+    0 25px 60px rgba(0, 0, 0, .35);
+}
+
+/* Ring */
+
+.ng-loader-logo {
+
+  width: 110px;
+  height: 110px;
+
+  margin: auto;
+
+  border-radius: 50%;
+
+  position: relative;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  animation: logoFloat 2.5s ease infinite;
+}
+
+.ng-loader-logo::before {
+
+  content: "";
+
+  position: absolute;
+
+  inset: -6px;
+
+  border-radius: 50%;
+
+  background:
+    conic-gradient(#7c3aed,
+      #06b6d4,
+      #22c55e,
+      #f59e0b,
+      #ef4444,
+      #7c3aed);
+
+  animation: rotateRing 2s linear infinite;
+
+}
+
+.ng-loader-logo::after {
+
+  content: "";
+
+  position: absolute;
+
+  inset: 6px;
+
+  background: #fff;
+
+  border-radius: 50%;
+
+}
+
+.ng-loader-logo img {
+
+  width: 62px;
+  height: 62px;
+
+  object-fit: contain;
+
+  position: relative;
+  z-index: 2;
+
+  animation: logoPulse 1.8s infinite;
+}
+
+/* Text */
+
+.ng-loader-text {
+
+  color: #fff;
+
+  font-size: 16px;
+
+  margin-top: 25px;
+
+  font-weight: 700;
+
+  letter-spacing: .5px;
+}
+
+.ng-loader-sub {
+
+  color: #bfc7d5;
+
+  font-size: 13px;
+
+  margin-top: 6px;
+}
+
+/* Progress */
+
+.ng-progress {
+
+  width: 100%;
+  height: 7px;
+
+  margin-top: 28px;
+
+  background: rgba(255, 255, 255, .10);
+
+  border-radius: 30px;
+
+  overflow: hidden;
+}
+
+.ng-progress span {
+
+  display: block;
+
+  width: 35%;
+
+  height: 100%;
+
+  border-radius: 30px;
+
+  background:
+    linear-gradient(90deg, #7c3aed, #06b6d4, #22c55e);
+
+  animation: progressMove 1.4s infinite;
+}
+
+/* Dots */
+
+.ng-loader-dots {
+
+  display: flex;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  margin-top: 18px;
+}
+
+.ng-loader-dots span {
+
+  width: 8px;
+  height: 8px;
+
+  border-radius: 50%;
+
+  background: #fff;
+
+  animation: bounce 1s infinite;
+}
+
+.ng-loader-dots span:nth-child(2) {
+  animation-delay: .2s;
+}
+
+.ng-loader-dots span:nth-child(3) {
+  animation-delay: .4s;
+}
+
+/* Animations */
+
+@keyframes rotateRing {
+
+  100% {
+    transform: rotate(360deg);
+  }
+
+}
+
+@keyframes logoFloat {
+
+  50% {
+    transform: translateY(-8px);
+  }
+
+}
+
+@keyframes logoPulse {
+
+  50% {
+    transform: scale(1.08);
+  }
+
+}
+
+@keyframes progressMove {
+
+  0% {
+    margin-left: -35%;
+  }
+
+  100% {
+    margin-left: 100%;
+  }
+
+}
+
+@keyframes bounce {
+
+  50% {
+    transform: translateY(-8px);
+    opacity: .5;
+  }
+
+}
+
+@keyframes blobMove {
+
+  100% {
+
+    transform:
+      translate(60px, -40px) scale(1.25);
+
+  }
+
+}
+
+/* ===============================
+   NGWebD Toast
+================================ */
+#ngToastContainer {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ng-toast {
+  min-width: 310px;
+  max-width: 390px;
+  background: rgba(255, 255, 255, .96);
+  backdrop-filter: blur(16px);
+  border-radius: 5px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, .22);
+  padding: 16px 18px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  position: relative;
+  overflow: hidden;
+  animation: ngToastIn .35s ease forwards;
+}
+
+.ng-toast::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 5px;
+  height: 100%;
+}
+
+.ng-toast.success::before {
+  background: #22c55e;
+}
+
+.ng-toast.error::before {
+  background: #ef4444;
+}
+
+.ng-toast.warning::before {
+  background: #f59e0b;
+}
+
+.ng-toast.info::before {
+  background: #3b82f6;
+}
+
+.ng-toast-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+  font-size: 18px;
+}
+
+.ng-toast.success .ng-toast-icon {
+  background: #22c55e;
+}
+
+.ng-toast.error .ng-toast-icon {
+  background: #ef4444;
+}
+
+.ng-toast.warning .ng-toast-icon {
+  background: #f59e0b;
+}
+
+.ng-toast.info .ng-toast-icon {
+  background: #3b82f6;
+}
+
+.ng-toast-title {
+  font-weight: 800;
+  color: #111827;
+  font-size: 15px;
+  margin-bottom: 3px;
+}
+
+.ng-toast-message {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.ng-toast-close {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ng-toast-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  animation: ngProgress 4s linear forwards;
+}
+
+.ng-toast.success .ng-toast-progress {
+  background: #22c55e;
+}
+
+.ng-toast.error .ng-toast-progress {
+  background: #ef4444;
+}
+
+.ng-toast.warning .ng-toast-progress {
+  background: #f59e0b;
+}
+
+.ng-toast.info .ng-toast-progress {
+  background: #3b82f6;
+}
+
+@keyframes ngToastIn {
+  from {
+    opacity: 0;
+    transform: translateX(40px) scale(.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes ngToastOut {
+  to {
+    opacity: 0;
+    transform: translateX(40px) scale(.96);
+  }
+}
+
+@keyframes ngProgress {
+  from {
+    width: 100%;
+  }
+
+  to {
+    width: 0%;
+  }
+}
+
+@media(max-width: 575px) {
+  #ngToastContainer {
+    left: 14px;
+    right: 14px;
+    top: 14px;
+  }
+
+  .ng-toast {
+    min-width: 100%;
+    max-width: 100%;
+  }
+}

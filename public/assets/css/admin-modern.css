@@ -1,0 +1,138 @@
+/* ===============================
+   Fixed Layout Structure
+================================ */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+#wrapper {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ===============================
+   Fixed Sidebar
+================================ */
+#sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 240px;
+  min-width: 240px !important;
+  max-width: 240px !important;
+  height: 100vh;
+  z-index: 1040;
+  overflow: hidden;
+}
+
+/* sidebar brand fixed */
+.sidebar-brand {
+  height: 78px;
+  min-height: 78px;
+  flex-shrink: 0;
+}
+
+/* sidebar menu scroll */
+#sidebar .overflow-auto {
+  height: calc(100vh - 78px);
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-bottom: 20px;
+}
+
+/* nice sidebar scrollbar */
+#sidebar .overflow-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+#sidebar .overflow-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#sidebar .overflow-auto::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, .25);
+  border-radius: 20px;
+}
+
+#sidebar .overflow-auto::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, .45);
+}
+
+/* ===============================
+   Main Content Area
+================================ */
+#wrapper > .flex-grow-1 {
+  margin-left: 240px;
+  width: calc(100% - 240px);
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ===============================
+   Fixed Top Navbar
+================================ */
+.navbar.sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+}
+
+/* content scroll area */
+#wrapper > .flex-grow-1 {
+  display: flex;
+  flex-direction: column;
+}
+
+.p-4.flex-grow-1 {
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: calc(100vh - 190px);
+  padding-bottom: 30px !important;
+}
+
+/* page header fixed below navbar */
+.bg-white.border-bottom.px-4.py-3 {
+  flex-shrink: 0;
+}
+
+/* footer fixed bottom inside main */
+footer {
+  flex-shrink: 0;
+}
+
+/* ===============================
+   Mobile Fix
+================================ */
+@media (max-width: 768px) {
+  #sidebar {
+    transform: translateX(-100%);
+    transition: .3s ease;
+  }
+
+  #sidebar:not(.d-none) {
+    transform: translateX(0);
+  }
+
+  #wrapper > .flex-grow-1 {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .navbar.sticky-top {
+    margin: 10px;
+  }
+
+  .bg-white.border-bottom.px-4.py-3 {
+    margin: 10px;
+  }
+
+  .p-4.flex-grow-1 {
+    height: calc(100vh - 185px);
+  }
+
+  footer {
+    margin: 0 10px 10px;
+  }
+}

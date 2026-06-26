@@ -1,0 +1,5 @@
+<FilesMatch "^(app|system|vendor|writable)">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+Options -Indexes

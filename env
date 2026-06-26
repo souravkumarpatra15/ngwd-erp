@@ -1,0 +1,20 @@
+CI_ENVIRONMENT = production
+
+app.baseURL = 'https://erp.ngwebdconsulting.com/'
+app.appTimezone = 'Asia/Kolkata'
+
+database.default.hostname = localhost
+database.default.database = ngwd_erp
+database.default.username = ngwd_user
+database.default.password = CHANGE_THIS_PASSWORD
+database.default.DBDriver = MySQLi
+database.default.DBPrefix =
+database.default.charset  = utf8mb4
+
+session.driver         = 'CodeIgniter\Session\Handlers\DatabaseHandler'
+session.cookieName     = 'ngwd_session'
+session.expiration     = 7200
+session.savePath       = 'ci_sessions'
+session.matchIP        = false
+
+encryption.key = hex2bin(GENERATE_WITH_SPARK_KEY_GENERATE)

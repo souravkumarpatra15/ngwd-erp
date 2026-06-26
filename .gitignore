@@ -1,0 +1,10 @@
+.env
+vendor/
+writable/logs/
+writable/cache/
+writable/session/
+writable/pdfs/
+public/uploads/
+*.log
+.DS_Store
+Thumbs.db
