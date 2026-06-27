@@ -258,7 +258,7 @@
         hideLoader();
 
         if (res.status === 'success') {
-          showToast('Lead deleted successfully', 'warning');
+          showToast('Lead deleted successfully', res.status);
           leadsTable.ajax.reload(null, false);
         } else {
           showToast(res.message || 'Lead delete failed', 'error');

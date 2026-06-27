@@ -84,8 +84,27 @@ class LeadController extends BaseController
 
     public function delete($id)
     {
+        if (!$this->request->isAJAX()) {
+            return redirect()->to('admin/leads');
+        }
+
+        $lead = $this->leadModel->find($id);
+
+        if (!$lead) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Lead not found',
+                'token'   => csrf_hash()
+            ]);
+        }
+
         $this->leadModel->delete($id);
-        return redirect()->to('admin/leads')->with('success', 'Lead delete successfully!');
+
+        return $this->response->setJSON([
+            'status'  => 'success',
+            'message' => 'Lead deleted successfully',
+            'token'   => csrf_hash()
+        ]);
     }
 
     public function convertToClient($id)
