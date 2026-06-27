@@ -8,6 +8,7 @@ use App\Models\ClientModel;
 use App\Models\LeadActivityModel;
 use App\Services\EmailService;
 use App\Services\WhatsAppService;
+use App\Models\UserModel;
 
 class LeadController extends BaseController
 {
@@ -110,13 +111,103 @@ class LeadController extends BaseController
     public function convertToClient($id)
     {
         $lead = $this->leadModel->find($id);
-        if (!$lead) return $this->jsonError('Lead not found');
-        $clientModel = new ClientModel();
-        $clientData  = ['client_number' => $this->generateNumber('CLT', $clientModel), 'name' => $lead['name'], 'company_name' => $lead['company_name'], 'phone' => $lead['mobile'], 'whatsapp' => $lead['whatsapp'], 'email' => $lead['email'], 'address' => $lead['address'], 'lead_id' => $id, 'created_by' => session()->get('user_id')];
-        $clientId = $clientModel->insert($clientData);
-        $this->leadModel->update($id, ['status' => 'converted', 'converted_client_id' => $clientId]);
-        $this->logActivity('leads', $id, 'converted', 'Converted to client #' . $clientId);
-        return redirect()->to("admin/leads/$id")->with('success', 'Lead converted!');
+
+        if (!$lead) {
+            return $this->jsonError('Lead not found');
+        }
+
+        $db = \Config\Database::connect();
+        $db->transBegin();
+
+        try {
+
+            $clientModel = new ClientModel();
+
+            $clientData = [
+                'client_number' => $this->generateNumber('CLT', $clientModel),
+                'name'          => $lead['name'],
+                'company_name'  => $lead['company_name'],
+                'phone'         => $lead['mobile'],
+                'whatsapp'      => $lead['whatsapp'],
+                'email'         => $lead['email'],
+                'address'       => $lead['address'],
+                'lead_id'       => $id,
+                'created_by'    => session()->get('user_id'),
+                'status'        => 'active'
+            ];
+
+            $clientId = $clientModel->insert($clientData);
+
+            // Create Client Login
+            if (!empty($lead['email'])) {
+
+                $userModel = new UserModel();
+
+                $exists = $userModel
+                    ->where('email', $lead['email'])
+                    ->first();
+
+                if (!$exists) {
+
+                    $password = 'Client@' . rand(1000, 9999);
+
+                    $userModel->insert([
+                        'name'       => $lead['name'],
+                        'email'      => $lead['email'],
+                        'password'   => password_hash($password, PASSWORD_BCRYPT),
+                        'role'       => 'client',
+                        'client_id'  => $clientId,
+                        'is_active'  => 1,
+                        'created_at' => date('Y-m-d H:i:s')
+                    ]);
+
+                    $mailService = new EmailService();
+
+                    $mailService->sendClientWelcome(
+                        $lead['email'],
+                        $lead['name'],
+                        $password
+                    );
+                }
+            }
+
+            $this->leadModel->update($id, [
+                'status'              => 'converted',
+                'converted_client_id' => $clientId
+            ]);
+
+            $this->logActivity(
+                'leads',
+                $id,
+                'converted',
+                'Lead converted to client #' . $clientId
+            );
+
+            $db->transCommit();
+
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'status' => 'success',
+                    'message' => 'Lead converted to client successfully',
+                    'client_id' => $clientId,
+                    'csrf' => csrf_hash()
+                ]);
+            }
+
+            return redirect()
+                ->to('admin/leads/' . $id)
+                ->with('success', 'Lead converted to client successfully!');
+        } catch (\Throwable $e) {
+
+            $db->transRollback();
+
+            log_message('error', $e->getMessage());
+
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Failed to convert lead.'
+            ]);
+        }
     }
 
     public function addActivity($id)

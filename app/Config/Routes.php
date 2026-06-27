@@ -63,6 +63,7 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('projects/update/(:num)', 'Admin\ProjectController::update/$1');
         $routes->post('projects/delete/(:num)', 'Admin\ProjectController::delete/$1');
         $routes->post('projects/status/(:num)', 'Admin\ProjectController::updateStatus/$1');
+        $routes->get('projects/by-client/(:num)', 'Admin\ProjectController::byClient/$1');
 
         // Proposals
         $routes->get('proposals', 'Admin\ProposalController::index');
@@ -75,6 +76,7 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->get('proposals/pdf/(:num)', 'Admin\ProposalController::generatePDF/$1');
         $routes->post('proposals/send-email/(:num)', 'Admin\ProposalController::sendEmail/$1');
         $routes->post('proposals/send-whatsapp/(:num)', 'Admin\ProposalController::sendWhatsApp/$1');
+        $routes->get('proposals/datatable', 'Admin\ProposalController::datatable');
 
         // Agreements
         $routes->get('agreements', 'Admin\AgreementController::index');

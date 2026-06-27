@@ -1,62 +1,72 @@
 <?= $this->extend('layouts/client') ?>
 <?= $this->section('content') ?>
+
 <div class="row justify-content-center">
-  <div class="col-md-5">
+  <div class="col-md-6">
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-white border-0 py-3 text-center">
-        <h5 class="mb-0 fw-semibold">Pay Invoice</h5>
-        <div class="text-muted small"><?= esc($invoice['invoice_number']) ?></div>
+        <h5 class="fw-bold mb-0"><i class="bi bi-credit-card me-2 text-primary"></i>Secure Payment</h5>
       </div>
       <div class="card-body p-4">
-        <div class="d-flex justify-content-between mb-2 small"><span class="text-muted">Subtotal</span><span>₹<?= number_format($invoice['subtotal'],2) ?></span></div>
-        <?php if ($invoice['tax_amount'] > 0): ?>
-        <div class="d-flex justify-content-between mb-2 small"><span class="text-muted">Tax</span><span>₹<?= number_format($invoice['tax_amount'],2) ?></span></div>
-        <?php endif; ?>
-        <hr>
-        <div class="d-flex justify-content-between mb-4">
-          <span class="fw-bold">Amount Due</span>
-          <span class="fw-bold text-primary fs-5">₹<?= number_format($invoice['balance_due'],2) ?></span>
-        </div>
-        <?php if ($razorpay_order): ?>
-        <button id="rzpBtn" class="btn btn-primary w-100 btn-lg">
-          <i class="bi bi-shield-check me-2"></i>Pay ₹<?= number_format($invoice['balance_due'],2) ?>
+        <table class="table table-sm table-borderless mb-4">
+          <tr><td class="text-muted">Invoice</td><td class="fw-semibold"><?= esc($invoice['invoice_number']) ?></td></tr>
+          <tr><td class="text-muted">Project</td><td><?= esc($invoice['project_name'] ?? '—') ?></td></tr>
+          <tr><td class="text-muted">Total</td><td>₹<?= number_format($invoice['total'],2) ?></td></tr>
+          <tr><td class="text-muted">Already Paid</td><td class="text-success">₹<?= number_format($invoice['paid_amount']??0,2) ?></td></tr>
+          <tr class="table-warning"><td class="fw-bold">Amount Due</td><td class="fw-bold fs-5">₹<?= number_format($amount_due,2) ?></td></tr>
+        </table>
+
+        <button id="rzpBtn" class="btn btn-success btn-lg w-100">
+          <i class="bi bi-lock me-2"></i>Pay ₹<?= number_format($amount_due,2) ?> Now
         </button>
-        <p class="text-center text-muted small mt-3"><i class="bi bi-lock me-1"></i>Secured by Razorpay</p>
-        <?php else: ?>
-        <div class="alert alert-warning small">Payment gateway not configured. Please contact us.</div>
-        <?php endif; ?>
+        <div class="text-center mt-3 text-muted small">
+          <i class="bi bi-shield-check me-1"></i>Powered by Razorpay · 256-bit SSL Encrypted
+        </div>
       </div>
+    </div>
+    <div class="text-center mt-3">
+      <a href="<?= base_url('portal/invoices/'.$invoice['id']) ?>" class="text-muted small"><i class="bi bi-arrow-left me-1"></i>Back to Invoice</a>
     </div>
   </div>
 </div>
+
 <?= $this->endSection() ?>
 <?= $this->section('scripts') ?>
-<?php if ($razorpay_order): ?>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
+const options = {
+  key: '<?= esc($razorpay_key) ?>',
+  amount: <?= (int)($amount_due * 100) ?>,
+  currency: 'INR',
+  name: '<?= esc($settings['company_name'] ?? 'NGWebD') ?>',
+  description: 'Payment for Invoice <?= esc($invoice['invoice_number']) ?>',
+  order_id: '<?= esc($order_id) ?>',
+  handler: function(response) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '<?= base_url('portal/payment/verify') ?>';
+    [
+      ['razorpay_payment_id', response.razorpay_payment_id],
+      ['razorpay_order_id',   response.razorpay_order_id],
+      ['razorpay_signature',  response.razorpay_signature],
+      ['invoice_id',          '<?= $invoice['id'] ?>'],
+      ['csrf_test_name',      document.querySelector('meta[name=csrf-token]').content],
+    ].forEach(([name, value]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden'; input.name = name; input.value = value;
+      form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+  },
+  prefill: {
+    name: '<?= esc($current_user['name'] ?? '') ?>',
+    email: '<?= esc($current_user['email'] ?? '') ?>',
+  },
+  theme: { color: '#0d6efd' }
+};
 document.getElementById('rzpBtn').addEventListener('click', function() {
-  const rzp = new Razorpay({
-    key: '<?= esc($razorpay_key) ?>',
-    amount: <?= (int)($invoice['balance_due']*100) ?>,
-    currency: 'INR',
-    name: '<?= esc($settings['company_name'] ?? '') ?>',
-    description: 'Invoice <?= esc($invoice['invoice_number']) ?>',
-    order_id: '<?= $razorpay_order['id'] ?>',
-    prefill: { name:'<?= esc($invoice['client_name']) ?>', email:'<?= esc($invoice['client_email']) ?>' },
-    theme: { color:'#0d6efd' },
-    handler: function(res) {
-      fetch('<?= base_url('portal/pay/verify') ?>', {
-        method:'POST',
-        headers:{'Content-Type':'application/json','X-CSRF-Token':'<?= csrf_hash() ?>'},
-        body: JSON.stringify({razorpay_order_id:res.razorpay_order_id,razorpay_payment_id:res.razorpay_payment_id,razorpay_signature:res.razorpay_signature,invoice_id:<?= $invoice['id'] ?>})
-      }).then(r=>r.json()).then(d => {
-        if (d.status==='success') window.location='<?= base_url('portal/invoices/'.$invoice['id']) ?>?paid=1';
-        else alert('Payment verification failed. Please contact support.');
-      });
-    }
-  });
-  rzp.open();
+  new Razorpay(options).open();
 });
 </script>
-<?php endif; ?>
 <?= $this->endSection() ?>

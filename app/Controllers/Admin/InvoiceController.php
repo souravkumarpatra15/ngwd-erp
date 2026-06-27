@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
@@ -50,25 +51,26 @@ class InvoiceController extends BaseController
             'title'        => 'Create Invoice',
             'clients'      => (new ClientModel())->findAll(),
             'tax_percent'  => $this->settings['tax_percent'] ?? 18,
-            'default_terms'=> $this->settings['invoice_terms'] ?? '',
+            'default_terms' => $this->settings['invoice_terms'] ?? '',
         ]);
     }
 
     public function store()
     {
         $post = $this->request->getPost();
+
         $invoiceData = [
             'invoice_number' => $this->generateNumber($this->settings['invoice_prefix'] ?? 'INV', $this->im),
-            'client_id'      => $post['client_id'],
-            'project_id'     => $post['project_id'] ?: null,
-            'milestone_id'   => $post['milestone_id'] ?: null,
-            'invoice_date'   => $post['invoice_date'],
-            'due_date'       => $post['due_date'],
-            'subtotal'       => $post['subtotal'],
-            'tax_percent'    => $post['tax_percent'],
-            'tax_amount'     => $post['tax_amount'],
+            'client_id'      => $post['client_id'] ?? null,
+            'project_id'     => !empty($post['project_id']) ? $post['project_id'] : null,
+            'milestone_id'   => !empty($post['milestone_id']) ? $post['milestone_id'] : null,
+            'invoice_date'   => $post['invoice_date'] ?? date('Y-m-d'),
+            'due_date'       => $post['due_date'] ?? date('Y-m-d', strtotime('+15 days')),
+            'subtotal'       => $post['subtotal'] ?? 0,
+            'tax_percent'    => $post['tax_percent'] ?? 0,
+            'tax_amount'     => $post['tax_amount'] ?? 0,
             'discount'       => $post['discount'] ?? 0,
-            'total'          => $post['total'],
+            'total'          => $post['total'] ?? 0,
             'paid_amount'    => 0,
             'is_gst'         => $post['is_gst'] ?? 0,
             'notes'          => $post['notes'] ?? '',
@@ -76,20 +78,27 @@ class InvoiceController extends BaseController
             'status'         => 'draft',
             'created_by'     => session()->get('user_id'),
         ];
+
         $id = $this->im->insert($invoiceData);
 
-        // Line items
         $iim = new InvoiceItemModel();
+
         foreach (($post['items'] ?? []) as $item) {
+            $qty   = $item['quantity'] ?? 1;
+            $rate  = $item['unit_price'] ?? $item['rate'] ?? 0;
+            $amount = $qty * $rate;
+
             $iim->insert([
                 'invoice_id'  => $id,
-                'description' => $item['description'],
-                'quantity'    => $item['quantity'],
-                'rate'        => $item['rate'],
-                'amount'      => $item['amount'],
+                'description' => $item['description'] ?? '',
+                'quantity'    => $qty,
+                'unit_price'        => $rate,
+                'total'      => $amount,
             ]);
         }
+
         $this->logActivity('invoices', $id, 'create', "Created invoice {$invoiceData['invoice_number']}");
+
         return redirect()->to("admin/invoices/$id")->with('success', 'Invoice created!');
     }
 
@@ -194,7 +203,9 @@ class InvoiceController extends BaseController
         $inv   = $this->im->getWithDetails($id);
         $order = (new PaymentService())->createOrder(
             (float) $inv['total'] - (float) $inv['paid_amount'],
-            'invoice', $id, $inv['client_id']
+            'invoice',
+            $id,
+            $inv['client_id']
         );
         if (!$order) {
             return $this->jsonError('Could not create Razorpay order.');
@@ -202,7 +213,7 @@ class InvoiceController extends BaseController
         return $this->jsonSuccess('Order created', [
             'order_id'    => $order['id'],
             'amount'      => $order['amount'],
-            'razorpay_key'=> $this->settings['razorpay_key'] ?? '',
+            'razorpay_key' => $this->settings['razorpay_key'] ?? '',
         ]);
     }
 }

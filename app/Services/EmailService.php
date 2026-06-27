@@ -63,6 +63,67 @@ class EmailService
         return $this->send($item['client_email'], $subject, $body);
     }
 
+    public function sendClientWelcome($to, $clientName, $password)
+    {
+        $company = $this->settings['company_name'] ?? 'NGWebD Consulting Pvt. Ltd.';
+        $portalUrl = base_url('login');
+
+        $subject = "Welcome to {$company} Client Portal";
+
+        $body = '
+        <h2 style="margin-top:0;color:#111827;">Welcome, ' . esc($clientName) . ' 👋</h2>
+
+        <p>Your client account has been created successfully.</p>
+
+        <p>You can now login to your client portal using the details below:</p>
+
+        <table width="100%" cellpadding="0" cellspacing="0" style="
+            background:#f9fafb;
+            border:1px solid #e5e7eb;
+            border-radius:12px;
+            padding:18px;
+            margin:20px 0;
+        ">
+            <tr>
+                <td style="padding:8px 0;color:#6b7280;">Login URL</td>
+                <td style="padding:8px 0;text-align:right;">
+                    <a href="' . $portalUrl . '">' . $portalUrl . '</a>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:8px 0;color:#6b7280;">Email</td>
+                <td style="padding:8px 0;text-align:right;"><strong>' . esc($to) . '</strong></td>
+            </tr>
+            <tr>
+                <td style="padding:8px 0;color:#6b7280;">Temporary Password</td>
+                <td style="padding:8px 0;text-align:right;"><strong>' . esc($password) . '</strong></td>
+            </tr>
+        </table>
+
+        <p style="text-align:center;margin:28px 0;">
+            <a href="' . $portalUrl . '" style="
+                background:#4f46e5;
+                color:#ffffff;
+                text-decoration:none;
+                padding:13px 28px;
+                border-radius:30px;
+                font-weight:600;
+                display:inline-block;
+            ">
+                Login to Client Portal
+            </a>
+        </p>
+
+        <p style="color:#6b7280;font-size:14px;">
+            For security reasons, please change your password after your first login.
+        </p>
+
+        <p>Regards,<br><strong>' . $company . ' Team</strong></p>
+    ';
+
+        return $this->send($to, $subject, $body);
+    }
+
     protected function wrap($content)
     {
         $company = $this->settings['company_name'] ?? 'NGWebD Consulting Pvt. Ltd.';
