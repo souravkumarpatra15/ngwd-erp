@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
@@ -51,7 +50,7 @@ class InvoiceController extends BaseController
             'title'        => 'Create Invoice',
             'clients'      => (new ClientModel())->orderBy('name')->findAll(),
             'default_tax'  => $this->settings['tax_percent'] ?? 18,
-            'default_terms' => $this->settings['invoice_terms'] ?? '',
+            'default_terms'=> $this->settings['invoice_terms'] ?? '',
         ]);
     }
 
@@ -59,6 +58,7 @@ class InvoiceController extends BaseController
     public function store()
     {
         $post = $this->request->getPost();
+
         $subtotal = (float) ($post['subtotal'] ?? 0);
         $tax_pct  = (float) ($post['tax_percent'] ?? 0);
         $tax_amt  = round($subtotal * $tax_pct / 100, 2);
@@ -114,10 +114,10 @@ class InvoiceController extends BaseController
         if (!$invoice) return redirect()->to('admin/invoices');
         $items = (new InvoiceItemModel())->where('invoice_id', $id)->orderBy('sort_order')->findAll();
         return view('admin/invoices/show', [
-            'title'   => 'Invoice ' . $invoice['invoice_number'],
+            'title'   => 'Invoice '.$invoice['invoice_number'],
             'invoice' => $invoice,
             'items'   => $items,
-            'settings' => $this->settings,
+            'settings'=> $this->settings,
         ]);
     }
 
@@ -151,7 +151,7 @@ class InvoiceController extends BaseController
         $this->im->update($id, [
             'client_id'   => $post['client_id'],
             'project_id'  => !empty($post['project_id']) ? $post['project_id'] : null,
-            'invoice_date' => $post['invoice_date'],
+            'invoice_date'=> $post['invoice_date'],
             'due_date'    => $post['due_date'],
             'subtotal'    => $subtotal,
             'tax_percent' => $tax_pct,
@@ -239,7 +239,7 @@ class InvoiceController extends BaseController
     {
         $inv = $this->im->getWithDetails($id);
         $msg = "Invoice *{$inv['invoice_number']}*\nAmount: ₹" . number_format($inv['total'], 2)
-            . "\nDue: {$inv['due_date']}\n\n" . ($this->settings['company_name'] ?? '');
+             . "\nDue: {$inv['due_date']}\n\n" . ($this->settings['company_name'] ?? '');
         $res = (new WhatsAppService())->sendMessage($inv['client_whatsapp'], $msg);
         if ($res) {
             $this->im->update($id, ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);
@@ -261,7 +261,7 @@ class InvoiceController extends BaseController
         return $this->jsonSuccess('Order created.', [
             'order_id'    => $order['id'],
             'amount'      => $order['amount'],
-            'razorpay_key' => $this->settings['razorpay_key'] ?? '',
+            'razorpay_key'=> $this->settings['razorpay_key'] ?? '',
             'pay_url'     => base_url("portal/pay/$id"),
         ]);
     }

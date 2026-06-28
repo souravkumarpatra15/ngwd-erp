@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
@@ -160,9 +159,9 @@ class AgreementController extends BaseController
     {
         $a   = $this->am->getWithDetails($id);
         $msg = "Dear {$a['client_name']},\n\n"
-            . "Agreement *{$a['title']}* is ready for your signature.\n"
-            . "Sign here: " . base_url("portal/agreements/sign/$id") . "\n\n"
-            . "Regards,\n" . ($this->settings['company_name'] ?? '');
+             . "Agreement *{$a['title']}* is ready for your signature.\n"
+             . "Sign here: " . base_url("portal/agreements/sign/$id") . "\n\n"
+             . "Regards,\n" . ($this->settings['company_name'] ?? '');
         $res = (new WhatsAppService())->sendMessage($a['client_whatsapp'], $msg);
         if ($res) {
             $this->am->update($id, ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);

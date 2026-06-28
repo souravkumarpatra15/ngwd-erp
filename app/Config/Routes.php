@@ -98,6 +98,7 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('milestones/delete/(:num)', 'Admin\MilestoneController::delete/$1');
         $routes->post('milestones/status/(:num)', 'Admin\MilestoneController::updateStatus/$1');
         $routes->post('milestones/payment-link/(:num)', 'Admin\MilestoneController::generatePaymentLink/$1');
+        $routes->get('milestones/by-project/(:num)', 'Admin\MilestoneController::byProject/$1');
 
         // Payments
         $routes->get('payments', 'Admin\PaymentController::index');
@@ -106,6 +107,7 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('payments/store', 'Admin\PaymentController::store');
         $routes->get('payments/(:num)', 'Admin\PaymentController::show/$1');
         $routes->get('payments/receipt/(:num)', 'Admin\PaymentController::receipt/$1');
+        $routes->get('payments/milestones-by-project/(:num)', 'Admin\PaymentController::milestonesByProject/$1');
 
         // Invoices
         $routes->get('invoices', 'Admin\InvoiceController::index');
