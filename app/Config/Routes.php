@@ -121,6 +121,7 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('invoices/payment-link/(:num)', 'Admin\InvoiceController::generatePaymentLink/$1');
         $routes->post('invoices/delete/(:num)', 'Admin\InvoiceController::delete/$1');
         $routes->post('invoices/void/(:num)', 'Admin\InvoiceController::void/$1');
+        $routes->get('ajax/invoices/(:num)',  'Admin\InvoiceController::byClient/$1');
 
         // Domains
         $routes->get('domains', 'Admin\DomainController::index');

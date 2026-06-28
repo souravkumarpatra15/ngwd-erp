@@ -146,6 +146,9 @@
     $('#summTotal').text('₹' + tot.toLocaleString('en-IN', {
       minimumFractionDigits: 2
     }));
+    $('#subtotalInput').val(sub.toFixed(2));
+    $('#taxAmountInput').val(tax.toFixed(2));
+    $('#totalInput').val(tot.toFixed(2));
   }
   $(document).on('input', '.item-qty,.item-price,#taxPercent,#discount', recalc);
   $('#addItem').on('click', function() {
