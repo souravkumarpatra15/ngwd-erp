@@ -25,11 +25,6 @@
         <tr><th>Title / File</th><th>Category</th><th>Client</th><th>Project</th><th>Size</th><th>Uploaded</th><th>Actions</th></tr>
       </thead>
       <tbody>
-        <?php if (empty($documents)): ?>
-        <tr><td colspan="7" class="text-center text-muted py-5">
-          <i class="bi bi-folder fs-2 d-block mb-2 opacity-25"></i>No documents yet. Upload one above.
-        </td></tr>
-        <?php else: ?>
         <?php foreach ($documents as $doc):
           $ext  = strtolower(pathinfo($doc['file_name'], PATHINFO_EXTENSION));
           $icon = match($ext) {
@@ -68,7 +63,6 @@
           </td>
         </tr>
         <?php endforeach; ?>
-        <?php endif; ?>
       </tbody>
     </table>
   </div>
@@ -136,7 +130,15 @@
 <script>
 const BASE = '<?= base_url() ?>'; const CSRF = CSRF_TOKEN;
 
-const dt = $('#docsTable').DataTable({ pageLength: 25, order: [[5,'desc']] });
+const dt = $('#docsTable').DataTable({
+  pageLength: 25,
+  order: [
+    [5, 'desc']
+  ],
+  language: {
+    emptyTable: "No documents yet. Upload one above."
+  }
+});
 
 // Category filter
 $('.filter-cat').on('click', function() {

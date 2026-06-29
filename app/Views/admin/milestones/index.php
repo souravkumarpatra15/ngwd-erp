@@ -50,6 +50,9 @@
           <td>
             <div class="d-flex gap-1">
               <a href="<?= base_url('admin/projects/'.$ms['project_id']) ?>" class="btn btn-xs btn-outline-primary" title="View Project"><i class="bi bi-folder2-open"></i></a>
+              <?php if (!in_array($ms['status'], ['completed','paid'])): ?>
+              <button class="btn btn-xs btn-outline-success btn-pay-link-ms" data-id="<?= $ms['id'] ?>" title="Generate Payment Link"><i class="bi bi-credit-card"></i></button>
+              <?php endif; ?>
               <button class="btn btn-xs btn-outline-danger btn-del-ms"
                 data-id="<?= $ms['id'] ?>"
                 data-confirm-title="Delete Milestone?"
@@ -65,6 +68,25 @@
   </div>
 </div>
 
+<!-- Payment link result modal -->
+<div class="modal fade" id="msPayLinkModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h6 class="modal-title fw-semibold"><i class="bi bi-credit-card me-2 text-success"></i>Payment Link Ready</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="small text-muted mb-2">Share this link with the client so they can pay this milestone directly:</div>
+        <div class="input-group">
+          <input type="text" class="form-control form-control-sm" id="msPayLinkUrl" readonly>
+          <button class="btn btn-outline-secondary btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('msPayLinkUrl').value).then(()=>showToast('Copied!','success'))">Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <?= $this->endSection() ?>
 <?= $this->section('scripts') ?>
 <script>
@@ -74,6 +96,20 @@ $('.ms-status-select').on('change', function() {
   const id = $(this).data('id'), status = $(this).val();
   $.post(`${BASE}admin/milestones/status/${id}`, {status, csrf_test_name: CSRF}, res => {
     showToast(res.message, res.status);
+  }, 'json');
+});
+
+$(document).on('click', '.btn-pay-link-ms', function() {
+  const id = $(this).data('id');
+  showLoader('Creating Razorpay order...');
+  $.post(`${BASE}admin/milestones/payment-link/${id}`, {csrf_test_name: CSRF}, res => {
+    hideLoader();
+    if (res.status === 'success' && res.data && res.data.url) {
+      document.getElementById('msPayLinkUrl').value = res.data.url;
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('msPayLinkModal')).show();
+    } else {
+      showToast(res.message, res.status);
+    }
   }, 'json');
 });
 

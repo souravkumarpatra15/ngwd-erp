@@ -64,6 +64,7 @@
             <td>
               <div class="d-flex gap-1">
                 <a href="<?= base_url('admin/domains/edit/' . $d['id']) ?>" class="btn btn-xs btn-outline-warning" title="Edit"><i class="bi bi-pencil"></i></a>
+                <a href="<?= base_url('admin/invoices/create?type=domain&client_id=' . $d['client_id'] . '&domain_id=' . $d['id']) ?>" class="btn btn-xs btn-outline-primary" title="Create Renewal Invoice"><i class="bi bi-receipt"></i></a>
                 <button class="btn btn-xs btn-outline-info btn-remind-domain" data-id="<?= $d['id'] ?>" title="Send Reminder"><i class="bi bi-bell"></i></button>
                 <button class="btn btn-xs btn-outline-danger btn-del-domain"
                   data-id="<?= $d['id'] ?>"

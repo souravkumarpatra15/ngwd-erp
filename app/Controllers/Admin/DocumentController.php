@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
@@ -43,35 +44,44 @@ class DocumentController extends BaseController
 
         if (!$this->validate([
             'file' => [
-                'rules'  => 'uploaded[file]|max_size[file,10240]|ext_in[file,pdf,doc,docx,png,jpg,jpeg,xlsx,xls,csv,txt,zip]',
-                'errors' => ['ext_in' => 'File type not allowed.', 'max_size' => 'Max file size is 10MB.'],
+                'rules' => 'uploaded[file]|max_size[file,10240]|ext_in[file,pdf,doc,docx,png,jpg,jpeg,xlsx,xls,csv,txt,zip]',
+                'errors' => [
+                    'ext_in'   => 'File type not allowed.',
+                    'max_size' => 'Max file size is 10MB.',
+                ],
             ],
         ])) {
             return redirect()->back()->with('error', $this->validator->getError('file'));
         }
 
+        // Get information BEFORE move
+        $originalName = $file->getClientName();
+        $mimeType     = $file->getClientMimeType();   // <-- use this
+        $size         = $file->getSize();
+
         $newName = $file->getRandomName();
         $folder  = FCPATH . 'uploads/' . date('Y/m/') . '/';
+
+        if (!is_dir($folder)) {
+            mkdir($folder, 0777, true);
+        }
+
         $file->move($folder, $newName);
 
-        $clientId  = $this->request->getPost('client_id') ?: null;
-        $projectId = $this->request->getPost('project_id') ?: null;
-
         $this->dm->insert([
-            'client_id'   => $clientId,
-            'project_id'  => $projectId,
-            'category'    => $this->request->getPost('category') ?? 'other',
-            'title'       => $this->request->getPost('title') ?: $file->getClientName(),
-            'file_name'   => $file->getClientName(),
-            'file_path'   => 'uploads/' . date('Y/m/') . '/' . $newName,
-            'file_size'   => $file->getSize(),
-            'file_type'   => $file->getMimeType(),
-            'notes'       => $this->request->getPost('notes') ?? '',
-            'created_by'  => session()->get('user_id'),
+            'client_id'  => $this->request->getPost('client_id') ?: null,
+            'project_id' => $this->request->getPost('project_id') ?: null,
+            'category'   => $this->request->getPost('category') ?: 'other',
+            'title'      => $this->request->getPost('title') ?: $originalName,
+            'file_name'  => $originalName,
+            'file_path'  => 'uploads/' . date('Y/m/') . '/' . $newName,
+            'file_size'  => $size,
+            'file_type'  => $mimeType,
+            'notes'      => $this->request->getPost('notes') ?: '',
+            'created_by' => session()->get('user_id'),
         ]);
 
-        $this->logActivity('documents', 0, 'upload', 'Uploaded: ' . $file->getClientName());
-        return redirect()->back()->with('success', 'File uploaded successfully!');
+        return redirect()->back()->with('success', 'Document uploaded successfully.');
     }
 
     // ── DOWNLOAD ──────────────────────────────────────────────

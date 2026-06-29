@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
@@ -7,6 +8,8 @@ use App\Models\InvoiceItemModel;
 use App\Models\ClientModel;
 use App\Models\ProjectModel;
 use App\Models\MilestoneModel;
+use App\Models\DomainModel;
+use App\Models\HostingModel;
 use App\Services\PDFService;
 use App\Services\EmailService;
 use App\Services\WhatsAppService;
@@ -51,6 +54,15 @@ class InvoiceController extends BaseController
             'clients'      => (new ClientModel())->orderBy('name')->findAll(),
             'default_tax'  => $this->settings['tax_percent'] ?? 18,
             'default_terms'=> $this->settings['invoice_terms'] ?? '',
+            // Optional prefill — lets "Create Invoice" buttons on the Domain/Hosting
+            // pages jump straight here with the right client/type/item pre-selected.
+            'prefill' => [
+                'type'        => $this->request->getGet('type') ?? '',
+                'client_id'   => $this->request->getGet('client_id') ?? '',
+                'domain_id'   => $this->request->getGet('domain_id') ?? '',
+                'hosting_id'  => $this->request->getGet('hosting_id') ?? '',
+                'milestone_id'=> $this->request->getGet('milestone_id') ?? '',
+            ],
         ]);
     }
 
@@ -58,7 +70,6 @@ class InvoiceController extends BaseController
     public function store()
     {
         $post = $this->request->getPost();
-
         $subtotal = (float) ($post['subtotal'] ?? 0);
         $tax_pct  = (float) ($post['tax_percent'] ?? 0);
         $tax_amt  = round($subtotal * $tax_pct / 100, 2);
@@ -70,6 +81,8 @@ class InvoiceController extends BaseController
             'client_id'      => $post['client_id'],
             'project_id'     => !empty($post['project_id'])   ? $post['project_id']   : null,
             'milestone_id'   => !empty($post['milestone_id']) ? $post['milestone_id'] : null,
+            'domain_id'      => !empty($post['domain_id'])    ? $post['domain_id']    : null,
+            'hosting_id'     => !empty($post['hosting_id'])   ? $post['hosting_id']   : null,
             'invoice_date'   => $post['invoice_date'] ?? date('Y-m-d'),
             'due_date'       => $post['due_date']     ?? date('Y-m-d', strtotime('+15 days')),
             'subtotal'       => $subtotal,
@@ -151,6 +164,9 @@ class InvoiceController extends BaseController
         $this->im->update($id, [
             'client_id'   => $post['client_id'],
             'project_id'  => !empty($post['project_id']) ? $post['project_id'] : null,
+            'milestone_id'=> !empty($post['milestone_id']) ? $post['milestone_id'] : null,
+            'domain_id'   => !empty($post['domain_id'])    ? $post['domain_id']    : null,
+            'hosting_id'  => !empty($post['hosting_id'])   ? $post['hosting_id']   : null,
             'invoice_date'=> $post['invoice_date'],
             'due_date'    => $post['due_date'],
             'subtotal'    => $subtotal,
@@ -239,7 +255,7 @@ class InvoiceController extends BaseController
     {
         $inv = $this->im->getWithDetails($id);
         $msg = "Invoice *{$inv['invoice_number']}*\nAmount: ₹" . number_format($inv['total'], 2)
-             . "\nDue: {$inv['due_date']}\n\n" . ($this->settings['company_name'] ?? '');
+            . "\nDue: {$inv['due_date']}\n\n" . ($this->settings['company_name'] ?? '');
         $res = (new WhatsAppService())->sendMessage($inv['client_whatsapp'], $msg);
         if ($res) {
             $this->im->update($id, ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);
@@ -277,5 +293,39 @@ class InvoiceController extends BaseController
             ->get()->getResultArray();
 
         return $this->response->setJSON(['status' => 'success', 'data' => $invoices]);
+    }
+
+    // ── AJAX: open milestones for a project (for "Invoice For: Milestone") ──
+    public function ajaxMilestones($projectId)
+    {
+        $rows = (new MilestoneModel())
+            ->where('project_id', $projectId)
+            ->whereNotIn('status', ['paid'])
+            ->orderBy('sort_order', 'ASC')
+            ->findAll();
+
+        return $this->response->setJSON($rows);
+    }
+
+    // ── AJAX: a client's domains (for "Invoice For: Domain Renewal") ────────
+    public function ajaxDomains($clientId)
+    {
+        $rows = (new DomainModel())
+            ->where('client_id', $clientId)
+            ->orderBy('expiry_date', 'ASC')
+            ->findAll();
+
+        return $this->response->setJSON($rows);
+    }
+
+    // ── AJAX: a client's hostings (for "Invoice For: Hosting Renewal") ──────
+    public function ajaxHostings($clientId)
+    {
+        $rows = (new HostingModel())
+            ->where('client_id', $clientId)
+            ->orderBy('expiry_date', 'ASC')
+            ->findAll();
+
+        return $this->response->setJSON($rows);
     }
 }

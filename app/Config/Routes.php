@@ -124,6 +124,9 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('invoices/delete/(:num)', 'Admin\InvoiceController::delete/$1');
         $routes->post('invoices/void/(:num)', 'Admin\InvoiceController::void/$1');
         $routes->get('ajax/invoices/(:num)',  'Admin\InvoiceController::byClient/$1');
+        $routes->get('ajax/invoice-milestones/(:num)', 'Admin\InvoiceController::ajaxMilestones/$1');
+        $routes->get('ajax/invoice-domains/(:num)',    'Admin\InvoiceController::ajaxDomains/$1');
+        $routes->get('ajax/invoice-hostings/(:num)',   'Admin\InvoiceController::ajaxHostings/$1');
 
         // Domains
         $routes->get('domains', 'Admin\DomainController::index');
@@ -204,6 +207,7 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->get('payments', 'Client\PortalController::payments');
         $routes->get('proposals', 'Client\PortalController::proposals');
         $routes->get('proposals/(:num)', 'Client\PortalController::proposalDetail/$1');
+        $routes->post('proposals/respond/(:num)', 'Client\PortalController::respondProposal/$1');
         $routes->get('agreements', 'Client\PortalController::agreements');
         $routes->get('agreements/sign/(:num)', 'Client\PortalController::signAgreement/$1');
         $routes->post('agreements/sign/(:num)', 'Client\PortalController::processSign/$1');
@@ -215,6 +219,8 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('tickets/reply/(:num)', 'Client\TicketController::reply/$1');
         $routes->get('pay/(:num)', 'Client\PaymentController::checkout/$1');
         $routes->post('pay/verify', 'Client\PaymentController::verify');
+        $routes->get('pay-milestone/(:num)', 'Client\PaymentController::checkoutMilestone/$1');
+        $routes->post('pay-milestone/verify', 'Client\PaymentController::verifyMilestone');
     });
 
     // ── Webhooks ───────────────────────────────────────────────

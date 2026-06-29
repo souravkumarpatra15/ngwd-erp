@@ -36,6 +36,9 @@ $balanceDue = $invoice['balance_due'] ?? ($invoice['total'] - $invoice['paid_amo
             <h4 class="fw-bold mb-1">TAX INVOICE</h4>
             <div class="text-muted small"><?= esc($invoice['invoice_number']) ?></div>
             <?php if ($invoice['is_gst']): ?><span class="badge bg-success badge-sm mt-1">GST Invoice</span><?php endif; ?>
+            <div class="mt-2">
+              <span class="badge bg-light text-dark border"><i class="bi bi-tag me-1"></i><?= esc(\App\Models\InvoiceModel::forLabel($invoice)) ?></span>
+            </div>
           </div>
           <div class="text-end">
             <div class="fw-bold"><?= esc($settings['company_name'] ?? '') ?></div>

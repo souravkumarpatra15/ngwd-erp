@@ -17,7 +17,7 @@
         <tr>
           <td class="fw-semibold small"><?= esc($p['payment_number']) ?></td>
           <td class="small text-muted"><?= esc($p['project_name'] ?? '—') ?></td>
-          <td class="small text-muted"><?= esc($p['invoice_number'] ?? '—') ?></td>
+          <td class="small text-muted"><?= esc($p['invoice_number'] ?? ($p['milestone_title'] ? 'Milestone — '.$p['milestone_title'] : '—')) ?></td>
           <td class="fw-bold text-success">₹<?= number_format($p['amount'],2) ?></td>
           <td><span class="badge bg-light text-dark border small"><?= ucwords(str_replace('_',' ',$p['method']??'')) ?></span></td>
           <td class="small"><?= date('d M Y',strtotime($p['created_at'])) ?></td>

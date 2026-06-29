@@ -15,13 +15,40 @@
               <select name="client_id" class="form-select select2" id="clientSelect" required>
                 <option value="">Select Client</option>
                 <?php foreach ($clients as $c): ?>
-                  <option value="<?= $c['id'] ?>"><?= esc($c['name']) ?> <?= $c['company_name'] ? '— ' . esc($c['company_name']) : '' ?></option>
+                  <option value="<?= $c['id'] ?>" <?= ($prefill['client_id'] ?? '') == $c['id'] ? 'selected' : '' ?>><?= esc($c['name']) ?> <?= $c['company_name'] ? '— ' . esc($c['company_name']) : '' ?></option>
                 <?php endforeach; ?>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Invoice For</label>
+              <select class="form-select" id="invoiceForType">
+                <option value="project" <?= ($prefill['type'] ?? '') === 'project' ? 'selected' : '' ?>>Project (general)</option>
+                <option value="milestone" <?= ($prefill['type'] ?? '') === 'milestone' ? 'selected' : '' ?>>Milestone Payment</option>
+                <option value="domain" <?= ($prefill['type'] ?? '') === 'domain' ? 'selected' : '' ?>>Domain Renewal</option>
+                <option value="hosting" <?= ($prefill['type'] ?? '') === 'hosting' ? 'selected' : '' ?>>Hosting Renewal</option>
               </select>
             </div>
             <div class="col-md-6">
               <label class="form-label small fw-semibold">Project</label>
               <select name="project_id" class="form-select" id="projectSelect">
+                <option value="">Select Client first</option>
+              </select>
+            </div>
+            <div class="col-md-6 d-none" id="milestoneWrap">
+              <label class="form-label small fw-semibold">Milestone</label>
+              <select class="form-select" id="milestoneSelect" name="milestone_id">
+                <option value="">Select Project first</option>
+              </select>
+            </div>
+            <div class="col-md-6 d-none" id="domainWrap">
+              <label class="form-label small fw-semibold">Domain</label>
+              <select class="form-select" id="domainSelect" name="domain_id">
+                <option value="">Select Client first</option>
+              </select>
+            </div>
+            <div class="col-md-6 d-none" id="hostingWrap">
+              <label class="form-label small fw-semibold">Hosting</label>
+              <select class="form-select" id="hostingSelect" name="hosting_id">
                 <option value="">Select Client first</option>
               </select>
             </div>
@@ -168,6 +195,104 @@
       recalc();
     }
   });
+
+  // ── "Invoice For" type → show the right picker ─────────────
+  function showForWrap(type) {
+    $('#milestoneWrap,#domainWrap,#hostingWrap').addClass('d-none');
+    if (type === 'milestone') $('#milestoneWrap').removeClass('d-none');
+    if (type === 'domain') $('#domainWrap').removeClass('d-none');
+    if (type === 'hosting') $('#hostingWrap').removeClass('d-none');
+  }
+
+  function clearForSelections() {
+    $('#milestoneSelect').val('');
+    $('#domainSelect').val('');
+    $('#hostingSelect').val('');
+  }
+
+  function loadMilestones(projectId, autoSelectId) {
+    if (!projectId) {
+      $('#milestoneSelect').html('<option value="">Select Project first</option>');
+      return;
+    }
+    $.get(`<?= base_url('admin/ajax/invoice-milestones/') ?>${projectId}`, data => {
+      let opts = '<option value="">— Select Milestone —</option>';
+      data.forEach(m => opts += `<option value="${m.id}" data-desc="Milestone — ${m.title}" data-amount="${m.amount}">${m.title} (₹${parseFloat(m.amount).toLocaleString('en-IN')})</option>`);
+      $('#milestoneSelect').html(opts);
+      if (autoSelectId) {
+        $('#milestoneSelect').val(autoSelectId).trigger('change');
+      }
+    });
+  }
+
+  function loadDomains(clientId, autoSelectId) {
+    if (!clientId) {
+      $('#domainSelect').html('<option value="">Select Client first</option>');
+      return;
+    }
+    $.get(`<?= base_url('admin/ajax/invoice-domains/') ?>${clientId}`, data => {
+      let opts = '<option value="">— Select Domain —</option>';
+      data.forEach(d => {
+        const cost = d.renewal_cost || 0;
+        opts += `<option value="${d.id}" data-desc="Domain Renewal — ${d.domain_name}" data-amount="${cost}">${d.domain_name} (expires ${d.expiry_date})</option>`;
+      });
+      $('#domainSelect').html(opts);
+      if (autoSelectId) {
+        $('#domainSelect').val(autoSelectId).trigger('change');
+      }
+    });
+  }
+
+  function loadHostings(clientId, autoSelectId) {
+    if (!clientId) {
+      $('#hostingSelect').html('<option value="">Select Client first</option>');
+      return;
+    }
+    $.get(`<?= base_url('admin/ajax/invoice-hostings/') ?>${clientId}`, data => {
+      let opts = '<option value="">— Select Hosting —</option>';
+      data.forEach(h => {
+        const cost = h.renewal_cost || 0;
+        const label = `${h.provider}${h.package ? ' (' + h.package + ')' : ''}`;
+        opts += `<option value="${h.id}" data-desc="Hosting Renewal — ${label}" data-amount="${cost}">${label} (expires ${h.expiry_date})</option>`;
+      });
+      $('#hostingSelect').html(opts);
+      if (autoSelectId) {
+        $('#hostingSelect').val(autoSelectId).trigger('change');
+      }
+    });
+  }
+
+  // Fill the first line item with the selected entity's description/amount
+  function fillFirstItem(desc, amount) {
+    const $row = $('.item-row').first();
+    $row.find('input[name$="[description]"]').val(desc);
+    $row.find('.item-price').val(amount);
+    $row.find('.item-qty').val(1);
+    recalc();
+  }
+
+  $('#invoiceForType').on('change', function() {
+    const type = $(this).val();
+    showForWrap(type);
+    clearForSelections();
+    if (type === 'domain') loadDomains($('#clientSelect').val());
+    if (type === 'hosting') loadHostings($('#clientSelect').val());
+    if (type === 'milestone') loadMilestones($('#projectSelect').val());
+  });
+
+  $('#milestoneSelect').on('change', function() {
+    const $opt = $(this).find(':selected');
+    if ($opt.val()) fillFirstItem($opt.data('desc'), $opt.data('amount'));
+  });
+  $('#domainSelect').on('change', function() {
+    const $opt = $(this).find(':selected');
+    if ($opt.val()) fillFirstItem($opt.data('desc'), $opt.data('amount'));
+  });
+  $('#hostingSelect').on('change', function() {
+    const $opt = $(this).find(':selected');
+    if ($opt.val()) fillFirstItem($opt.data('desc'), $opt.data('amount'));
+  });
+
   $('#clientSelect').on('change', function() {
     const cid = $(this).val();
     if (!cid) return;
@@ -176,11 +301,35 @@
       data.forEach(p => opts += `<option value="${p.id}">${p.name}</option>`);
       $('#projectSelect').html(opts);
     });
+    const type = $('#invoiceForType').val();
+    if (type === 'domain') loadDomains(cid);
+    if (type === 'hosting') loadHostings(cid);
+  });
+
+  $('#projectSelect').on('change', function() {
+    if ($('#invoiceForType').val() === 'milestone') {
+      loadMilestones($(this).val());
+    }
   });
   $('.select2').select2({
     theme: 'bootstrap-5',
     width: '100%'
   });
+
+  // ── Apply server-side prefill (from "Create Invoice" quick links) ──
+  const prefill = <?= json_encode($prefill ?? []) ?>;
+  showForWrap(prefill.type || 'project');
+  if (prefill.client_id) {
+    $.get(`<?= base_url('admin/ajax/projects/') ?>${prefill.client_id}`, data => {
+      let opts = '<option value="">— No Project —</option>';
+      data.forEach(p => opts += `<option value="${p.id}">${p.name}</option>`);
+      $('#projectSelect').html(opts);
+      if (prefill.milestone_id) loadMilestones('', null); // shown only after a project is chosen manually
+    });
+    if (prefill.type === 'domain') loadDomains(prefill.client_id, prefill.domain_id);
+    if (prefill.type === 'hosting') loadHostings(prefill.client_id, prefill.hosting_id);
+  }
+
   recalc();
 </script>
 <?= $this->endSection() ?>

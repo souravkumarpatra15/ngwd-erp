@@ -3,6 +3,12 @@
 
 <head>
   <meta charset="UTF-8">
+  <?php
+    // dompdf needs a real filesystem path (or absolute URL) for <img src>,
+    // not the relative "assets/images/..." string stored in settings.
+    $logoPath = !empty($settings['company_logo']) ? FCPATH . $settings['company_logo'] : '';
+    $logoUrl  = ($logoPath && is_file($logoPath)) ? $logoPath : '';
+  ?>
   <style>
     * {
       margin: 0;
@@ -266,6 +272,11 @@
     <div class="brand">
       <table class="brand-table">
         <tr>
+          <?php if ($logoUrl): ?>
+          <td class="logo-cell">
+            <img src="<?= esc($logoUrl) ?>" alt="<?= esc($settings['company_name'] ?? 'Logo') ?>" class="logo-img">
+          </td>
+          <?php endif; ?>
           <td>
             <div class="company-name"><?= esc($settings['company_name'] ?? '') ?></div>
             <div class="company-sub">
@@ -312,10 +323,10 @@
             <td>Due Date:</td>
             <td><?= date('d/m/Y', strtotime($invoice['due_date'])) ?></td>
           </tr>
-          <?php if (!empty($invoice['project_name'])): ?><tr>
-              <td>Project:</td>
-              <td><?= esc($invoice['project_name']) ?></td>
-            </tr><?php endif; ?>
+          <tr>
+            <td>For:</td>
+            <td><?= esc(\App\Models\InvoiceModel::forLabel($invoice)) ?></td>
+          </tr>
         </table>
       </div>
     </div>

@@ -1,0 +1,155 @@
+<?= $this->extend('layouts/client') ?>
+<?= $this->section('content') ?>
+
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0 py-3 text-center">
+        <h5 class="fw-bold mb-0"><i class="bi bi-shield-lock me-2 text-success"></i>Secure Payment</h5>
+        <div class="text-muted small mt-1">Powered by Razorpay</div>
+      </div>
+      <div class="card-body p-4">
+
+        <!-- Milestone summary -->
+        <div class="bg-light rounded p-3 mb-4">
+          <div class="d-flex justify-content-between mb-2 small">
+            <span class="text-muted">Milestone</span>
+            <span class="fw-semibold"><?= esc($milestone['title']) ?></span>
+          </div>
+          <?php if ($milestone['project_name'] ?? null): ?>
+            <div class="d-flex justify-content-between mb-2 small">
+              <span class="text-muted">Project</span>
+              <span><?= esc($milestone['project_name']) ?></span>
+            </div>
+          <?php endif; ?>
+          <hr class="my-2">
+          <div class="d-flex justify-content-between">
+            <span class="fw-bold">Amount Due</span>
+            <span class="fw-bold text-primary fs-5">₹<?= number_format($milestone['amount'], 2) ?></span>
+          </div>
+        </div>
+
+        <?php if ($razorpay_order && isset($razorpay_order['id'])): ?>
+          <button id="rzpBtn" class="btn btn-success btn-lg w-100 mb-3">
+            <i class="bi bi-credit-card me-2"></i>Pay ₹<?= number_format($milestone['amount'], 2) ?> Now
+          </button>
+          <div class="text-center text-muted" style="font-size:12px">
+            <i class="bi bi-shield-check me-1"></i>256-bit SSL encrypted · UPI, Cards, Net Banking accepted
+          </div>
+        <?php else: ?>
+          <div class="alert alert-warning text-center">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Payment gateway not configured. Please contact support.
+          </div>
+        <?php endif; ?>
+
+      </div>
+    </div>
+    <div class="text-center mt-3">
+      <a href="<?= base_url('portal/projects/' . $milestone['project_id']) ?>" class="text-muted small">
+        <i class="bi bi-arrow-left me-1"></i>Back to Project
+      </a>
+    </div>
+  </div>
+</div>
+
+<?= $this->endSection() ?>
+<?= $this->section('scripts') ?>
+<?php if ($razorpay_order && isset($razorpay_order['id'])): ?>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+    const rzpOptions = {
+      key: '<?= esc($razorpay_key) ?>',
+      amount: <?= (int)($milestone['amount'] * 100) ?>,
+      currency: 'INR',
+      name: '<?= esc($settings['company_name'] ?? 'NGWebD Consulting') ?>',
+      description: 'Payment for milestone <?= esc($milestone['title']) ?>',
+      order_id: '<?= esc($razorpay_order['id']) ?>',
+      prefill: {
+        name: '<?= esc(session()->get('user_name') ?? '') ?>',
+        email: '<?= esc(session()->get('user_email') ?? '') ?>',
+      },
+      theme: {
+        color: '#0d6efd'
+      },
+
+      handler: function(response) {
+
+        console.log(response);
+
+        const btn = document.getElementById('rzpBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+
+        fetch('<?= base_url('portal/pay-milestone/verify') ?>', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+            },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              milestone_id: <?= (int)$milestone['id'] ?>
+            })
+          })
+          .then(res => res.json())
+          .then(res => {
+
+            console.log(res);
+
+            if (res.status === 'success') {
+
+              alert(res.message);
+
+              window.location.href = "<?= base_url('portal/projects/' . $milestone['project_id']) ?>";
+
+            } else {
+
+              btn.disabled = false;
+              btn.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay ₹<?= number_format($milestone['amount'], 2) ?> Now';
+
+              alert(res.message);
+            }
+
+          })
+          .catch(err => {
+
+            console.error(err);
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay ₹<?= number_format($milestone['amount'], 2) ?> Now';
+
+            alert('Network error');
+          });
+      },
+
+      modal: {
+        ondismiss: function() {
+
+          const btn = document.getElementById('rzpBtn');
+
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay ₹<?= number_format($milestone['amount'], 2) ?> Now';
+
+          alert('Payment cancelled.');
+        }
+      }
+    };
+
+    document.getElementById('rzpBtn').addEventListener('click', function() {
+      this.disabled = true;
+      this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Opening Razorpay...';
+      try {
+        new Razorpay(rzpOptions).open();
+      } catch (e) {
+        this.disabled = false;
+        this.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay ₹<?= number_format($milestone['amount'], 2) ?> Now';
+        showToast('Could not open payment gateway.', 'error');
+      }
+    });
+  </script>
+<?php endif; ?>
+<?= $this->endSection() ?>

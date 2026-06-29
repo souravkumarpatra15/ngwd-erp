@@ -18,7 +18,7 @@
   <div class="card-body p-0">
     <table id="invoicesTable" class="table table-hover mb-0 w-100">
       <thead class="table-light">
-        <tr><th>Invoice #</th><th>Client</th><th>Date</th><th>Due Date</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th></tr>
+        <tr><th>Invoice #</th><th>Client</th><th>For</th><th>Date</th><th>Due Date</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th></tr>
       </thead>
       <tbody></tbody>
     </table>
@@ -34,6 +34,12 @@ const invoicesTable = $('#invoicesTable').DataTable({
   columns: [
     { data: 'invoice_number', render: (d,t,r) => `<a href="<?= base_url('admin/invoices/') ?>${r.id}" class="fw-semibold text-decoration-none">${d}</a>` },
     { data: 'client_name' },
+    { data: null, render: (d,t,r) => {
+        if (r.milestone_id) return `<span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-flag me-1"></i>${r.milestone_title||'Milestone'}</span>`;
+        if (r.domain_id) return `<span class="badge bg-info-subtle text-info border border-info-subtle"><i class="bi bi-globe me-1"></i>${r.domain_name||'Domain'}</span>`;
+        if (r.hosting_id) return `<span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-server me-1"></i>${r.hosting_provider||'Hosting'}</span>`;
+        return '<span class="text-muted small">—</span>';
+      } },
     { data: 'invoice_date', render: d => new Date(d).toLocaleDateString('en-IN') },
     { data: 'due_date', render: d => new Date(d).toLocaleDateString('en-IN') },
     { data: 'total', render: d => '₹'+parseFloat(d).toLocaleString('en-IN',{minimumFractionDigits:2}) },

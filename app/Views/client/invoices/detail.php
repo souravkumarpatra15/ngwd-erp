@@ -11,6 +11,9 @@
           <div>
             <h4 class="fw-bold mb-1">Invoice</h4>
             <div class="text-muted small"><?= esc($invoice['invoice_number']) ?></div>
+            <div class="mt-2">
+              <span class="badge bg-light text-dark border"><i class="bi bi-tag me-1"></i><?= esc(\App\Models\InvoiceModel::forLabel($invoice)) ?></span>
+            </div>
           </div>
           <span class="badge bg-<?= $sc ?> fs-6"><?= ucfirst($invoice['status']) ?></span>
         </div>

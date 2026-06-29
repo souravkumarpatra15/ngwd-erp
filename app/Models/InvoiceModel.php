@@ -16,6 +16,8 @@ class InvoiceModel extends Model
         'client_id',
         'project_id',
         'milestone_id',
+        'domain_id',
+        'hosting_id',
         'invoice_date',
         'due_date',
         'subtotal',
@@ -41,19 +43,49 @@ class InvoiceModel extends Model
             ->select('invoices.*, clients.name as client_name, clients.email as client_email,
                       clients.whatsapp as client_whatsapp, clients.address as client_address,
                       clients.gst_number as client_gst,
-                      projects.name as project_name')
-            ->join('clients',  'clients.id  = invoices.client_id',  'left')
-            ->join('projects', 'projects.id = invoices.project_id', 'left')
+                      projects.name as project_name,
+                      milestones.title as milestone_title,
+                      domains.domain_name as domain_name,
+                      hostings.provider as hosting_provider, hostings.package as hosting_package')
+            ->join('clients',    'clients.id    = invoices.client_id',   'left')
+            ->join('projects',   'projects.id   = invoices.project_id',  'left')
+            ->join('milestones', 'milestones.id = invoices.milestone_id','left')
+            ->join('domains',    'domains.id    = invoices.domain_id',   'left')
+            ->join('hostings',   'hostings.id   = invoices.hosting_id',  'left')
             ->where('invoices.id', $id)
             ->get()->getRowArray() ?: null;
+    }
+
+    // ── A human-readable "this invoice is for" label ──────────
+    public static function forLabel(array $invoice): string
+    {
+        if (!empty($invoice['milestone_id']) && !empty($invoice['milestone_title'])) {
+            return 'Milestone — ' . $invoice['milestone_title'];
+        }
+        if (!empty($invoice['domain_id']) && !empty($invoice['domain_name'])) {
+            return 'Domain Renewal — ' . $invoice['domain_name'];
+        }
+        if (!empty($invoice['hosting_id']) && !empty($invoice['hosting_provider'])) {
+            return 'Hosting Renewal — ' . $invoice['hosting_provider'] . (!empty($invoice['hosting_package']) ? ' (' . $invoice['hosting_package'] . ')' : '');
+        }
+        if (!empty($invoice['project_name'])) {
+            return 'Project — ' . $invoice['project_name'];
+        }
+        return 'General';
     }
 
     // ── DataTable ─────────────────────────────────────────────
     public function getDataTable(string $search, int $start, int $length, string $status = ''): array
     {
         $b = $this->db->table('invoices')
-            ->select('invoices.*, clients.name as client_name')
-            ->join('clients', 'clients.id = invoices.client_id', 'left');
+            ->select('invoices.*, clients.name as client_name,
+                      milestones.title as milestone_title,
+                      domains.domain_name as domain_name,
+                      hostings.provider as hosting_provider, hostings.package as hosting_package')
+            ->join('clients',    'clients.id    = invoices.client_id',   'left')
+            ->join('milestones', 'milestones.id = invoices.milestone_id','left')
+            ->join('domains',    'domains.id    = invoices.domain_id',   'left')
+            ->join('hostings',   'hostings.id   = invoices.hosting_id',  'left');
 
         if ($search) {
             $b->groupStart()
