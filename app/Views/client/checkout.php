@@ -105,18 +105,21 @@
       .then(r => r.json())
       .then(res => {
         if (res.status === 'success') {
+          showToast(res.message, 'success');
           // Redirect to invoice detail with success flash
+          setTimeout(() => {
           window.location.href = '<?= base_url('portal/invoices/'.$invoice['id']) ?>?paid=1';
+          }, 1200);
         } else {
           btn.disabled = false;
           btn.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay ₹<?= number_format($invoice['balance_due'], 2) ?> Now';
-          alert('Verification failed: ' + res.message + '\nPlease contact support with your payment ID: ' + response.razorpay_payment_id);
+          showToast('Verification failed: ' + res.message + '\nPlease contact support with your payment ID: ' + response.razorpay_payment_id, 'error');
         }
       })
       .catch(err => {
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay ₹<?= number_format($invoice['balance_due'], 2) ?> Now';
-        alert('Network error during verification. Please contact support with payment ID: ' + response.razorpay_payment_id);
+        showToast('Network error during verification. Please contact support with payment ID: ' + response.razorpay_payment_id, 'error');
         console.error(err);
       });
     },
@@ -124,6 +127,8 @@
     modal: {
       ondismiss: function() {
         document.getElementById('rzpBtn').disabled = false;
+        btn.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay ₹<?= number_format($invoice['balance_due'], 2) ?> Now';
+        showToast('Payment cancelled.', 'warning');
       }
     }
   };
@@ -136,7 +141,7 @@
     } catch(e) {
       this.disabled = false;
       this.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay ₹<?= number_format($invoice['balance_due'], 2) ?> Now';
-      alert('Could not open Razorpay. Please check your internet connection.');
+      showToast('Could not open Razorpay. Please check your internet connection.', 'error');
     }
   });
 })();

@@ -112,10 +112,10 @@
 
             if (res.status === 'success') {
 
-              alert(res.message);
-
+              showToast(res.message, 'success');
+              setTimeout(() => {
               window.location.href = "<?= base_url('portal/invoices/' . $invoice['id']) ?>";
-
+              }, 1200);
             } else {
 
               btn.disabled = false;
@@ -132,7 +132,7 @@
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay ₹<?= number_format($invoice['balance_due'], 2) ?> Now';
 
-            alert('Network error');
+            showToast('Network error', 'error');
           });
       },
 
@@ -144,7 +144,7 @@
           btn.disabled = false;
           btn.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay ₹<?= number_format($invoice['balance_due'], 2) ?> Now';
 
-          alert('Payment cancelled.');
+          showToast('Payment cancelled.', 'error');
         }
       }
     };

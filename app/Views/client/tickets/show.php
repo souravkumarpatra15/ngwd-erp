@@ -88,9 +88,11 @@ $pc = ['low'=>'success','medium'=>'warning','high'=>'danger','urgent'=>'danger']
 <script>
 $('#clientReplyForm').on('submit', function(e) {
   e.preventDefault();
+  showLoader('Sending reply...');
   $.post('<?= base_url('portal/tickets/reply/'.$ticket['id']) ?>', $(this).serialize(), res => {
+    hideLoader();
     if (res.status === 'success') setTimeout(() => location.reload(), 400);
-    else alert(res.message);
+    else showToast(res.message, 'error');
   }, 'json');
 });
 </script>

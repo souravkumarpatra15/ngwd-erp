@@ -51,15 +51,30 @@ const invoicesTable = $('#invoicesTable').DataTable({
   order: [[2,'desc']], pageLength: 25,
 });
 $('.filter-btn').on('click', function() { currentStatus=$(this).data('status'); $('.filter-btn').removeClass('active'); $(this).addClass('active'); invoicesTable.ajax.reload(); });
+let pendingInvoiceAction = null;
 $(document).on('click', '.btn-email-inv', function() {
-  const id = $(this).data('id');
-  if (!confirm('Send invoice by email?')) return;
-  $.post(`<?= base_url('admin/invoices/send-email/') ?>${id}`,{csrf_test_name:CSRF_TOKEN}, res => showToast(res.message, res.status));
+  pendingInvoiceAction = { id: $(this).data('id'), url: 'admin/invoices/send-email/' };
+  $('#ngConfirmTitle').text('Send Invoice by Email?');
+  $('#ngConfirmMessage').text('This will email the invoice to the client.');
+  $('#ngConfirmYes').removeClass('btn-danger').addClass('btn-success').text('Yes, Send');
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('ngConfirmModal')).show();
 });
 $(document).on('click', '.btn-wa-inv', function() {
-  const id = $(this).data('id');
-  if (!confirm('Send invoice via WhatsApp?')) return;
-  $.post(`<?= base_url('admin/invoices/send-whatsapp/') ?>${id}`,{csrf_test_name:CSRF_TOKEN}, res => showToast(res.message, res.status));
+  pendingInvoiceAction = { id: $(this).data('id'), url: 'admin/invoices/send-whatsapp/' };
+  $('#ngConfirmTitle').text('Send Invoice via WhatsApp?');
+  $('#ngConfirmMessage').text('This will send the invoice to the client on WhatsApp.');
+  $('#ngConfirmYes').removeClass('btn-danger').addClass('btn-success').text('Yes, Send');
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('ngConfirmModal')).show();
+});
+$('#ngConfirmYes').off('click').on('click', function() {
+  if (!pendingInvoiceAction) return;
+  bootstrap.Modal.getInstance(document.getElementById('ngConfirmModal')).hide();
+  showLoader('Sending...');
+  $.post(`<?= base_url() ?>${pendingInvoiceAction.url}${pendingInvoiceAction.id}`, {csrf_test_name: CSRF_TOKEN}, res => {
+    hideLoader();
+    showToast(res.message, res.status);
+  }, 'json');
+  pendingInvoiceAction = null;
 });
 </script>
 <?= $this->endSection() ?>

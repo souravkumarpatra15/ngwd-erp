@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 <link rel="stylesheet" href="<?= base_url('assets/css/custom.css') ?>">
+<link rel="stylesheet" href="<?= base_url('assets/css/ng-ui.css') ?>">
 <style>
 .portal-sidebar { width:240px;min-height:100vh;background:#0d6efd; }
 .portal-link { display:flex;align-items:center;gap:10px;padding:10px 20px;color:rgba(255,255,255,.75);text-decoration:none;font-size:14px;transition:.15s; }
@@ -67,6 +68,80 @@
     </footer>
   </div>
 </div>
+<?php
+  $logo = !empty($settings['company_logo'])
+    ? $settings['company_logo']
+    : 'assets/images/logo/logo.png';
+  ?>
+
+  <div id="ngLoader">
+
+    <div class="ng-loader-box">
+
+      <div class="ng-loader-logo">
+        <img src="<?= base_url($logo) ?>">
+      </div>
+
+      <div class="ng-loader-text" id="ngLoaderText">
+        Loading...
+      </div>
+
+      <div class="ng-progress">
+        <span></span>
+      </div>
+
+      <div class="ng-loader-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div id="ngToastContainer"></div>
+
+  <script src="<?= base_url('assets/js/ng-ui.js') ?>"></script>
+
+  <?php if (session()->getFlashdata('success')): ?>
+    <script>
+      showToast("<?= esc(session()->getFlashdata('success')) ?>", "success");
+    </script>
+  <?php endif; ?>
+
+  <?php if (session()->getFlashdata('error')): ?>
+    <script>
+      showToast("<?= esc(session()->getFlashdata('error')) ?>", "error");
+    </script>
+  <?php endif; ?>
+
+  <?php if (session()->getFlashdata('warning')): ?>
+    <script>
+      showToast("<?= esc(session()->getFlashdata('warning')) ?>", "warning");
+    </script>
+  <?php endif; ?>
+
+  <?php if (session()->getFlashdata('info')): ?>
+    <script>
+      showToast("<?= esc(session()->getFlashdata('info')) ?>", "info");
+    </script>
+  <?php endif; ?>
+  <div class="modal fade" id="ngConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content ng-confirm-modal">
+        <div class="ng-confirm-icon"><i class="bi bi-question-circle-fill"></i></div>
+        <div class="modal-body text-center px-4 pb-4">
+          <h5 class="fw-bold mb-2" id="ngConfirmTitle">Are you sure?</h5>
+          <p class="text-muted mb-4" id="ngConfirmMessage">This action cannot be undone.</p>
+          <div class="d-flex gap-2 justify-content-center">
+            <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary px-4" id="ngConfirmYes">Yes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <?= $this->renderSection('scripts') ?>
