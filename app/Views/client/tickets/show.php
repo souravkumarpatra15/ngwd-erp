@@ -72,12 +72,14 @@ $pc = ['low'=>'success','medium'=>'warning','high'=>'danger','urgent'=>'danger']
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-white border-0 py-3"><h6 class="mb-0 fw-semibold">Ticket Info</h6></div>
       <div class="card-body">
+        <div class="table-responsive">
         <table class="table table-sm table-borderless mb-0">
           <tr><td class="text-muted small">Status</td><td><span class="badge bg-<?= $sc ?>"><?= ucwords(str_replace('_',' ',$ticket['status'])) ?></span></td></tr>
           <tr><td class="text-muted small">Priority</td><td><span class="badge bg-<?= $pc ?>"><?= ucfirst($ticket['priority']) ?></span></td></tr>
           <tr><td class="text-muted small">Opened</td><td class="small"><?= date('d M Y',strtotime($ticket['created_at'])) ?></td></tr>
           <?php if ($ticket['closed_at']): ?><tr><td class="text-muted small">Closed</td><td class="small"><?= date('d M Y',strtotime($ticket['closed_at'])) ?></td></tr><?php endif; ?>
         </table>
+        </div>
       </div>
     </div>
   </div>

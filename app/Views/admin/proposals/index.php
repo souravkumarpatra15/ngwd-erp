@@ -15,12 +15,14 @@
 
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
+    <div class="table-responsive">
     <table id="proposalsTable" class="table table-hover mb-0 w-100">
       <thead class="table-light">
         <tr><th>Proposal #</th><th>Title</th><th>Client</th><th>Amount</th><th>Valid Until</th><th>Status</th><th>Actions</th></tr>
       </thead>
       <tbody></tbody>
     </table>
+    </div>
   </div>
 </div>
 

@@ -25,6 +25,7 @@
 
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
+    <div class="table-responsive">
     <table class="table table-hover align-middle mb-0" id="tasksTable">
       <thead class="table-light">
         <tr><th>Task</th><th>Project</th><th>Priority</th><th>Status</th><th>Due Date</th><th>Actions</th></tr>
@@ -65,6 +66,7 @@
         <?php endforeach; ?>
       </tbody>
     </table>
+    </div>
   </div>
 </div>
 

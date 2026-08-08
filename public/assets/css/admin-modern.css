@@ -111,7 +111,7 @@ footer {
     transition: .3s ease;
   }
 
-  #sidebar:not(.d-none) {
+  #sidebar.mobile-show {
     transform: translateX(0);
   }
 
@@ -134,6 +134,18 @@ footer {
 
   footer {
     margin: 0 10px 10px;
+  }
+
+  .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);
+    z-index: 1039; /* just below #sidebar's 1040 */
+  }
+
+  .sidebar-backdrop.show {
+    display: block;
   }
 }
 

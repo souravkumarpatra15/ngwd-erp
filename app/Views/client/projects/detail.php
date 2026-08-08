@@ -145,6 +145,7 @@ $balance = ($project['budget'] ?? 0) - ($project['advance_paid'] ?? 0);
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-white border-0 py-3"><h6 class="mb-0 fw-semibold">Project Summary</h6></div>
       <div class="card-body">
+        <div class="table-responsive">
         <table class="table table-sm table-borderless mb-0">
           <tr><td class="text-muted small">Project #</td><td class="fw-semibold small"><?= esc($project['project_number']) ?></td></tr>
           <tr><td class="text-muted small">Type</td><td class="small"><?= ucwords(str_replace('_',' ',$project['type']??'')) ?></td></tr>
@@ -161,6 +162,7 @@ $balance = ($project['budget'] ?? 0) - ($project['advance_paid'] ?? 0);
             </td>
           </tr>
         </table>
+        </div>
       </div>
     </div>
   </div>

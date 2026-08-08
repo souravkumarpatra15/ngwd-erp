@@ -11,10 +11,16 @@ body{font-family:'DejaVu Sans',Arial,sans-serif;font-size:11px;color:#333;line-h
 .sign-col{display:table-cell;width:50%;padding:0 20px 0 0}
 .sign-col:last-child{padding:0 0 0 20px}
 .sign-line{border-bottom:1px solid #333;margin-top:40px;margin-bottom:5px}
+.sign-img{height:45px;max-width:180px;display:block}
 .sign-meta{font-size:10px;color:#666}
 .footer{padding:15px 40px;text-align:center;font-size:9px;color:#aaa;border-top:1px solid #eee}
 .signed-stamp{background:#d4edda;border:1px solid #c3e6cb;border-radius:6px;padding:10px;text-align:center;color:#155724;margin-top:10px;font-size:11px}
 </style></head><body>
+<?php
+  // dompdf needs a real filesystem path for <img src>, not the relative "assets/images/..." string stored in settings.
+  $sigPath = !empty($settings['signature_image']) ? FCPATH . $settings['signature_image'] : '';
+  $sigUrl  = ($sigPath && is_file($sigPath)) ? $sigPath : '';
+?>
 <div class="header">
   <div style="font-size:11px;opacity:.7;margin-bottom:8px"><?= esc($settings['company_name'] ?? '') ?></div>
   <h1>SERVICE AGREEMENT</h1>
@@ -53,8 +59,10 @@ body{font-family:'DejaVu Sans',Arial,sans-serif;font-size:11px;color:#333;line-h
   <?php endif; ?>
   <div class="sign-block" style="margin-top:20px">
     <div class="sign-col">
+      <?php if ($sigUrl): ?><img class="sign-img" src="<?= $sigUrl ?>" alt="Signature"><?php else: ?>
       <div class="sign-line"></div>
-      <div class="sign-meta"><strong><?= esc($settings['company_name'] ?? '') ?></strong><br>Service Provider<br>Date: _______________</div>
+      <?php endif; ?>
+      <div class="sign-meta"><strong><?= esc($settings['signatory_name'] ?? ($settings['company_name'] ?? '')) ?></strong><br><?= esc($settings['signatory_title'] ?? 'Service Provider') ?><br>Date: <?= !empty($agreement['sent_at']) ? date('d/m/Y', strtotime($agreement['sent_at'])) : date('d/m/Y') ?></div>
     </div>
     <div class="sign-col">
       <div class="sign-line"></div>

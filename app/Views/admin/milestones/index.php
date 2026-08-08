@@ -7,6 +7,7 @@
 
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
+    <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr>
@@ -66,6 +67,7 @@
         <?php endif; ?>
       </tbody>
     </table>
+    </div>
   </div>
 </div>
 

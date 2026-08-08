@@ -13,6 +13,7 @@
 
 <div class="card border-0 shadow-sm">
     <div class="card-body">
+        <div class="table-responsive">
         <table id="clientsTable" class="table table-bordered table-striped align-middle w-100">
             <thead class="table-light">
                 <tr>
@@ -27,6 +28,7 @@
                 </tr>
             </thead>
         </table>
+        </div>
     </div>
 </div>
 

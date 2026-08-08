@@ -94,6 +94,7 @@
           <i class="bi bi-gear"></i> Settings</a>
       </div>
     </nav>
+    <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
 
     <!-- ── Main Content ── -->
     <div class="flex-grow-1 d-flex flex-column" style="min-width:0">
@@ -286,9 +287,27 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="<?= base_url('assets/js/custom.js') ?>"></script>
   <script>
-    // Sidebar toggle
-    document.getElementById('sidebarOpen')?.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('d-none'));
-    document.getElementById('sidebarToggle')?.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('d-none'));
+    // Sidebar toggle — desktop collapses (existing behavior), mobile opens as an overlay with backdrop
+    function isMobileNav() { return window.innerWidth <= 768; }
+    function openMobileSidebar() {
+      document.getElementById('sidebar')?.classList.add('mobile-show');
+      document.getElementById('sidebarBackdrop')?.classList.add('show');
+    }
+    function closeMobileSidebar() {
+      document.getElementById('sidebar')?.classList.remove('mobile-show');
+      document.getElementById('sidebarBackdrop')?.classList.remove('show');
+    }
+    function handleSidebarToggleClick() {
+      if (isMobileNav()) {
+        document.getElementById('sidebar')?.classList.contains('mobile-show') ? closeMobileSidebar() : openMobileSidebar();
+      } else {
+        document.getElementById('sidebar')?.classList.toggle('d-none');
+      }
+    }
+    document.getElementById('sidebarOpen')?.addEventListener('click', handleSidebarToggleClick);
+    document.getElementById('sidebarToggle')?.addEventListener('click', handleSidebarToggleClick);
+    document.getElementById('sidebarBackdrop')?.addEventListener('click', closeMobileSidebar);
+    document.querySelectorAll('#sidebar .sidebar-link').forEach(a => a.addEventListener('click', () => { if (isMobileNav()) closeMobileSidebar(); }));
     // Mark all notifications read
     document.getElementById('markAllRead')?.addEventListener('click', e => {
       e.preventDefault();

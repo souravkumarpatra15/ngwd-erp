@@ -8,6 +8,7 @@
 <?php else: ?>
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
+    <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr><th>Agreement #</th><th>Title</th><th>Date</th><th>Status</th><th>Action</th></tr>
@@ -35,6 +36,7 @@
         <?php endforeach; ?>
       </tbody>
     </table>
+    </div>
   </div>
 </div>
 <?php endif; ?>

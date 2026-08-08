@@ -16,12 +16,14 @@
 </div>
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
+    <div class="table-responsive">
     <table id="invoicesTable" class="table table-hover mb-0 w-100">
       <thead class="table-light">
         <tr><th>Invoice #</th><th>Client</th><th>For</th><th>Date</th><th>Due Date</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th></tr>
       </thead>
       <tbody></tbody>
     </table>
+    </div>
   </div>
 </div>
 <?= $this->endSection() ?>

@@ -45,6 +45,7 @@
         </div>
 
         <!-- Line items -->
+        <div class="table-responsive">
         <table class="table table-sm mb-3">
           <thead class="table-light">
             <tr><th>Description</th><th class="text-end">Qty</th><th class="text-end">Rate</th><th class="text-end">Amount</th></tr>
@@ -74,6 +75,7 @@
             <?php endif; ?>
           </tfoot>
         </table>
+        </div>
 
         <?php if ($invoice['notes'] ?? null): ?>
         <div class="border-top pt-3">

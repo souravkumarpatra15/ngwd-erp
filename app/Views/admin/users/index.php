@@ -9,6 +9,7 @@ $this->section('content'); ?>
 
 <div class="card">
     <div class="card-body p-0">
+        <div class="table-responsive">
         <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
                 <tr>
@@ -72,6 +73,7 @@ $this->section('content'); ?>
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 

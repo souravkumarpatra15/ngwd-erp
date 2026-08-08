@@ -8,6 +8,7 @@
 <?php else: ?>
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
+    <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr><th>Payment #</th><th>Project</th><th>Invoice</th><th>Amount</th><th>Method</th><th>Date</th></tr>
@@ -44,6 +45,7 @@
         </tr>
       </tfoot>
     </table>
+    </div>
   </div>
 </div>
 <?php endif; ?>

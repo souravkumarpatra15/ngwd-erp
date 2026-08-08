@@ -3,6 +3,20 @@
 
 <head>
   <meta charset="UTF-8">
+  <?php
+  $sigPath = !empty($settings['signature_image'])
+    ? FCPATH . ltrim($settings['signature_image'], '/\\')
+    : '';
+
+  $sigUrl = ($sigPath && is_file($sigPath)) ? $sigPath : '';
+  ?>
+  <?php
+  $logoPath = !empty($settings['company_logo'])
+    ? FCPATH . ltrim($settings['company_logo'], '/\\')
+    : '';
+
+  $logoUrl = ($logoPath && is_file($logoPath)) ? $logoPath : '';
+  ?>
   <style>
     * {
       margin: 0;
@@ -143,6 +157,35 @@
       padding-bottom: 4px
     }
 
+    .sign-block {
+      display: table;
+      width: 100%;
+      margin-top: 15px
+    }
+
+    .sign-col {
+      display: table-cell;
+      width: 50%;
+      padding-right: 20px
+    }
+
+    .sign-img {
+      height: 42px;
+      max-width: 170px;
+      display: block
+    }
+
+    .sign-line {
+      border-bottom: 1px solid #333;
+      margin-top: 36px;
+      margin-bottom: 5px
+    }
+
+    .sign-meta {
+      font-size: 10px;
+      color: #666
+    }
+
     .section p,
     .section ul {
       margin-bottom: 5px;
@@ -209,8 +252,8 @@
 <body>
 
   <div class="cover">
-    <?php if (!empty($settings['company_logo'])): ?>
-      <img class="logo" src="<?= esc($settings['company_logo']) ?>" alt="logo">
+    <?php if (!empty($logoUrl)): ?>
+      <img class="logo" src="<?= esc($logoUrl) ?>" alt="logo">
     <?php else: ?>
       <div class="brand"><?= esc($settings['company_name'] ?? '') ?></div>
     <?php endif; ?>
@@ -355,9 +398,35 @@
     </div>
   <?php endif; ?>
 
+  <?php $sec++; ?>
+  <div class="section">
+    <table class="sec-table">
+      <tr>
+        <td class="num-col">
+          <div class="num-badge"><?= sprintf('%02d', $sec) ?></div>
+        </td>
+        <td class="body-col">
+          <h2><span>Authorization</span></h2>
+          <div class="sign-block">
+            <div class="sign-col">
+              <?php if ($sigUrl): ?><img class="sign-img" src="<?= $sigUrl ?>" alt="Signature"><?php else: ?>
+                <div class="sign-line"></div>
+              <?php endif; ?>
+              <div class="sign-meta"><strong><?= esc($settings['signatory_name'] ?? ($settings['company_name'] ?? '')) ?></strong><br><?= esc($settings['signatory_title'] ?? 'Service Provider') ?><br>Date: <?= !empty($proposal['sent_at']) ? date('d/m/Y', strtotime($proposal['sent_at'])) : date('d/m/Y') ?></div>
+            </div>
+            <div class="sign-col">
+              <div class="sign-line"></div>
+              <div class="sign-meta"><strong>Client Acceptance</strong><br>Signature &amp; Date<br>&nbsp;</div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
   <div class="footer">
-    <?php if (!empty($settings['company_logo'])): ?>
-      <img class="logo-sm" src="<?= esc($settings['company_logo']) ?>" alt="logo">
+    <?php if (!empty($logoUrl)): ?>
+      <img class="logo-sm" src="<?= esc($logoUrl) ?>" alt="logo">
     <?php endif; ?>
     <div class="line1"><?= esc($settings['company_name'] ?? '') ?> &bull; <?= esc($settings['company_email'] ?? '') ?> &bull; <?= esc($settings['company_phone'] ?? '') ?></div>
     <div class="line2">This proposal is confidential and intended solely for the recipient named above.</div>
