@@ -81,7 +81,7 @@
               <input type="number" name="tax_percent" id="taxPercent" class="form-control" value="<?= $default_tax ?? 18 ?>" step="0.01">
             </div>
             <div class="col-md-4">
-              <label class="form-label small fw-semibold">Discount (₹)</label>
+              <label class="form-label small fw-semibold">Discount</label>
               <input type="number" name="discount" id="discount" class="form-control" value="0" step="0.01">
             </div>
           </div>
@@ -100,7 +100,7 @@
               <tr>
                 <th>Description</th>
                 <th style="width:80px">Qty</th>
-                <th style="width:120px">Rate (₹)</th>
+                <th style="width:120px">Rate</th>
                 <th style="width:120px">Total</th>
                 <th style="width:40px"></th>
               </tr>
@@ -228,7 +228,7 @@
     }
     $.get(`<?= base_url('admin/ajax/invoice-milestones/') ?>${projectId}`, data => {
       let opts = '<option value="">— Select Milestone —</option>';
-      data.forEach(m => opts += `<option value="${m.id}" data-desc="Milestone — ${m.title}" data-amount="${m.amount}">${m.title} (₹${parseFloat(m.amount).toLocaleString('en-IN')})</option>`);
+      data.forEach(m => opts += `<option value="${m.id}" data-desc="Milestone — ${m.title}" data-amount="${m.amount}">${m.title} (${curSym(m.currency)}${parseFloat(m.amount).toLocaleString('en-IN')})</option>`);
       $('#milestoneSelect').html(opts);
       if (autoSelectId) {
         $('#milestoneSelect').val(autoSelectId).trigger('change');

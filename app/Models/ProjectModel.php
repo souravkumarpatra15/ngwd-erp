@@ -6,7 +6,7 @@ class ProjectModel extends Model {
     protected $primaryKey = 'id';
     protected $useTimestamps = true;
     protected $useSoftDeletes = true;
-    protected $allowedFields = ['project_number','client_id','name','type','description','start_date','delivery_date','budget','advance_paid','total_paid','status','notes','created_by'];
+    protected $allowedFields = ['project_number','client_id','name','type','description','start_date','delivery_date','budget','currency','advance_paid','total_paid','status','notes','created_by'];
     public function getWithClient($id) {
         return $this->db->table('projects')->select('projects.*, clients.name as client_name, clients.email as client_email, clients.whatsapp as client_whatsapp, clients.phone as client_phone')
             ->join('clients','clients.id = projects.client_id','left')->where('projects.id',$id)->get()->getRowArray();

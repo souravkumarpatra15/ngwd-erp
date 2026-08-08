@@ -30,9 +30,9 @@ $balance = ($project['budget'] ?? 0) - ($project['advance_paid'] ?? 0);
         </div>
       </div>
       <div class="col-md-4 text-md-end mt-3 mt-md-0">
-        <div class="fs-4 fw-bold text-primary mb-1">₹<?= number_format($project['budget'] ?? 0, 0) ?></div>
+        <div class="fs-4 fw-bold text-primary mb-1"><?= currencySymbol($project['currency'] ?? 'INR') ?><?= number_format($project['budget'] ?? 0, 0) ?></div>
         <div class="small text-muted">
-          Advance paid: <span class="text-success fw-semibold">₹<?= number_format($project['advance_paid'] ?? 0, 0) ?></span>
+          Advance paid: <span class="text-success fw-semibold"><?= currencySymbol($project['currency'] ?? 'INR') ?><?= number_format($project['advance_paid'] ?? 0, 0) ?></span>
         </div>
       </div>
     </div>
@@ -149,8 +149,8 @@ $balance = ($project['budget'] ?? 0) - ($project['advance_paid'] ?? 0);
         <table class="table table-sm table-borderless mb-0">
           <tr><td class="text-muted small">Project #</td><td class="fw-semibold small"><?= esc($project['project_number']) ?></td></tr>
           <tr><td class="text-muted small">Type</td><td class="small"><?= ucwords(str_replace('_',' ',$project['type']??'')) ?></td></tr>
-          <tr><td class="text-muted small">Budget</td><td class="fw-semibold">₹<?= number_format($project['budget']??0,0) ?></td></tr>
-          <tr><td class="text-muted small">Advance</td><td class="text-success fw-semibold">₹<?= number_format($project['advance_paid']??0,0) ?></td></tr>
+          <tr><td class="text-muted small">Budget</td><td class="fw-semibold"><?= currencySymbol($project['currency'] ?? 'INR') ?><?= number_format($project['budget']??0,0) ?></td></tr>
+          <tr><td class="text-muted small">Advance</td><td class="text-success fw-semibold"><?= currencySymbol($project['currency'] ?? 'INR') ?><?= number_format($project['advance_paid']??0,0) ?></td></tr>
           <tr><td colspan="2"><hr class="my-1"></td></tr>
           <tr><td class="text-muted small">Start</td><td class="small"><?= ($project['start_date']??null) ? date('d M Y',strtotime($project['start_date'])) : '—' ?></td></tr>
           <tr><td class="text-muted small">Delivery</td><td class="small"><?= ($project['delivery_date']??null) ? date('d M Y',strtotime($project['delivery_date'])) : 'TBD' ?></td></tr>

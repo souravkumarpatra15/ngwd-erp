@@ -29,9 +29,9 @@
             </div>
 
             <div class="col-md-6">
-              <label class="form-label small fw-semibold">Amount (₹) <span class="text-danger">*</span></label>
+              <label class="form-label small fw-semibold">Amount <span class="text-danger">*</span></label>
               <div class="input-group">
-                <span class="input-group-text">₹</span>
+                <span class="input-group-text" id="paySymbol">₹</span>
                 <input type="number" name="amount" class="form-control" step="0.01" min="0.01"
                        value="<?= old('amount') ?>" required placeholder="0.00" id="amountInput">
               </div>
@@ -118,11 +118,11 @@ $('#clientSel').on('change', function() {
   }
 
   // Load outstanding invoices for this client (route exists in InvoiceController::byClient)
-  $.getJSON(`${BASE}admin/invoices/by-client/${cid}`, res => {
+  $.getJSON(`${BASE}admin/ajax/invoices/${cid}`, res => {
     let opts = '<option value="">None — general payment</option>';
     (res.data || []).forEach(inv => {
       const bal = parseFloat(inv.balance_due || 0).toLocaleString('en-IN', {minimumFractionDigits:2});
-      opts += `<option value="${inv.id}" data-amount="${inv.balance_due}">${inv.invoice_number} — ₹${bal} due</option>`;
+      opts += `<option value="${inv.id}" data-amount="${inv.balance_due}" data-currency="${inv.currency||'INR'}">${inv.invoice_number} — ${curSym(inv.currency)}${bal} due</option>`;
     });
     $('#invoiceSel').html(opts).trigger('change.select2');
   });
@@ -138,8 +138,10 @@ $('#clientSel').on('change', function() {
 
 // Auto-fill amount when invoice selected
 $('#invoiceSel').on('change', function() {
-  const amt = $(this).find(':selected').data('amount');
+  const opt = $(this).find(':selected');
+  const amt = opt.data('amount');
   if (amt) $('#amountInput').val(parseFloat(amt).toFixed(2));
+  $('#paySymbol').text(curSym(opt.data('currency') || 'INR'));
 });
 
 // Load milestones when project selected
@@ -149,7 +151,7 @@ $('#projectSel').on('change', function() {
   $.getJSON(`${BASE}admin/milestones/by-project/${pid}`, res => {
     let opts = '<option value="">None</option>';
     (res.data || []).forEach(ms => {
-      opts += `<option value="${ms.id}">${ms.title} — ₹${parseFloat(ms.amount).toLocaleString('en-IN')} (${ms.status})</option>`;
+      opts += `<option value="${ms.id}">${ms.title} — ${curSym(ms.currency)}${parseFloat(ms.amount).toLocaleString('en-IN')} (${ms.status})</option>`;
     });
     $('#milestoneSel').html(opts);
   });

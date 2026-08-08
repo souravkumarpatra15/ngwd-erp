@@ -63,6 +63,18 @@ class MilestoneController extends BaseController
         return $order ? $this->jsonSuccess('Link created', ['url' => base_url("portal/pay-milestone/$id"), 'order' => $order]) : $this->jsonError('Could not create Razorpay order. Check your keys in Settings.');
     }
 
+    // Used by the payment-creation form's "milestones for this project" dropdown.
+    // (Pre-existing dead route — the controller method never existed; adding it here
+    // since it's the exact endpoint the currency fix in payments/create.php depends on.)
+    public function byProject($projectId)
+    {
+        $rows = $this->ms->where('project_id', $projectId)
+            ->whereNotIn('status', ['paid'])
+            ->orderBy('sort_order', 'ASC')
+            ->findAll();
+        return $this->response->setJSON(['data' => $rows]);
+    }
+
     // ── Notes / Q&A thread ──────────────────────────────────────
     public function notes($id)
     {

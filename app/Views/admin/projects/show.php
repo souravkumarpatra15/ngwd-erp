@@ -27,12 +27,12 @@ $balance = ($project['budget'] ?? 0) - ($project['total_paid'] ?? 0);
       </div>
       <div class="col-md-5 text-md-end mt-3 mt-md-0">
         <div class="mb-2">
-          <span class="fs-5 fw-bold text-primary">₹<?= number_format($project['budget'] ?? 0, 0) ?></span>
+          <span class="fs-5 fw-bold text-primary"><?= currencySymbol($project['currency'] ?? 'INR') ?><?= number_format($project['budget'] ?? 0, 0) ?></span>
           <span class="text-muted small ms-1">Budget</span>
         </div>
         <div class="small text-muted mb-2">
-          Paid: <span class="text-success fw-semibold">₹<?= number_format($project['total_paid'] ?? 0, 0) ?></span> &nbsp;|&nbsp;
-          Balance: <span class="text-danger fw-semibold">₹<?= number_format($balance, 0) ?></span>
+          Paid: <span class="text-success fw-semibold"><?= currencySymbol($project['currency'] ?? 'INR') ?><?= number_format($project['total_paid'] ?? 0, 0) ?></span> &nbsp;|&nbsp;
+          Balance: <span class="text-danger fw-semibold"><?= currencySymbol($project['currency'] ?? 'INR') ?><?= number_format($balance, 0) ?></span>
         </div>
         <div class="d-flex gap-2 justify-content-md-end">
           <a href="<?= base_url('admin/projects/edit/'.$project['id']) ?>" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil me-1"></i>Edit</a>
@@ -169,10 +169,10 @@ $balance = ($project['budget'] ?? 0) - ($project['total_paid'] ?? 0);
       <div class="card-header bg-white border-0 py-3"><h6 class="mb-0 fw-semibold">Project Info</h6></div>
       <div class="card-body">
         <table class="table table-sm table-borderless mb-0">
-          <tr><td class="text-muted small">Budget</td><td class="fw-semibold">₹<?= number_format($project['budget']??0,0) ?></td></tr>
-          <tr><td class="text-muted small">Advance</td><td class="fw-semibold text-info">₹<?= number_format($project['advance_paid']??0,0) ?></td></tr>
-          <tr><td class="text-muted small">Total Paid</td><td class="fw-semibold text-success">₹<?= number_format($project['total_paid']??0,0) ?></td></tr>
-          <tr><td class="text-muted small">Balance</td><td class="fw-semibold text-danger">₹<?= number_format($balance,0) ?></td></tr>
+          <tr><td class="text-muted small">Budget</td><td class="fw-semibold"><?= currencySymbol($project['currency'] ?? 'INR') ?><?= number_format($project['budget']??0,0) ?></td></tr>
+          <tr><td class="text-muted small">Advance</td><td class="fw-semibold text-info"><?= currencySymbol($project['currency'] ?? 'INR') ?><?= number_format($project['advance_paid']??0,0) ?></td></tr>
+          <tr><td class="text-muted small">Total Paid</td><td class="fw-semibold text-success"><?= currencySymbol($project['currency'] ?? 'INR') ?><?= number_format($project['total_paid']??0,0) ?></td></tr>
+          <tr><td class="text-muted small">Balance</td><td class="fw-semibold text-danger"><?= currencySymbol($project['currency'] ?? 'INR') ?><?= number_format($balance,0) ?></td></tr>
           <tr><td colspan="2"><hr class="my-1"></td></tr>
           <tr><td class="text-muted small">Start</td><td class="small"><?= ($project['start_date']??null) ? date('d M Y',strtotime($project['start_date'])) : '—' ?></td></tr>
           <tr><td class="text-muted small">Delivery</td><td class="small"><?= ($project['delivery_date']??null) ? date('d M Y',strtotime($project['delivery_date'])) : '—' ?></td></tr>

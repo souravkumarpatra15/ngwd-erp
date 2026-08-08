@@ -26,6 +26,7 @@
             <a href="<?= base_url('portal/agreements/sign/'.$a['id']) ?>" class="btn btn-sm btn-success">
               <i class="bi bi-pen me-1"></i>Review &amp; Sign
             </a>
+            <a href="<?= base_url('portal/agreements/pdf/'.$a['id']) ?>" class="btn btn-xs btn-outline-secondary" target="_blank" title="PDF"><i class="bi bi-file-pdf"></i></a>
             <?php elseif ($a['status'] === 'signed'): ?>
             <span class="text-success small"><i class="bi bi-check-circle me-1"></i>Signed <?= $a['signed_at'] ? date('d M Y',strtotime($a['signed_at'])) : '' ?></span>
             <?php else: ?>

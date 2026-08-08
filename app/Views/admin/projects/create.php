@@ -58,18 +58,21 @@
                 <input type="date" name="delivery_date" class="form-control" value="<?= old('delivery_date') ?>">
               </div>
               <div class="col-12">
-                <label class="form-label small fw-semibold">Budget (₹)</label>
-                <div class="input-group">
-                  <span class="input-group-text">₹</span>
-                  <input type="number" name="budget" class="form-control" value="<?= old('budget') ?>" placeholder="0.00" min="0" step="0.01">
-                </div>
+                <label class="form-label small fw-semibold">Currency</label>
+                <select name="currency" class="form-select">
+                  <option value="INR" selected>INR ₹</option>
+                  <option value="USD">USD $</option>
+                  <option value="EUR">EUR €</option>
+                  <option value="GBP">GBP £</option>
+                </select>
               </div>
               <div class="col-12">
-                <label class="form-label small fw-semibold">Advance Paid (₹)</label>
-                <div class="input-group">
-                  <span class="input-group-text">₹</span>
-                  <input type="number" name="advance_paid" class="form-control" value="<?= old('advance_paid', '0') ?>" min="0" step="0.01">
-                </div>
+                <label class="form-label small fw-semibold">Budget</label>
+                <input type="number" name="budget" class="form-control" value="<?= old('budget') ?>" placeholder="0.00" min="0" step="0.01">
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-semibold">Advance Paid</label>
+                <input type="number" name="advance_paid" class="form-control" value="<?= old('advance_paid', '0') ?>" min="0" step="0.01">
               </div>
               <div class="col-12">
                 <label class="form-label small fw-semibold">Status</label>

@@ -78,7 +78,7 @@ const projectsTable = $('#projectsTable').DataTable({
     { data: 'name', render: (d,t,r) => `<div><a href="<?= base_url('admin/projects/') ?>${r.id}" class="fw-semibold text-decoration-none">${d}</a><div class="text-muted" style="font-size:11px">${r.type ? r.type.replace(/_/g,' ') : ''}</div></div>` },
     { data: 'client_name', render: d => `<span class="small">${d||'—'}</span>` },
     { data: 'type', render: d => `<span class="badge bg-light text-dark border small">${(d||'').replace(/_/g,' ')}</span>` },
-    { data: 'budget', render: d => d ? '₹'+parseFloat(d).toLocaleString('en-IN',{maximumFractionDigits:0}) : '—' },
+    { data: 'budget', render: (d,t,r) => d ? curSym(r.currency)+parseFloat(d).toLocaleString('en-IN',{maximumFractionDigits:0}) : '—' },
     { data: 'progress', render: d => {
       const p = d || 0;
       const c = p >= 100 ? 'success' : p >= 60 ? 'info' : p >= 30 ? 'warning' : 'danger';

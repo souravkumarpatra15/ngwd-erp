@@ -20,7 +20,13 @@ class PaymentModel extends Model {
         return $this->db->table('payments')->select('payments.*, clients.name as client_name')->join('clients','clients.id = payments.client_id','left')->where('payments.status','completed')->orderBy('payments.created_at','DESC')->limit($limit)->get()->getResultArray();
     }
     public function getDataTable($search,$start,$length,$status='') {
-        $b = $this->db->table('payments')->select('payments.*, clients.name as client_name, projects.name as project_name')->join('clients','clients.id = payments.client_id','left')->join('projects','projects.id = payments.project_id','left');
+        $b = $this->db->table('payments')
+            ->select("payments.*, clients.name as client_name, projects.name as project_name,
+                      COALESCE(invoices.currency, milestones.currency, 'INR') as currency")
+            ->join('clients','clients.id = payments.client_id','left')
+            ->join('projects','projects.id = payments.project_id','left')
+            ->join('invoices','invoices.id = payments.invoice_id','left')
+            ->join('milestones','milestones.id = payments.milestone_id','left');
         if ($search) $b->groupStart()->like('clients.name',$search)->orLike('payments.transaction_id',$search)->orLike('payments.payment_number',$search)->groupEnd();
         if ($status) $b->where('payments.status',$status);
         $total = (clone $b)->countAllResults();

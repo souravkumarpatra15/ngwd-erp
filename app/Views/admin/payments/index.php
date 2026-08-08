@@ -32,7 +32,7 @@ $('#paymentsTable').DataTable({
     { data: 'payment_number', render: (d,t,r) => `<a href="${BASE}admin/payments/${r.id}" class="fw-semibold text-decoration-none small">${d}</a>` },
     { data: 'client_name', render: d => `<span class="small">${d||'—'}</span>` },
     { data: 'project_name', render: d => `<span class="small text-muted">${d||'—'}</span>` },
-    { data: 'amount', render: d => `<span class="fw-bold text-success">₹${parseFloat(d).toLocaleString('en-IN',{minimumFractionDigits:2})}</span>` },
+    { data: 'amount', render: (d,t,r) => `<span class="fw-bold text-success">${curSym(r.currency)}${parseFloat(d).toLocaleString('en-IN',{minimumFractionDigits:2})}</span>` },
     { data: 'method', render: d => `<span class="badge bg-light text-dark border">${(d||'').replace(/_/g,' ')}</span>` },
     { data: 'payment_date', render: d => d ? new Date(d).toLocaleDateString('en-IN') : '—' },
     { data: 'status', render: d => {

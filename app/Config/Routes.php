@@ -225,6 +225,7 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('pay-milestone/verify', 'Client\PaymentController::verifyMilestone');
         $routes->get('milestones/notes/(:num)', 'Client\PortalController::milestoneNotes/$1');
         $routes->post('milestones/notes/(:num)', 'Client\PortalController::addMilestoneNote/$1');
+        $routes->get('agreements/pdf/(:num)', 'Admin\AgreementController::generatePDF/$1');
     });
 
     // ── Webhooks ───────────────────────────────────────────────

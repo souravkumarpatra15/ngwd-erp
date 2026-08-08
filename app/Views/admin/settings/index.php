@@ -102,7 +102,12 @@
           <div class="row g-3">
             <div class="col-md-4"><label class="form-label small fw-semibold">Invoice Prefix</label><input type="text" name="invoice_prefix" class="form-control" value="<?= esc($settings['invoice_prefix']??'NGWD') ?>"><div class="form-text">Format: PREFIX/YEAR/00001</div></div>
             <div class="col-md-4"><label class="form-label small fw-semibold">Default GST %</label><input type="number" name="tax_percent" class="form-control" value="<?= esc($settings['tax_percent']??18) ?>" step="0.01"></div>
-            <div class="col-md-4"><label class="form-label small fw-semibold">Currency</label><select name="currency" class="form-select"><option value="INR" <?= ($settings['currency']??'INR')==='INR'?'selected':'' ?>>INR (₹)</option></select></div>
+            <div class="col-md-4"><label class="form-label small fw-semibold">Currency</label><select name="currency" class="form-select">
+              <?php $globalCur = $settings['currency'] ?? 'INR'; ?>
+              <?php foreach (['INR' => 'INR (₹)', 'USD' => 'USD ($)', 'EUR' => 'EUR (€)', 'GBP' => 'GBP (£)'] as $code => $label): ?>
+                <option value="<?= $code ?>" <?= $globalCur === $code ? 'selected' : '' ?>><?= $label ?></option>
+              <?php endforeach; ?>
+            </select></div>
             <div class="col-12"><label class="form-label small fw-semibold">Default Invoice Terms</label><textarea name="invoice_terms" class="form-control" rows="3"><?= esc($settings['invoice_terms']??'') ?></textarea></div>
             <div class="col-12"><label class="form-label small fw-semibold">Default Proposal Terms</label><textarea name="proposal_terms" class="form-control" rows="3"><?= esc($settings['proposal_terms']??'') ?></textarea></div>
             <div class="col-12"><label class="form-label small fw-semibold">Default Agreement Terms & Conditions</label><textarea name="agreement_terms" class="form-control" rows="5"><?= esc($settings['agreement_terms']??'') ?></textarea></div>

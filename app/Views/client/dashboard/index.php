@@ -60,7 +60,7 @@
           <div class="d-flex justify-content-between align-items-center">
             <div><div class="fw-semibold small"><?= esc($inv['invoice_number']) ?></div><div class="text-muted" style="font-size:11px">Due: <?= date('d M Y',strtotime($inv['due_date'])) ?></div></div>
             <div class="text-end">
-              <div class="fw-bold text-danger small">₹<?= number_format($inv['balance_due'],0) ?></div>
+              <div class="fw-bold text-danger small"><?= currencySymbol($inv['currency'] ?? 'INR') ?><?= number_format($inv['balance_due'],0) ?></div>
               <a href="<?= base_url('portal/pay/'.$inv['id']) ?>" class="btn btn-xs btn-success mt-1"><i class="bi bi-credit-card me-1"></i>Pay</a>
             </div>
           </div>

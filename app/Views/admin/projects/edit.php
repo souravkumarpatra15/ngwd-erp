@@ -59,18 +59,21 @@
                 <input type="date" name="delivery_date" class="form-control" value="<?= $project['delivery_date'] ?? '' ?>">
               </div>
               <div class="col-12">
-                <label class="form-label small fw-semibold">Budget (₹)</label>
-                <div class="input-group">
-                  <span class="input-group-text">₹</span>
-                  <input type="number" name="budget" class="form-control" value="<?= $project['budget'] ?? '' ?>" step="0.01">
-                </div>
+                <label class="form-label small fw-semibold">Currency</label>
+                <select name="currency" class="form-select">
+                  <?php $curVal = $project['currency'] ?? 'INR'; ?>
+                  <?php foreach (['INR' => 'INR ₹', 'USD' => 'USD $', 'EUR' => 'EUR €', 'GBP' => 'GBP £'] as $code => $label): ?>
+                    <option value="<?= $code ?>" <?= $curVal === $code ? 'selected' : '' ?>><?= $label ?></option>
+                  <?php endforeach; ?>
+                </select>
               </div>
               <div class="col-12">
-                <label class="form-label small fw-semibold">Advance Paid (₹)</label>
-                <div class="input-group">
-                  <span class="input-group-text">₹</span>
-                  <input type="number" name="advance_paid" class="form-control" value="<?= $project['advance_paid'] ?? '0' ?>" step="0.01">
-                </div>
+                <label class="form-label small fw-semibold">Budget</label>
+                <input type="number" name="budget" class="form-control" value="<?= $project['budget'] ?? '' ?>" step="0.01">
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-semibold">Advance Paid</label>
+                <input type="number" name="advance_paid" class="form-control" value="<?= $project['advance_paid'] ?? '0' ?>" step="0.01">
               </div>
               <div class="col-12">
                 <label class="form-label small fw-semibold">Status</label>
