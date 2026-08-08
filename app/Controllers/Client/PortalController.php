@@ -77,7 +77,8 @@ class PortalController extends BaseController
 
     public function payments() {
         $pays = $this->db->table('payments')
-            ->select('payments.*, projects.name as project_name, invoices.invoice_number, milestones.title as milestone_title')
+            ->select("payments.*, projects.name as project_name, invoices.invoice_number, milestones.title as milestone_title,
+                      COALESCE(invoices.currency, milestones.currency, 'INR') as currency")
             ->join('projects',   'projects.id   = payments.project_id', 'left')
             ->join('invoices',   'invoices.id   = payments.invoice_id', 'left')
             ->join('milestones', 'milestones.id = payments.milestone_id', 'left')

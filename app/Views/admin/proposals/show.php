@@ -51,9 +51,9 @@ $sc = $statusColors[$proposal['status']] ?? 'secondary';
           <tr><td class="text-muted small">Valid Until</td><td><?= $proposal['valid_until'] && $proposal['valid_until'] !== '0000-00-00' ? date('d M Y',strtotime($proposal['valid_until'])) : '—' ?></td></tr>
           <tr><td class="text-muted small">Sent At</td><td class="small"><?= $proposal['sent_at'] ? date('d M Y',strtotime($proposal['sent_at'])) : '—' ?></td></tr>
           <tr><td colspan="2"><hr class="my-1"></td></tr>
-          <tr><td class="text-muted small">Subtotal</td><td>₹<?= number_format($proposal['subtotal'] ?? $proposal['total_amount'] ?? 0, 0) ?></td></tr>
-          <tr><td class="text-muted small">Tax (<?= $proposal['tax_percent'] ?? 0 ?>%)</td><td>₹<?= number_format($proposal['tax_amount'] ?? 0, 0) ?></td></tr>
-          <tr><td class="fw-bold">Total</td><td class="fw-bold text-primary fs-5">₹<?= number_format($proposal['total_amount'] ?? 0, 0) ?></td></tr>
+          <tr><td class="text-muted small">Subtotal</td><td><?= currencySymbol($proposal['currency'] ?? 'INR') ?><?= number_format($proposal['subtotal'] ?? $proposal['total_amount'] ?? 0, 0) ?></td></tr>
+          <tr><td class="text-muted small">Tax (<?= $proposal['tax_percent'] ?? 0 ?>%)</td><td><?= currencySymbol($proposal['currency'] ?? 'INR') ?><?= number_format($proposal['tax_amount'] ?? 0, 0) ?></td></tr>
+          <tr><td class="fw-bold">Total</td><td class="fw-bold text-primary fs-5"><?= currencySymbol($proposal['currency'] ?? 'INR') ?><?= number_format($proposal['total_amount'] ?? 0, 0) ?></td></tr>
         </table>
       </div>
     </div>

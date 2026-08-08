@@ -30,9 +30,19 @@ if (!function_exists('invoiceStatusColor')) {
         };
     }
 }
+if (!function_exists('currencySymbol')) {
+    // Display-only symbol lookup. Amounts are stored already in the
+    // record's chosen currency — no FX conversion happens here.
+    function currencySymbol(?string $code): string {
+        $map = ['INR' => '₹', 'USD' => '$', 'EUR' => '€', 'GBP' => '£', 'AUD' => 'A$', 'CAD' => 'C$', 'AED' => 'د.إ', 'SGD' => 'S$'];
+        return $map[strtoupper($code ?: 'INR')] ?? (strtoupper($code) . ' ');
+    }
+}
 if (!function_exists('formatMoney')) {
-    function formatMoney(float $amount, string $currency = '₹'): string {
-        return $currency . number_format($amount, 2);
+    function formatMoney(float $amount, string $currency = 'INR'): string {
+        // Back-compat: also accept a literal symbol (old call style) as well as a 3-letter code.
+        $symbol = (strlen($currency) <= 3 && ctype_alpha($currency)) ? currencySymbol($currency) : $currency;
+        return $symbol . number_format($amount, 2);
     }
 }
 if (!function_exists('daysUntil')) {

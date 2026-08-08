@@ -36,7 +36,7 @@ const table = $('#proposalsTable').DataTable({
     { data: 'proposal_number', render: (d,t,r) => `<a href="${BASE}admin/proposals/${r.id}" class="fw-semibold text-decoration-none small">${d}</a>` },
     { data: 'title' },
     { data: 'client_name', render: d => `<span class="small">${d||'—'}</span>` },
-    { data: 'total_amount', render: d => `<span class="fw-semibold">₹${parseFloat(d||0).toLocaleString('en-IN',{maximumFractionDigits:0})}</span>` },
+    { data: 'total_amount', render: (d,t,r) => `<span class="fw-semibold">${curSym(r.currency)}${parseFloat(d||0).toLocaleString('en-IN',{maximumFractionDigits:0})}</span>` },
     { data: 'valid_until', render: d => d && d !== '0000-00-00' ? new Date(d).toLocaleDateString('en-IN') : '—' },
     { data: 'status', render: d => {
       const m={draft:'secondary',sent:'info',accepted:'success',revision:'warning',rejected:'danger'};

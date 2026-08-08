@@ -2,6 +2,11 @@ const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribu
 
 $.ajaxSetup({ headers: { 'X-CSRF-Token': CSRF_TOKEN } });
 
+// Multi-currency: symbol lookup shared by all DataTables render callbacks.
+// Display-only — the stored amount is already in the record's currency.
+const CURRENCY_SYMBOLS = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AUD: 'A$', CAD: 'C$', AED: 'د.إ', SGD: 'S$' };
+function curSym(code) { return CURRENCY_SYMBOLS[code] || (code ? code + ' ' : '₹'); }
+
 // Select2
 $(document).ready(function () {
   $('select.select2').select2({ theme: 'bootstrap-5', width: '100%' });

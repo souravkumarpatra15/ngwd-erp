@@ -88,23 +88,23 @@ $balanceDue = $invoice['balance_due'] ?? ($invoice['total'] - $invoice['paid_amo
               <td class="text-muted small"><?= $i+1 ?></td>
               <td><?= esc($item['description']) ?></td>
               <td class="text-end small"><?= $item['quantity'] ?></td>
-              <td class="text-end small">₹<?= number_format($item['unit_price'],2) ?></td>
-              <td class="text-end fw-semibold">₹<?= number_format($item['total'],2) ?></td>
+              <td class="text-end small"><?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($item['unit_price'],2) ?></td>
+              <td class="text-end fw-semibold"><?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($item['total'],2) ?></td>
             </tr>
             <?php endforeach; ?>
           </tbody>
           <tfoot>
-            <tr><td colspan="4" class="text-end text-muted small border-0 pt-2">Subtotal</td><td class="text-end border-0 pt-2">₹<?= number_format($invoice['subtotal'],2) ?></td></tr>
+            <tr><td colspan="4" class="text-end text-muted small border-0 pt-2">Subtotal</td><td class="text-end border-0 pt-2"><?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['subtotal'],2) ?></td></tr>
             <?php if (($invoice['tax_amount'] ?? 0) > 0): ?>
-            <tr><td colspan="4" class="text-end text-muted small border-0">GST (<?= $invoice['tax_percent'] ?>%)</td><td class="text-end border-0">₹<?= number_format($invoice['tax_amount'],2) ?></td></tr>
+            <tr><td colspan="4" class="text-end text-muted small border-0">GST (<?= $invoice['tax_percent'] ?>%)</td><td class="text-end border-0"><?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['tax_amount'],2) ?></td></tr>
             <?php endif; ?>
             <?php if (($invoice['discount'] ?? 0) > 0): ?>
-            <tr><td colspan="4" class="text-end text-muted small border-0">Discount</td><td class="text-end border-0 text-danger">-₹<?= number_format($invoice['discount'],2) ?></td></tr>
+            <tr><td colspan="4" class="text-end text-muted small border-0">Discount</td><td class="text-end border-0 text-danger">-<?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['discount'],2) ?></td></tr>
             <?php endif; ?>
-            <tr class="table-light"><td colspan="4" class="text-end fw-bold border-0">Total</td><td class="text-end fw-bold fs-5 border-0">₹<?= number_format($invoice['total'],2) ?></td></tr>
+            <tr class="table-light"><td colspan="4" class="text-end fw-bold border-0">Total</td><td class="text-end fw-bold fs-5 border-0"><?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['total'],2) ?></td></tr>
             <?php if (($invoice['paid_amount'] ?? 0) > 0): ?>
-            <tr><td colspan="4" class="text-end text-muted small border-0">Amount Paid</td><td class="text-end text-success border-0">-₹<?= number_format($invoice['paid_amount'],2) ?></td></tr>
-            <tr class="table-warning"><td colspan="4" class="text-end fw-bold border-0">Balance Due</td><td class="text-end fw-bold text-danger border-0">₹<?= number_format($balanceDue,2) ?></td></tr>
+            <tr><td colspan="4" class="text-end text-muted small border-0">Amount Paid</td><td class="text-end text-success border-0">-<?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['paid_amount'],2) ?></td></tr>
+            <tr class="table-warning"><td colspan="4" class="text-end fw-bold border-0">Balance Due</td><td class="text-end fw-bold text-danger border-0"><?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($balanceDue,2) ?></td></tr>
             <?php endif; ?>
           </tfoot>
         </table>
@@ -132,9 +132,9 @@ $balanceDue = $invoice['balance_due'] ?? ($invoice['total'] - $invoice['paid_amo
       <div class="card-header bg-white border-0 py-3"><h6 class="mb-0 fw-semibold">Summary</h6></div>
       <div class="card-body">
         <table class="table table-sm table-borderless mb-0">
-          <tr><td class="text-muted small">Total</td><td class="fw-bold text-primary">₹<?= number_format($invoice['total'],2) ?></td></tr>
-          <tr><td class="text-muted small">Paid</td><td class="text-success fw-semibold">₹<?= number_format($invoice['paid_amount'],2) ?></td></tr>
-          <tr><td class="text-muted small">Balance</td><td class="text-danger fw-bold">₹<?= number_format($balanceDue,2) ?></td></tr>
+          <tr><td class="text-muted small">Total</td><td class="fw-bold text-primary"><?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['total'],2) ?></td></tr>
+          <tr><td class="text-muted small">Paid</td><td class="text-success fw-semibold"><?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['paid_amount'],2) ?></td></tr>
+          <tr><td class="text-muted small">Balance</td><td class="text-danger fw-bold"><?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($balanceDue,2) ?></td></tr>
           <tr><td colspan="2"><hr class="my-1"></td></tr>
           <tr><td class="text-muted small">Status</td><td><span class="badge bg-<?= $sc ?>"><?= ucfirst($invoice['status']) ?></span></td></tr>
           <tr><td class="text-muted small">Client</td><td class="small"><?= esc($invoice['client_name'] ?? '—') ?></td></tr>

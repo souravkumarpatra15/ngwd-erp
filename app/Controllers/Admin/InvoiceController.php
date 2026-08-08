@@ -93,6 +93,7 @@ class InvoiceController extends BaseController
             'paid_amount'    => 0,
             'balance_due'    => $total,          // ← always set on create
             'is_gst'         => !empty($post['is_gst']) ? 1 : 0,
+            'currency'       => $post['currency'] ?? 'INR',
             'notes'          => $post['notes']  ?? '',
             'terms'          => $post['terms']  ?? '',
             'status'         => 'draft',
@@ -176,6 +177,7 @@ class InvoiceController extends BaseController
             'total'       => $total,
             'balance_due' => max(0, $total - $paidAmt),  // ← recalculate
             'is_gst'      => !empty($post['is_gst']) ? 1 : 0,
+            'currency'    => $post['currency'] ?? ($inv['currency'] ?? 'INR'),
             'notes'       => $post['notes'] ?? '',
             'terms'       => $post['terms'] ?? '',
             // status stays as-is unless already draft
@@ -254,7 +256,7 @@ class InvoiceController extends BaseController
     public function sendWhatsApp($id)
     {
         $inv = $this->im->getWithDetails($id);
-        $msg = "Invoice *{$inv['invoice_number']}*\nAmount: ₹" . number_format($inv['total'], 2)
+        $msg = "Invoice *{$inv['invoice_number']}*\nAmount: " . currencySymbol($inv['currency'] ?? 'INR') . number_format($inv['total'], 2)
             . "\nDue: {$inv['due_date']}\n\n" . ($this->settings['company_name'] ?? '');
         $res = (new WhatsAppService())->sendMessage($inv['client_whatsapp'], $msg);
         if ($res) {

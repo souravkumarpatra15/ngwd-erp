@@ -37,10 +37,10 @@
           <td class="small <?= strtotime($inv['due_date']) < time() && !in_array($inv['status'],['paid','cancelled']) ? 'text-danger fw-semibold' : '' ?>">
             <?= date('d M Y',strtotime($inv['due_date'])) ?>
           </td>
-          <td class="fw-semibold">₹<?= number_format($inv['total'],0) ?></td>
-          <td class="text-success small">₹<?= number_format($inv['paid_amount']??0,0) ?></td>
+          <td class="fw-semibold"><?= currencySymbol($inv['currency'] ?? 'INR') ?><?= number_format($inv['total'],0) ?></td>
+          <td class="text-success small"><?= currencySymbol($inv['currency'] ?? 'INR') ?><?= number_format($inv['paid_amount']??0,0) ?></td>
           <td class="<?= ($inv['balance_due']??0) > 0 ? 'text-danger fw-semibold' : 'text-success' ?> small">
-            ₹<?= number_format($inv['balance_due']??($inv['total']-($inv['paid_amount']??0)),0) ?>
+            <?= currencySymbol($inv['currency'] ?? 'INR') ?><?= number_format($inv['balance_due']??($inv['total']-($inv['paid_amount']??0)),0) ?>
           </td>
           <td><span class="badge bg-<?= $sc ?>"><?= ucfirst($inv['status']) ?></span></td>
           <td>

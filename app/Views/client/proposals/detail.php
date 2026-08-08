@@ -28,7 +28,7 @@
           <div class="row text-center">
             <div class="col-4">
               <div class="text-muted small">Amount</div>
-              <div class="fw-bold text-primary fs-5">₹<?= number_format($proposal['total_amount'] ?? 0, 0) ?></div>
+              <div class="fw-bold text-primary fs-5"><?= currencySymbol($proposal['currency'] ?? 'INR') ?><?= number_format($proposal['total_amount'] ?? 0, 0) ?></div>
             </div>
             <div class="col-4">
               <div class="text-muted small">Valid Until</div>

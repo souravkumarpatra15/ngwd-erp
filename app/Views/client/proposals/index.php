@@ -21,7 +21,7 @@
           Valid until: <?= $p['valid_until'] && $p['valid_until'] !== '0000-00-00' ? date('d M Y',strtotime($p['valid_until'])) : '—' ?>
         </div>
         <div class="d-flex justify-content-between align-items-center">
-          <div class="fw-bold text-primary fs-5">₹<?= number_format($p['total_amount']??0,0) ?></div>
+          <div class="fw-bold text-primary fs-5"><?= currencySymbol($p['currency'] ?? 'INR') ?><?= number_format($p['total_amount']??0,0) ?></div>
           <a href="<?= base_url('portal/proposals/'.$p['id']) ?>" class="btn btn-sm btn-outline-primary">View Details</a>
         </div>
       </div>

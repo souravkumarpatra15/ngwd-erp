@@ -87,7 +87,7 @@ $balance = ($project['budget'] ?? 0) - ($project['advance_paid'] ?? 0);
                 </div>
               </div>
               <div class="text-end flex-shrink-0">
-                <div class="fw-bold text-primary">₹<?= number_format($ms['amount'] ?? 0, 0) ?></div>
+                <div class="fw-bold text-primary"><?= currencySymbol($ms['currency'] ?? 'INR') ?><?= number_format($ms['amount'] ?? 0, 0) ?></div>
                 <?php if (in_array($ms['status'], ['pending','in_progress'])): ?>
                 <a href="<?= base_url('portal/pay-milestone/'.$ms['id']) ?>" class="btn btn-xs btn-success mt-1">
                   <i class="bi bi-credit-card me-1"></i>Pay
@@ -99,9 +99,20 @@ $balance = ($project['budget'] ?? 0) - ($project['advance_paid'] ?? 0);
           <?php endforeach; ?>
         </div>
         <!-- Milestone totals -->
+        <?php
+          $msTotalsByCur = [];
+          foreach ($milestones as $ms) {
+            $c = $ms['currency'] ?? 'INR';
+            $msTotalsByCur[$c] = ($msTotalsByCur[$c] ?? 0) + (float) ($ms['amount'] ?? 0);
+          }
+        ?>
         <div class="px-4 py-3 border-top bg-light d-flex justify-content-between small">
           <span class="text-muted">Total Milestones Value</span>
-          <span class="fw-bold text-primary">₹<?= number_format(array_sum(array_column($milestones,'amount')), 0) ?></span>
+          <span class="fw-bold text-primary">
+            <?php foreach ($msTotalsByCur as $c => $amt): ?>
+              <?= currencySymbol($c) ?><?= number_format($amt, 0) ?><?= end($msTotalsByCur) !== $amt ? ' + ' : '' ?>
+            <?php endforeach; ?>
+          </span>
         </div>
         <?php endif; ?>
       </div>

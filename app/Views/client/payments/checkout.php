@@ -24,24 +24,24 @@
           <?php endif; ?>
           <div class="d-flex justify-content-between mb-2 small">
             <span class="text-muted">Invoice Total</span>
-            <span>₹<?= number_format($invoice['total'], 2) ?></span>
+            <span><?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['total'], 2) ?></span>
           </div>
           <?php if (($invoice['paid_amount'] ?? 0) > 0): ?>
             <div class="d-flex justify-content-between mb-2 small">
               <span class="text-muted">Already Paid</span>
-              <span class="text-success">-₹<?= number_format($invoice['paid_amount'], 2) ?></span>
+              <span class="text-success">-<?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['paid_amount'], 2) ?></span>
             </div>
           <?php endif; ?>
           <hr class="my-2">
           <div class="d-flex justify-content-between">
             <span class="fw-bold">Amount Due</span>
-            <span class="fw-bold text-primary fs-5">₹<?= number_format($invoice['balance_due'], 2) ?></span>
+            <span class="fw-bold text-primary fs-5"><?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['balance_due'], 2) ?></span>
           </div>
         </div>
 
         <?php if ($razorpay_order && isset($razorpay_order['id'])): ?>
           <button id="rzpBtn" class="btn btn-success btn-lg w-100 mb-3">
-            <i class="bi bi-credit-card me-2"></i>Pay ₹<?= number_format($invoice['balance_due'], 2) ?> Now
+            <i class="bi bi-credit-card me-2"></i>Pay <?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['balance_due'], 2) ?> Now
           </button>
           <div class="text-center text-muted" style="font-size:12px">
             <i class="bi bi-shield-check me-1"></i>256-bit SSL encrypted · UPI, Cards, Net Banking accepted
@@ -119,7 +119,7 @@
             } else {
 
               btn.disabled = false;
-              btn.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay ₹<?= number_format($invoice['balance_due'], 2) ?> Now';
+              btn.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay <?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['balance_due'], 2) ?> Now';
 
               alert(res.message);
             }
@@ -130,7 +130,7 @@
             console.error(err);
 
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay ₹<?= number_format($invoice['balance_due'], 2) ?> Now';
+            btn.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay <?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['balance_due'], 2) ?> Now';
 
             showToast('Network error', 'error');
           });
@@ -142,7 +142,7 @@
           const btn = document.getElementById('rzpBtn');
 
           btn.disabled = false;
-          btn.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay ₹<?= number_format($invoice['balance_due'], 2) ?> Now';
+          btn.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay <?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['balance_due'], 2) ?> Now';
 
           showToast('Payment cancelled.', 'error');
         }
@@ -156,7 +156,7 @@
         new Razorpay(rzpOptions).open();
       } catch (e) {
         this.disabled = false;
-        this.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay ₹<?= number_format($invoice['balance_due'], 2) ?> Now';
+        this.innerHTML = '<i class="bi bi-credit-card me-2"></i>Pay <?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['balance_due'], 2) ?> Now';
         showToast('Could not open payment gateway.', 'error');
       }
     });

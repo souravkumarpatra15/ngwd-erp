@@ -127,11 +127,13 @@ class PaymentController extends BaseController
     public function show($id)
     {
         $p = $this->db->table('payments')
-            ->select('payments.*, clients.name as client_name, clients.email as client_email,
-                      projects.name as project_name, invoices.invoice_number')
+            ->select("payments.*, clients.name as client_name, clients.email as client_email,
+                      projects.name as project_name, invoices.invoice_number,
+                      COALESCE(invoices.currency, milestones.currency, 'INR') as currency")
             ->join('clients',  'clients.id  = payments.client_id',  'left')
             ->join('projects', 'projects.id = payments.project_id', 'left')
             ->join('invoices', 'invoices.id = payments.invoice_id', 'left')
+            ->join('milestones', 'milestones.id = payments.milestone_id', 'left')
             ->where('payments.id', $id)
             ->get()->getRowArray();
 
@@ -143,10 +145,13 @@ class PaymentController extends BaseController
     public function receipt($id)
     {
         $p = $this->db->table('payments')
-            ->select('payments.*, clients.name as client_name, clients.address as client_address,
-                      clients.email as client_email, projects.name as project_name')
+            ->select("payments.*, clients.name as client_name, clients.address as client_address,
+                      clients.email as client_email, projects.name as project_name,
+                      COALESCE(invoices.currency, milestones.currency, 'INR') as currency")
             ->join('clients',  'clients.id  = payments.client_id',  'left')
             ->join('projects', 'projects.id = payments.project_id', 'left')
+            ->join('invoices', 'invoices.id = payments.invoice_id', 'left')
+            ->join('milestones', 'milestones.id = payments.milestone_id', 'left')
             ->where('payments.id', $id)
             ->get()->getRowArray();
 

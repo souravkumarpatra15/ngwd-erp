@@ -28,6 +28,15 @@
                 <option value="hosting" <?= ($prefill['type'] ?? '') === 'hosting' ? 'selected' : '' ?>>Hosting Renewal</option>
               </select>
             </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-semibold">Currency</label>
+              <select name="currency" id="invCurrency" class="form-select">
+                <option value="INR" selected>INR ₹</option>
+                <option value="USD">USD $</option>
+                <option value="EUR">EUR €</option>
+                <option value="GBP">GBP £</option>
+              </select>
+            </div>
             <div class="col-md-6">
               <label class="form-label small fw-semibold">Project</label>
               <select name="project_id" class="form-select" id="projectSelect">
@@ -150,6 +159,7 @@
   let itemIdx = 1;
 
   function recalc() {
+    const sym = curSym($('#invCurrency').val());
     let sub = 0;
     $('.item-row').each(function() {
       const qty = parseFloat($(this).find('.item-qty').val()) || 0;
@@ -161,16 +171,16 @@
     const tax = sub * (parseFloat($('#taxPercent').val()) || 0) / 100;
     const disc = parseFloat($('#discount').val()) || 0;
     const tot = sub + tax - disc;
-    $('#summSubtotal').text('₹' + sub.toLocaleString('en-IN', {
+    $('#summSubtotal').text(sym + sub.toLocaleString('en-IN', {
       minimumFractionDigits: 2
     }));
-    $('#summTax').text('₹' + tax.toLocaleString('en-IN', {
+    $('#summTax').text(sym + tax.toLocaleString('en-IN', {
       minimumFractionDigits: 2
     }));
-    $('#summDiscount').text('-₹' + disc.toLocaleString('en-IN', {
+    $('#summDiscount').text('-' + sym + disc.toLocaleString('en-IN', {
       minimumFractionDigits: 2
     }));
-    $('#summTotal').text('₹' + tot.toLocaleString('en-IN', {
+    $('#summTotal').text(sym + tot.toLocaleString('en-IN', {
       minimumFractionDigits: 2
     }));
     $('#subtotalInput').val(sub.toFixed(2));
@@ -178,6 +188,7 @@
     $('#totalInput').val(tot.toFixed(2));
   }
   $(document).on('input', '.item-qty,.item-price,#taxPercent,#discount', recalc);
+  $('#invCurrency').on('change', recalc);
   $('#addItem').on('click', function() {
     const row = `<tr class="item-row">
     <td><input type="text" name="items[${itemIdx}][description]" class="form-control form-control-sm" required></td>

@@ -35,7 +35,7 @@
           </td>
           <td><a href="<?= base_url('admin/projects/'.$ms['project_id']) ?>" class="text-decoration-none small"><?= esc($ms['project_name'] ?? '—') ?></a></td>
           <td class="small text-muted"><?= esc($ms['client_name'] ?? '—') ?></td>
-          <td class="fw-semibold text-primary">₹<?= number_format($ms['amount'] ?? 0, 0) ?></td>
+          <td class="fw-semibold text-primary"><?= currencySymbol($ms['currency'] ?? 'INR') ?><?= number_format($ms['amount'] ?? 0, 0) ?></td>
           <td class="<?= $overdue ? 'text-danger fw-semibold' : '' ?> small">
             <?= $ms['due_date'] && $ms['due_date'] !== '0000-00-00' ? date('d M Y', strtotime($ms['due_date'])) : '—' ?>
             <?php if ($overdue): ?><span class="badge bg-danger ms-1">Overdue</span><?php endif; ?>

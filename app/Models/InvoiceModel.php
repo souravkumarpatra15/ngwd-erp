@@ -28,6 +28,7 @@ class InvoiceModel extends Model
         'paid_amount',
         'balance_due',     // ← balance_due included
         'is_gst',
+        'currency',
         'notes',
         'terms',
         'status',

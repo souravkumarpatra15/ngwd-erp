@@ -54,23 +54,23 @@
             <tr>
               <td><?= esc($item['description']) ?></td>
               <td class="text-end small"><?= $item['quantity'] ?></td>
-              <td class="text-end small">₹<?= number_format($item['unit_price'],2) ?></td>
-              <td class="text-end fw-semibold">₹<?= number_format($item['total'],2) ?></td>
+              <td class="text-end small"><?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($item['unit_price'],2) ?></td>
+              <td class="text-end fw-semibold"><?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($item['total'],2) ?></td>
             </tr>
             <?php endforeach; ?>
           </tbody>
           <tfoot>
-            <tr><td colspan="3" class="text-end text-muted small">Subtotal</td><td class="text-end">₹<?= number_format($invoice['subtotal']??$invoice['total'],2) ?></td></tr>
+            <tr><td colspan="3" class="text-end text-muted small">Subtotal</td><td class="text-end"><?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['subtotal']??$invoice['total'],2) ?></td></tr>
             <?php if (($invoice['tax_amount']??0) > 0): ?>
-            <tr><td colspan="3" class="text-end text-muted small">GST (<?= $invoice['tax_percent']??0 ?>%)</td><td class="text-end">₹<?= number_format($invoice['tax_amount'],2) ?></td></tr>
+            <tr><td colspan="3" class="text-end text-muted small">GST (<?= $invoice['tax_percent']??0 ?>%)</td><td class="text-end"><?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['tax_amount'],2) ?></td></tr>
             <?php endif; ?>
             <?php if (($invoice['discount']??0) > 0): ?>
-            <tr><td colspan="3" class="text-end text-muted small">Discount</td><td class="text-end text-danger">-₹<?= number_format($invoice['discount'],2) ?></td></tr>
+            <tr><td colspan="3" class="text-end text-muted small">Discount</td><td class="text-end text-danger">-<?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['discount'],2) ?></td></tr>
             <?php endif; ?>
-            <tr class="table-light"><td colspan="3" class="text-end fw-bold">Total</td><td class="text-end fw-bold fs-5">₹<?= number_format($invoice['total'],2) ?></td></tr>
+            <tr class="table-light"><td colspan="3" class="text-end fw-bold">Total</td><td class="text-end fw-bold fs-5"><?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['total'],2) ?></td></tr>
             <?php if (($invoice['paid_amount']??0) > 0): ?>
-            <tr><td colspan="3" class="text-end text-muted small">Paid</td><td class="text-end text-success">-₹<?= number_format($invoice['paid_amount'],2) ?></td></tr>
-            <tr class="table-warning"><td colspan="3" class="text-end fw-bold">Balance Due</td><td class="text-end fw-bold text-danger">₹<?= number_format(($invoice['total']-($invoice['paid_amount']??0)),2) ?></td></tr>
+            <tr><td colspan="3" class="text-end text-muted small">Paid</td><td class="text-end text-success">-<?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['paid_amount'],2) ?></td></tr>
+            <tr class="table-warning"><td colspan="3" class="text-end fw-bold">Balance Due</td><td class="text-end fw-bold text-danger"><?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format(($invoice['total']-($invoice['paid_amount']??0)),2) ?></td></tr>
             <?php endif; ?>
           </tfoot>
         </table>
@@ -91,7 +91,7 @@
       <?php if (!in_array($invoice['status'],['paid','cancelled'])): ?>
       <div class="card-footer bg-white border-0 px-4 pb-4 text-center">
         <a href="<?= base_url('portal/pay/'.$invoice['id']) ?>" class="btn btn-success btn-lg">
-          <i class="bi bi-credit-card me-2"></i>Pay ₹<?= number_format($invoice['total']-($invoice['paid_amount']??0),2) ?> Now
+          <i class="bi bi-credit-card me-2"></i>Pay <?= currencySymbol($invoice['currency'] ?? 'INR') ?><?= number_format($invoice['total']-($invoice['paid_amount']??0),2) ?> Now
         </a>
       </div>
       <?php endif; ?>

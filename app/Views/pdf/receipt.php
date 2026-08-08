@@ -26,7 +26,7 @@ body{font-family:'DejaVu Sans',Arial,sans-serif;font-size:12px;color:#333}
 <div class="body">
   <div class="amount-box">
     <div class="label">Payment Received</div>
-    <div class="amount">₹<?= number_format($payment['amount'],2) ?></div>
+    <div class="amount"><?= currencySymbol($payment['currency'] ?? 'INR') ?><?= number_format($payment['amount'],2) ?></div>
   </div>
   <table class="info-table">
     <tr><td>Receipt No</td><td><?= esc($payment['payment_number']) ?></td></tr>

@@ -330,7 +330,7 @@
             <?php if (!empty($proposal['total_amount'])): ?>
               <div class="price-box">
                 <div class="label">Total Investment</div>
-                <div class="amount">₹<?= number_format($proposal['total_amount'], 0) ?></div>
+                <div class="amount"><?= currencySymbol($proposal['currency'] ?? 'INR') ?><?= number_format($proposal['total_amount'], 0) ?></div>
               </div>
             <?php endif; ?>
           </td>

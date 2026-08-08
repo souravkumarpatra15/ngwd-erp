@@ -9,7 +9,7 @@ class MilestoneModel extends Model
     protected $primaryKey = 'id';
     protected $useTimestamps = true;
     protected $allowedFields = [
-        'project_id', 'title', 'description', 'amount',
+        'project_id', 'title', 'description', 'amount', 'currency',
         'due_date', 'completed_date', 'status', 'sort_order',
     ];
 

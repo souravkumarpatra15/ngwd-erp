@@ -69,7 +69,7 @@ class ProposalController extends BaseController
     public function sendWhatsApp($id)
     {
         $p = $this->pm->getWithDetails($id);
-        $msg = "Dear {$p['client_name']},\n\nProposal: *{$p['title']}*\nAmount: ₹" . number_format($p['total_amount'], 2) . "\nValid: {$p['valid_until']}\n\nDownload: " . base_url("admin/proposals/pdf/$id") . "\n\nRegards,\n" . ($this->settings['company_name'] ?? '');
+        $msg = "Dear {$p['client_name']},\n\nProposal: *{$p['title']}*\nAmount: " . currencySymbol($p['currency'] ?? 'INR') . number_format($p['total_amount'], 2) . "\nValid: {$p['valid_until']}\n\nDownload: " . base_url("admin/proposals/pdf/$id") . "\n\nRegards,\n" . ($this->settings['company_name'] ?? '');
         $res = (new WhatsAppService())->sendMessage($p['client_whatsapp'], $msg);
         if ($res) {
             $this->pm->update($id, ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);
@@ -92,6 +92,7 @@ class ProposalController extends BaseController
             proposals.proposal_number,
             proposals.title,
             proposals.total_amount,
+            proposals.currency,
             proposals.valid_until,
             proposals.status,
             clients.name AS client_name

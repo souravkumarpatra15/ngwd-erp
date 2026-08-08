@@ -76,7 +76,7 @@ $balance = ($project['budget'] ?? 0) - ($project['total_paid'] ?? 0);
                 <?php if ($ms['due_date'] && $ms['due_date'] !== '0000-00-00'): ?><div class="text-muted" style="font-size:11px"><i class="bi bi-calendar me-1"></i><?= date('d M Y',strtotime($ms['due_date'])) ?></div><?php endif; ?>
               </div>
               <div class="d-flex align-items-center gap-2">
-                <span class="fw-bold text-primary small">₹<?= number_format($ms['amount'],0) ?></span>
+                <span class="fw-bold text-primary small"><?= currencySymbol($ms['currency'] ?? 'INR') ?><?= number_format($ms['amount'],0) ?></span>
                 <button class="btn btn-xs btn-outline-danger btn-del-ms"
                   data-id="<?= $ms['id'] ?>"
                   data-confirm-title="Delete Milestone?"
@@ -209,7 +209,16 @@ $balance = ($project['budget'] ?? 0) - ($project['total_paid'] ?? 0);
       <div class="modal-body row g-3">
         <div class="col-12"><label class="form-label small fw-semibold">Title *</label><input type="text" name="title" class="form-control" required></div>
         <div class="col-12"><label class="form-label small fw-semibold">Description</label><textarea name="description" class="form-control" rows="2"></textarea></div>
-        <div class="col-md-6"><label class="form-label small fw-semibold">Amount (₹)</label><input type="number" name="amount" class="form-control" min="0" step="0.01" value="0"></div>
+        <div class="col-md-4"><label class="form-label small fw-semibold">Amount</label><input type="number" name="amount" class="form-control" min="0" step="0.01" value="0"></div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Currency</label>
+          <select name="currency" class="form-select">
+            <option value="INR" selected>INR ₹</option>
+            <option value="USD">USD $</option>
+            <option value="EUR">EUR €</option>
+            <option value="GBP">GBP £</option>
+          </select>
+        </div>
         <div class="col-md-6"><label class="form-label small fw-semibold">Due Date</label><input type="date" name="due_date" class="form-control"></div>
       </div>
       <div class="modal-footer border-0">

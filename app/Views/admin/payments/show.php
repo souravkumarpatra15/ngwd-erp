@@ -30,7 +30,7 @@
           <div class="col-md-6">
             <div class="mb-3">
               <div class="text-muted small">Amount</div>
-              <div class="fs-4 fw-bold text-success">₹<?= number_format($payment['amount'], 2) ?></div>
+              <div class="fs-4 fw-bold text-success"><?= currencySymbol($payment['currency'] ?? 'INR') ?><?= number_format($payment['amount'], 2) ?></div>
             </div>
             <div class="mb-3">
               <div class="text-muted small">Method</div>

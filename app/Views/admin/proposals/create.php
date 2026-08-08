@@ -61,9 +61,14 @@
             <div class="card-header bg-white border-0 py-3"><h6 class="mb-0 fw-semibold">Settings</h6></div>
             <div class="card-body row g-3">
               <div class="col-12">
-                <label class="form-label small fw-semibold">Total Amount (₹) <span class="text-danger">*</span></label>
+                <label class="form-label small fw-semibold">Total Amount <span class="text-danger">*</span></label>
                 <div class="input-group">
-                  <span class="input-group-text">₹</span>
+                  <select name="currency" id="propCurrency" class="form-select" style="min-width:90px;flex:0 0 auto;">
+                    <option value="INR" selected>INR ₹</option>
+                    <option value="USD">USD $</option>
+                    <option value="EUR">EUR €</option>
+                    <option value="GBP">GBP £</option>
+                  </select>
                   <input type="number" name="total_amount" class="form-control" step="0.01" min="0" value="<?= old('total_amount') ?>" required placeholder="0.00">
                 </div>
                 <div class="form-text">Enter the all-inclusive total for the client.</div>
