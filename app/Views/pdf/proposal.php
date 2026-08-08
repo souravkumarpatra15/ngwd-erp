@@ -4,18 +4,16 @@
 <head>
   <meta charset="UTF-8">
   <?php
-  $sigPath = !empty($settings['signature_image'])
-    ? FCPATH . ltrim($settings['signature_image'], '/\\')
+  $baseUrl = rtrim(config('App')->baseURL, '/') . '/';
+
+  $logoUrl = !empty($settings['company_logo'])
+    ? $baseUrl . ltrim($settings['company_logo'], '/')
     : '';
 
-  $sigUrl = ($sigPath && is_file($sigPath)) ? $sigPath : '';
-  ?>
-  <?php
-  $logoPath = !empty($settings['company_logo'])
-    ? FCPATH . ltrim($settings['company_logo'], '/\\')
+  $sigUrl = !empty($settings['signature_image'])
+    ? $baseUrl . ltrim($settings['signature_image'], '/')
     : '';
 
-  $logoUrl = ($logoPath && is_file($logoPath)) ? $logoPath : '';
   ?>
   <style>
     * {

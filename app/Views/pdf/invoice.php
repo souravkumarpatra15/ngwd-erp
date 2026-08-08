@@ -4,10 +4,16 @@
 <head>
   <meta charset="UTF-8">
   <?php
-    // dompdf needs a real filesystem path (or absolute URL) for <img src>,
-    // not the relative "assets/images/..." string stored in settings.
-    $logoPath = !empty($settings['company_logo']) ? FCPATH . $settings['company_logo'] : '';
-    $logoUrl  = ($logoPath && is_file($logoPath)) ? $logoPath : '';
+  $baseUrl = rtrim(config('App')->baseURL, '/') . '/';
+
+  $logoUrl = !empty($settings['company_logo'])
+    ? $baseUrl . ltrim($settings['company_logo'], '/')
+    : '';
+
+  $sigUrl = !empty($settings['signature_image'])
+    ? $baseUrl . ltrim($settings['signature_image'], '/')
+    : '';
+
   ?>
   <style>
     * {
