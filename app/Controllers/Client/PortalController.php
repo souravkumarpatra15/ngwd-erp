@@ -8,6 +8,8 @@ use App\Models\ProposalModel;
 use App\Models\AgreementModel;
 use App\Models\DocumentModel;
 use App\Models\MilestoneModel;
+use App\Models\MilestoneNoteModel;
+use App\Services\NotificationService;
 
 class PortalController extends BaseController
 {
@@ -37,6 +39,44 @@ class PortalController extends BaseController
             'project'    => $project,
             'milestones' => (new MilestoneModel())->where('project_id',$id)->orderBy('sort_order')->findAll(),
         ]);
+    }
+
+    // ── Milestone notes / Q&A thread ─────────────────────────────
+    protected function ownMilestone(int $milestoneId): ?array {
+        $ms = $this->db->table('milestones')
+            ->select('milestones.*, projects.client_id')
+            ->join('projects', 'projects.id = milestones.project_id', 'left')
+            ->where('milestones.id', $milestoneId)->get()->getRowArray();
+        return ($ms && (int) $ms['client_id'] === $this->cid()) ? $ms : null;
+    }
+
+    public function milestoneNotes($id) {
+        if (!$this->ownMilestone((int) $id)) return $this->jsonError('Not found.');
+        $notes = (new MilestoneNoteModel())->getForMilestone((int) $id);
+        return $this->response->setJSON(['success' => true, 'notes' => $notes]);
+    }
+
+    public function addMilestoneNote($id) {
+        $ms = $this->ownMilestone((int) $id);
+        if (!$ms) return $this->jsonError('Not found.');
+
+        $message = trim((string) $this->request->getPost('message'));
+        if ($message === '') return $this->jsonError('Note cannot be empty.');
+
+        (new MilestoneNoteModel())->insert([
+            'milestone_id' => $id,
+            'user_id'      => session()->get('user_id'),
+            'message'      => $message,
+            'is_admin'     => 0,
+        ]);
+
+        // Let the agency know a client asked something
+        (new NotificationService())->create(
+            0, 'milestone_note', 'New milestone question',
+            "A client left a note on milestone \"{$ms['title']}\"", (int) $id, 'milestone'
+        );
+
+        return $this->jsonSuccess('Note added');
     }
 
     public function invoices() {

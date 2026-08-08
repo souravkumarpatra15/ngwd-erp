@@ -88,6 +88,7 @@ $balance = ($project['budget'] ?? 0) - ($project['advance_paid'] ?? 0);
               </div>
               <div class="text-end flex-shrink-0">
                 <div class="fw-bold text-primary"><?= currencySymbol($ms['currency'] ?? 'INR') ?><?= number_format($ms['amount'] ?? 0, 0) ?></div>
+                <button class="btn btn-xs btn-outline-info mt-1 btn-ms-notes" data-id="<?= $ms['id'] ?>" data-title="<?= esc($ms['title']) ?>" title="Notes / Ask a question"><i class="bi bi-chat-left-text"></i></button>
                 <?php if (in_array($ms['status'], ['pending','in_progress'])): ?>
                 <a href="<?= base_url('portal/pay-milestone/'.$ms['id']) ?>" class="btn btn-xs btn-success mt-1">
                   <i class="bi bi-credit-card me-1"></i>Pay
@@ -171,4 +172,7 @@ $balance = ($project['budget'] ?? 0) - ($project['advance_paid'] ?? 0);
   </a>
 </div>
 
+<?= $this->endSection() ?>
+<?= $this->section('scripts') ?>
+<?= view('client/projects/partials/notes_modal') ?>
 <?= $this->endSection() ?>

@@ -99,6 +99,8 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('milestones/status/(:num)', 'Admin\MilestoneController::updateStatus/$1');
         $routes->post('milestones/payment-link/(:num)', 'Admin\MilestoneController::generatePaymentLink/$1');
         $routes->get('milestones/by-project/(:num)', 'Admin\MilestoneController::byProject/$1');
+        $routes->get('milestones/notes/(:num)', 'Admin\MilestoneController::notes/$1');
+        $routes->post('milestones/notes/(:num)', 'Admin\MilestoneController::addNote/$1');
 
         // Payments
         $routes->get('payments', 'Admin\PaymentController::index');
@@ -221,6 +223,8 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('pay/verify', 'Client\PaymentController::verify');
         $routes->get('pay-milestone/(:num)', 'Client\PaymentController::checkoutMilestone/$1');
         $routes->post('pay-milestone/verify', 'Client\PaymentController::verifyMilestone');
+        $routes->get('milestones/notes/(:num)', 'Client\PortalController::milestoneNotes/$1');
+        $routes->post('milestones/notes/(:num)', 'Client\PortalController::addMilestoneNote/$1');
     });
 
     // ── Webhooks ───────────────────────────────────────────────

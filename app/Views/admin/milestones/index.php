@@ -50,6 +50,7 @@
           <td>
             <div class="d-flex gap-1">
               <a href="<?= base_url('admin/projects/'.$ms['project_id']) ?>" class="btn btn-xs btn-outline-primary" title="View Project"><i class="bi bi-folder2-open"></i></a>
+              <button class="btn btn-xs btn-outline-info btn-ms-notes" data-id="<?= $ms['id'] ?>" data-title="<?= esc($ms['title']) ?>" title="Notes / Q&A"><i class="bi bi-chat-left-text"></i></button>
               <?php if (!in_array($ms['status'], ['completed','paid'])): ?>
               <button class="btn btn-xs btn-outline-success btn-pay-link-ms" data-id="<?= $ms['id'] ?>" title="Generate Payment Link"><i class="bi bi-credit-card"></i></button>
               <?php endif; ?>
@@ -89,6 +90,7 @@
 
 <?= $this->endSection() ?>
 <?= $this->section('scripts') ?>
+<?= view('admin/milestones/partials/notes_modal') ?>
 <script>
 const BASE = '<?= base_url() ?>'; const CSRF = CSRF_TOKEN;
 

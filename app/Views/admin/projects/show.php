@@ -77,6 +77,7 @@ $balance = ($project['budget'] ?? 0) - ($project['total_paid'] ?? 0);
               </div>
               <div class="d-flex align-items-center gap-2">
                 <span class="fw-bold text-primary small"><?= currencySymbol($ms['currency'] ?? 'INR') ?><?= number_format($ms['amount'],0) ?></span>
+                <button class="btn btn-xs btn-outline-info btn-ms-notes" data-id="<?= $ms['id'] ?>" data-title="<?= esc($ms['title']) ?>" title="Notes / Q&A"><i class="bi bi-chat-left-text"></i></button>
                 <button class="btn btn-xs btn-outline-danger btn-del-ms"
                   data-id="<?= $ms['id'] ?>"
                   data-confirm-title="Delete Milestone?"
@@ -281,6 +282,7 @@ $balance = ($project['budget'] ?? 0) - ($project['total_paid'] ?? 0);
 
 <?= $this->endSection() ?>
 <?= $this->section('scripts') ?>
+<?= view('admin/milestones/partials/notes_modal') ?>
 <script>
 const BASE = '<?= base_url() ?>'; const CSRF = CSRF_TOKEN;
 

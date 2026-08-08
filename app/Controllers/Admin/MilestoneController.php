@@ -4,6 +4,7 @@ namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
 use App\Models\MilestoneModel;
+use App\Models\MilestoneNoteModel;
 use App\Services\PaymentService;
 
 class MilestoneController extends BaseController
@@ -60,5 +61,32 @@ class MilestoneController extends BaseController
         if (in_array($ms['status'], ['completed', 'paid'])) return $this->jsonError('This milestone is already completed/paid.');
         $order = (new PaymentService())->createOrder($ms['amount'], 'milestone', $id, $ms['client_id']);
         return $order ? $this->jsonSuccess('Link created', ['url' => base_url("portal/pay-milestone/$id"), 'order' => $order]) : $this->jsonError('Could not create Razorpay order. Check your keys in Settings.');
+    }
+
+    // ── Notes / Q&A thread ──────────────────────────────────────
+    public function notes($id)
+    {
+        $notes = (new MilestoneNoteModel())->getForMilestone((int) $id);
+        return $this->response->setJSON(['success' => true, 'notes' => $notes]);
+    }
+
+    public function addNote($id)
+    {
+        $message = trim((string) $this->request->getPost('message'));
+        if ($message === '') return $this->jsonError('Note cannot be empty.');
+
+        $ms = $this->db->table('milestones')
+            ->select('milestones.id')
+            ->where('milestones.id', $id)->get()->getRowArray();
+        if (!$ms) return $this->jsonError('Milestone not found.');
+
+        (new MilestoneNoteModel())->insert([
+            'milestone_id' => $id,
+            'user_id'      => session()->get('user_id'),
+            'message'      => $message,
+            'is_admin'     => 1,
+        ]);
+
+        return $this->jsonSuccess('Note added');
     }
 }
