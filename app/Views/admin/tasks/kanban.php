@@ -53,6 +53,7 @@
             </div>
             <div class="fw-semibold small mb-1"><?= esc($task['title']) ?></div>
             <?php if ($task['project_name'] ?? null): ?><div class="text-muted" style="font-size:11px"><i class="bi bi-folder2 me-1"></i><?= esc($task['project_name']) ?></div><?php endif; ?>
+            <?php if ($task['milestone_title'] ?? null): ?><div class="text-muted" style="font-size:11px"><i class="bi bi-flag me-1"></i><?= esc($task['milestone_title']) ?></div><?php endif; ?>
             <?php if ($task['due_date'] && $task['due_date'] !== '0000-00-00'): ?>
             <?php $ov = strtotime($task['due_date']) < time() && $status !== 'completed'; ?>
             <div class="mt-1 <?= $ov ? 'text-danger' : 'text-muted' ?>" style="font-size:11px"><i class="bi bi-calendar me-1"></i><?= date('d M',strtotime($task['due_date'])) ?><?= $ov ? ' ⚠' : '' ?></div>

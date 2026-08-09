@@ -28,12 +28,13 @@ class TaskController extends BaseController
 
     public function store() {
         $data = $this->request->getPost(); unset($data['csrf_test_name']);
+        $data['milestone_id'] = $data['milestone_id'] ?: null;
         $data['created_by'] = session()->get('user_id');
         $id = $this->tm->insert($data);
         return $this->jsonSuccess('Task created', ['id'=>$id,'task'=>$this->tm->find($id)]);
     }
 
-    public function update($id) { $data=$this->request->getPost();unset($data['csrf_test_name']);$this->tm->update($id,$data);return $this->jsonSuccess('Updated'); }
+    public function update($id) { $data=$this->request->getPost();unset($data['csrf_test_name']);if(array_key_exists('milestone_id',$data))$data['milestone_id']=$data['milestone_id']?:null;$this->tm->update($id,$data);return $this->jsonSuccess('Updated'); }
     public function updateStatus($id) { $s=$this->request->getPost('status');$u=['status'=>$s];if($s==='completed')$u['completed_date']=date('Y-m-d');$this->tm->update($id,$u);return $this->jsonSuccess('Status updated'); }
     public function delete($id) { $this->tm->delete($id);return $this->jsonSuccess('Deleted'); }
 }

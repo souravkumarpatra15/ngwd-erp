@@ -77,6 +77,7 @@ $balance = ($project['budget'] ?? 0) - ($project['total_paid'] ?? 0);
               </div>
               <div class="d-flex align-items-center gap-2">
                 <span class="fw-bold text-primary small"><?= currencySymbol($ms['currency'] ?? 'INR') ?><?= number_format($ms['amount'],0) ?></span>
+                <button class="btn btn-xs btn-outline-secondary btn-ms-add-task" data-id="<?= $ms['id'] ?>" title="Add change/issue task for this milestone"><i class="bi bi-plus-square"></i></button>
                 <button class="btn btn-xs btn-outline-info btn-ms-notes" data-id="<?= $ms['id'] ?>" data-title="<?= esc($ms['title']) ?>" title="Notes / Q&A"><i class="bi bi-chat-left-text"></i></button>
                 <button class="btn btn-xs btn-outline-danger btn-del-ms"
                   data-id="<?= $ms['id'] ?>"
@@ -118,6 +119,9 @@ $balance = ($project['budget'] ?? 0) - ($project['total_paid'] ?? 0);
                   <span class="badge bg-<?= $tc ?> badge-sm"><?= ucwords(str_replace('_',' ',$task['status'])) ?></span>
                   <span class="badge bg-<?= $pc ?> badge-sm"><?= ucfirst($task['priority']) ?></span>
                   <span class="small fw-semibold"><?= esc($task['title']) ?></span>
+                  <?php if (!empty($task['milestone_title'])): ?>
+                  <span class="badge bg-light text-dark border" style="font-size:10px"><i class="bi bi-flag me-1"></i><?= esc($task['milestone_title']) ?></span>
+                  <?php endif; ?>
                 </div>
                 <?php if ($task['due_date'] && $task['due_date'] !== '0000-00-00'): ?>
                 <div class="text-muted" style="font-size:11px;margin-top:2px"><i class="bi bi-calendar me-1"></i><?= date('d M Y',strtotime($task['due_date'])) ?></div>
@@ -239,6 +243,15 @@ $balance = ($project['budget'] ?? 0) - ($project['total_paid'] ?? 0);
       <div class="modal-body row g-3">
         <div class="col-12"><label class="form-label small fw-semibold">Task Title *</label><input type="text" name="title" class="form-control" required></div>
         <div class="col-12"><label class="form-label small fw-semibold">Description</label><textarea name="description" class="form-control" rows="2"></textarea></div>
+        <div class="col-12">
+          <label class="form-label small fw-semibold">Milestone <span class="text-muted fw-normal">(optional — for change requests/issues tied to a specific delivery)</span></label>
+          <select name="milestone_id" id="addTaskMilestone" class="form-select">
+            <option value="">— Not tied to a milestone —</option>
+            <?php foreach ($milestones as $ms): ?>
+              <option value="<?= $ms['id'] ?>"><?= esc($ms['title']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
         <div class="col-md-6"><label class="form-label small fw-semibold">Priority</label>
           <select name="priority" class="form-select">
             <option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="urgent">Urgent</option>
@@ -311,6 +324,12 @@ $('#addTaskForm').on('submit', function(e) {
     hideLoader(); showToast(res.message, res.status);
     if (res.status === 'success') { bootstrap.Modal.getInstance(document.getElementById('addTaskModal')).hide(); setTimeout(() => location.reload(), 500); }
   }, 'json');
+});
+
+// Quick-add a task pre-scoped to a specific milestone (change requests/issues found during delivery)
+$(document).on('click', '.btn-ms-add-task', function() {
+  $('#addTaskMilestone').val($(this).data('id'));
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('addTaskModal')).show();
 });
 
 let delType = null, delId = null;

@@ -9,7 +9,7 @@ class TaskModel extends Model
     protected $primaryKey = 'id';
     protected $useTimestamps = true;
     protected $allowedFields = [
-        'project_id', 'title', 'description', 'priority',
+        'project_id', 'milestone_id', 'title', 'description', 'priority',
         'due_date', 'completed_date', 'status', 'sort_order',
         'notes', 'assigned_to', 'created_by',
     ];
@@ -19,12 +19,16 @@ class TaskModel extends Model
     {
         $b = $this->db->table('tasks')
             ->select('tasks.*, projects.name as project_name, projects.id as project_id,
-                      u.name as assigned_name')
+                      u.name as assigned_name, milestones.title as milestone_title')
             ->join('projects', 'projects.id = tasks.project_id', 'left')
+            ->join('milestones', 'milestones.id = tasks.milestone_id', 'left')
             ->join('users u', 'u.id = tasks.assigned_to', 'left');
 
         if (!empty($filters['project_id'])) {
             $b->where('tasks.project_id', $filters['project_id']);
+        }
+        if (!empty($filters['milestone_id'])) {
+            $b->where('tasks.milestone_id', $filters['milestone_id']);
         }
         if (!empty($filters['status'])) {
             $b->where('tasks.status', $filters['status']);
@@ -49,10 +53,11 @@ class TaskModel extends Model
     {
         return $this->db->table('tasks')
             ->select('tasks.*, projects.name as project_name, clients.name as client_name,
-                      u.name as assigned_name, u.email as assigned_email')
+                      u.name as assigned_name, u.email as assigned_email, milestones.title as milestone_title')
             ->join('projects', 'projects.id = tasks.project_id', 'left')
             ->join('clients', 'clients.id = projects.client_id', 'left')
             ->join('users u', 'u.id = tasks.assigned_to', 'left')
+            ->join('milestones', 'milestones.id = tasks.milestone_id', 'left')
             ->where('tasks.id', $id)
             ->get()->getRowArray() ?: null;
     }
@@ -65,8 +70,9 @@ class TaskModel extends Model
 
         foreach ($statuses as $status) {
             $b = $this->db->table('tasks')
-                ->select('tasks.*, projects.name as project_name, u.name as assigned_name')
+                ->select('tasks.*, projects.name as project_name, u.name as assigned_name, milestones.title as milestone_title')
                 ->join('projects', 'projects.id = tasks.project_id', 'left')
+                ->join('milestones', 'milestones.id = tasks.milestone_id', 'left')
                 ->join('users u', 'u.id = tasks.assigned_to', 'left')
                 ->where('tasks.status', $status);
 

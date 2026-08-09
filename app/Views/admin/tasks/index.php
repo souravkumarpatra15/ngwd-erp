@@ -42,7 +42,12 @@
             <div class="fw-semibold"><?= esc($task['title']) ?></div>
             <?php if ($task['description']): ?><div class="text-muted small"><?= esc(substr($task['description'],0,60)) ?>...</div><?php endif; ?>
           </td>
-          <td><a href="<?= base_url('admin/projects/'.$task['project_id']) ?>" class="text-decoration-none small"><?= esc($task['project_name'] ?? '—') ?></a></td>
+          <td>
+            <a href="<?= base_url('admin/projects/'.$task['project_id']) ?>" class="text-decoration-none small"><?= esc($task['project_name'] ?? '—') ?></a>
+            <?php if (!empty($task['milestone_title'])): ?>
+            <div class="text-muted" style="font-size:11px"><i class="bi bi-flag me-1"></i><?= esc($task['milestone_title']) ?></div>
+            <?php endif; ?>
+          </td>
           <td><span class="badge bg-<?= $pc ?>"><?= ucfirst($task['priority'] ?? 'normal') ?></span></td>
           <td>
             <select class="form-select form-select-sm task-status-sel" data-id="<?= $task['id'] ?>" style="width:120px">
@@ -79,11 +84,17 @@
         <?= csrf_field() ?>
         <div class="modal-body row g-3">
           <div class="col-12"><label class="form-label small fw-semibold">Project *</label>
-            <select name="project_id" class="form-select" required>
+            <select name="project_id" id="taskProjectSel" class="form-select" required>
               <option value="">Select Project</option>
               <?php foreach ($projects as $p): ?>
               <option value="<?= $p['id'] ?>"><?= esc($p['name']) ?></option>
               <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold">Milestone <span class="text-muted fw-normal">(optional)</span></label>
+            <select name="milestone_id" id="taskMilestoneSel" class="form-select">
+              <option value="">Select project first</option>
             </select>
           </div>
           <div class="col-12"><label class="form-label small fw-semibold">Task Title *</label><input type="text" name="title" class="form-control" required></div>
@@ -115,6 +126,20 @@ $('.task-status-sel').on('change', function() {
   $.post(`${BASE}admin/tasks/status/${$(this).data('id')}`, {status: $(this).val(), csrf_test_name: CSRF}, res => {
     showToast(res.message, res.status);
   }, 'json');
+});
+
+// Populate milestone dropdown when a project is chosen
+$('#taskProjectSel').on('change', function() {
+  const pid = $(this).val();
+  const $ms = $('#taskMilestoneSel');
+  if (!pid) { $ms.html('<option value="">Select project first</option>'); return; }
+  $ms.html('<option value="">Loading…</option>');
+  $.get(`${BASE}admin/milestones/by-project/${pid}`, res => {
+    const rows = res.data || [];
+    let opts = '<option value="">— Not tied to a milestone —</option>';
+    rows.forEach(m => opts += `<option value="${m.id}">${m.title}</option>`);
+    $ms.html(opts);
+  }).fail(() => $ms.html('<option value="">— Not tied to a milestone —</option>'));
 });
 
 $('#addTaskForm').on('submit', function(e) {
