@@ -50,6 +50,15 @@ class DashboardController extends BaseController
         ]);
     }
 
+    // Polled by the bell dropdown for live updates (list + unread count).
+    public function notificationsRecent() {
+        $nm = new NotificationModel();
+        return $this->response->setJSON([
+            'notifications' => $nm->getUserNotifications(session()->get('user_id'), 8),
+            'unread'        => $nm->getUnreadCount(session()->get('user_id')),
+        ]);
+    }
+
     public function markRead($id) {
         (new NotificationModel())->markRead($id);
         return $this->jsonSuccess('Marked as read');

@@ -9,11 +9,31 @@ use App\Models\AgreementModel;
 use App\Models\DocumentModel;
 use App\Models\MilestoneModel;
 use App\Models\MilestoneNoteModel;
+use App\Models\NotificationModel;
 use App\Services\NotificationService;
 
 class PortalController extends BaseController
 {
     protected function cid(): int { return (int) session()->get('client_id'); }
+
+    // Polled by the portal bell dropdown for live updates (list + unread count).
+    public function notificationsRecent() {
+        $nm = new NotificationModel();
+        return $this->response->setJSON([
+            'notifications' => $nm->getUserNotifications(session()->get('user_id'), 8),
+            'unread'        => $nm->getUnreadCount(session()->get('user_id')),
+        ]);
+    }
+
+    public function markNotificationRead($id) {
+        (new NotificationModel())->markRead($id);
+        return $this->jsonSuccess('Marked as read');
+    }
+
+    public function markAllNotificationsRead() {
+        (new NotificationModel())->markAllRead(session()->get('user_id'));
+        return $this->jsonSuccess('All marked as read');
+    }
 
     public function dashboard() {
         $cid = $this->cid();
@@ -153,6 +173,10 @@ class PortalController extends BaseController
                 'accepted_at' => date('Y-m-d H:i:s'),
                 'updated_at'  => date('Y-m-d H:i:s'),
             ]);
+            (new NotificationService())->create(
+                0, 'proposal_accepted', 'Proposal Accepted',
+                "\"{$p['title']}\" was accepted by the client", (int) $id, 'proposal'
+            );
             return $this->jsonSuccess('Thank you! The proposal has been accepted.');
         }
 
@@ -161,6 +185,10 @@ class PortalController extends BaseController
                 'status'     => 'revision',
                 'updated_at' => date('Y-m-d H:i:s'),
             ]);
+            (new NotificationService())->create(
+                0, 'proposal_revision', 'Revision Requested',
+                "Client requested a revision on \"{$p['title']}\"", (int) $id, 'proposal'
+            );
             return $this->jsonSuccess('Revision requested. We will get back to you shortly.');
         }
 
@@ -184,9 +212,17 @@ class PortalController extends BaseController
         $action = $this->request->getPost('action');
         if ($action === 'sign') {
             $this->db->table('agreements')->where('id',$id)->update(['status'=>'signed','signed_at'=>date('Y-m-d H:i:s'),'signature_ip'=>$this->request->getIPAddress()]);
+            (new NotificationService())->create(
+                0, 'agreement_signed', 'Agreement Signed',
+                "\"{$ag['title']}\" was signed by the client", (int) $id, 'agreement'
+            );
             return redirect()->to('portal/agreements')->with('success','Agreement signed successfully!');
         }
         $this->db->table('agreements')->where('id',$id)->update(['status'=>'rejected']);
+        (new NotificationService())->create(
+            0, 'agreement_rejected', 'Agreement Rejected',
+            "\"{$ag['title']}\" was rejected by the client", (int) $id, 'agreement'
+        );
         return redirect()->to('portal/agreements')->with('info','Agreement rejected.');
     }
 

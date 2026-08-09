@@ -7,6 +7,7 @@ use App\Models\ClientModel;
 use App\Services\PDFService;
 use App\Services\EmailService;
 use App\Services\WhatsAppService;
+use App\Services\NotificationService;
 
 class AgreementController extends BaseController
 {
@@ -149,6 +150,7 @@ class AgreementController extends BaseController
         $res = (new EmailService())->send($a['client_email'], "Agreement: {$a['title']}", $body, $path);
         if ($res) {
             $this->am->update($id, ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);
+            (new NotificationService())->createForClient($a['client_id'], 'agreement_sent', 'Agreement Ready to Sign', "\"{$a['title']}\" needs your signature", (int) $id, 'agreement');
             return $this->jsonSuccess('Email sent!');
         }
         return $this->jsonError('Failed to send email.');
@@ -165,6 +167,7 @@ class AgreementController extends BaseController
         $res = (new WhatsAppService())->sendMessage($a['client_whatsapp'], $msg);
         if ($res) {
             $this->am->update($id, ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);
+            (new NotificationService())->createForClient($a['client_id'], 'agreement_sent', 'Agreement Ready to Sign', "\"{$a['title']}\" needs your signature", (int) $id, 'agreement');
             return $this->jsonSuccess('WhatsApp sent!');
         }
         return $this->jsonError('Failed to send WhatsApp message.');

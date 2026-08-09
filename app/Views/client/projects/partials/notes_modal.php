@@ -71,10 +71,18 @@
       const id = $('#msNoteMilestoneId').val();
       const msg = $('#msNoteMessage').val().trim();
       if (!msg) return;
+      const $btn = $(this).find('button[type=submit]');
+      const $input = $('#msNoteMessage');
+      $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+      $input.prop('disabled', true);
       $.post(NOTES_BASE + id, { message: msg, csrf_test_name: CSRF }, function (res) {
-        if (res.success) { $('#msNoteMessage').val(''); loadThread(id); }
+        if (res.success) { $input.val(''); loadThread(id); }
+        else alert(res.message || 'Could not send note. Please try again.');
       }).fail(function () {
         alert('Could not send note. Please try again.');
+      }).always(function () {
+        $btn.prop('disabled', false).html('<i class="bi bi-send"></i>');
+        $input.prop('disabled', false).focus();
       });
     });
 })(jQuery);

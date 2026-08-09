@@ -24,6 +24,7 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->get('/', 'Admin\DashboardController::index');
         $routes->get('dashboard', 'Admin\DashboardController::index');
         $routes->get('notifications', 'Admin\DashboardController::notifications');
+        $routes->get('notifications/recent', 'Admin\DashboardController::notificationsRecent');
         $routes->post('notifications/read/(:num)', 'Admin\DashboardController::markRead/$1');
         $routes->post('notifications/read-all', 'Admin\DashboardController::markAllRead');
         $routes->get('ajax/clients', 'Admin\DashboardController::ajaxClients');
@@ -202,6 +203,9 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
     $routes->group('portal', ['filter' => 'clientauth'], function ($routes) {
         $routes->get('/', 'Client\PortalController::dashboard');
         $routes->get('dashboard', 'Client\PortalController::dashboard');
+        $routes->get('notifications/recent', 'Client\PortalController::notificationsRecent');
+        $routes->post('notifications/read/(:num)', 'Client\PortalController::markNotificationRead/$1');
+        $routes->post('notifications/read-all', 'Client\PortalController::markAllNotificationsRead');
         $routes->get('projects', 'Client\PortalController::projects');
         $routes->get('projects/(:num)', 'Client\PortalController::projectDetail/$1');
         $routes->get('invoices', 'Client\PortalController::invoices');

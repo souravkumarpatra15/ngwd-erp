@@ -121,6 +121,21 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .fw-bold, strong { font-family: 'Sora', '
       <button class="btn btn-sm btn-outline-secondary me-2" id="portalSidebarOpen" type="button"><i class="bi bi-list fs-5"></i></button>
       <span class="navbar-brand mb-0 h6 text-truncate"><?= $title ?? '' ?></span>
       <div class="ms-auto d-flex align-items-center gap-2 gap-md-3">
+        <div class="dropdown">
+          <a class="btn btn-sm btn-outline-secondary position-relative" data-bs-toggle="dropdown" href="#" id="notifBellBtn">
+            <i class="bi bi-bell"></i>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="notifBadge" style="font-size:9px"></span>
+          </a>
+          <div class="dropdown-menu dropdown-menu-end shadow p-0" style="width:300px">
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+              <strong class="small">Notifications</strong>
+              <a href="#" class="text-muted small" id="markAllRead">Mark all read</a>
+            </div>
+            <div id="notifList" style="max-height:280px;overflow-y:auto">
+              <p class="text-center text-muted py-3 small">Loading…</p>
+            </div>
+          </div>
+        </div>
         <span class="small text-muted d-none d-sm-inline"><i class="bi bi-person-circle me-1"></i><?= esc($current_user['name'] ?? '') ?></span>
         <a href="<?= base_url('logout') ?>" class="btn btn-sm btn-outline-danger"><i class="bi bi-box-arrow-right me-1"></i><span class="d-none d-sm-inline">Logout</span></a>
       </div>
@@ -235,6 +250,62 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .fw-bold, strong { font-family: 'Sora', '
     backdrop?.addEventListener('click', closeSidebar);
     document.querySelectorAll('.portal-link').forEach(a => a.addEventListener('click', closeSidebar));
   })();
+
+  // Belt-and-braces: guarantee showLoader()'s overlay always clears after
+  // an AJAX request finishes, even if the call site's own callback forgot
+  // a .fail() handler (the usual cause of a stuck "Sending..." overlay).
+  $(document).ajaxComplete(function () { if (typeof hideLoader === 'function') hideLoader(); });
+
+  // Live notification bell — poll every 25s, render list, badge, and
+  // beep once when new notifications arrive since the last check.
+  let notifSeenIds = null;
+  function timeAgo(iso) {
+    const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.floor(s / 60) + 'm ago';
+    if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+    return Math.floor(s / 86400) + 'd ago';
+  }
+  function renderNotifList(items) {
+    if (!items.length) return '<p class="text-center text-muted py-3 small mb-0">No notifications yet</p>';
+    return items.map(n => `
+      <a href="#" class="dropdown-item notif-item ${n.is_read == 0 ? 'bg-light' : ''}" data-id="${n.id}" style="white-space:normal;border-bottom:1px solid #f0f0f0;padding:10px 14px">
+        <div class="d-flex justify-content-between">
+          <strong class="small">${n.title}</strong>
+          ${n.is_read == 0 ? '<span class="badge bg-primary rounded-pill" style="font-size:8px">new</span>' : ''}
+        </div>
+        <div class="small text-muted">${n.message || ''}</div>
+        <div class="small text-muted" style="font-size:10px">${timeAgo(n.created_at)}</div>
+      </a>`).join('');
+  }
+  function loadNotifications() {
+    $.get('<?= base_url('portal/notifications/recent') ?>', res => {
+      const badge = document.getElementById('notifBadge');
+      if (res.unread > 0) { badge.textContent = res.unread; badge.classList.remove('d-none'); }
+      else { badge.classList.add('d-none'); }
+      document.getElementById('notifList').innerHTML = renderNotifList(res.notifications);
+
+      const ids = res.notifications.map(n => n.id).join(',');
+      if (notifSeenIds !== null && ids !== notifSeenIds && res.unread > 0) {
+        const newestKnown = notifSeenIds.split(',')[0];
+        if (res.notifications.length && String(res.notifications[0].id) !== newestKnown) playNotifSound();
+      }
+      notifSeenIds = ids;
+    }).fail(() => {});
+  }
+  const csrfToken = document.querySelector('meta[name=csrf-token]')?.content || '';
+  document.getElementById('markAllRead')?.addEventListener('click', e => {
+    e.preventDefault();
+    $.post('<?= base_url('portal/notifications/read-all') ?>', { csrf_test_name: csrfToken }, () => loadNotifications());
+  });
+  document.addEventListener('click', e => {
+    const item = e.target.closest('.notif-item');
+    if (!item) return;
+    e.preventDefault();
+    $.post(`<?= base_url('portal/notifications/read/') ?>${item.dataset.id}`, { csrf_test_name: csrfToken }, () => loadNotifications());
+  });
+  loadNotifications();
+  setInterval(loadNotifications, 25000);
 </script>
 <?= $this->renderSection('scripts') ?>
 </body>

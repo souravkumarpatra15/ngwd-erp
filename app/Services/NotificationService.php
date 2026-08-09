@@ -49,6 +49,25 @@ class NotificationService
         $this->insertNotification($userId, $type, $title, $message, $referenceId, $referenceType);
     }
 
+    /**
+     * Notify a client's portal login (resolves client_id -> their users.id).
+     * No-op if that client has no portal login yet.
+     */
+    public function createForClient(
+        int    $clientId,
+        string $type,
+        string $title,
+        string $message      = '',
+        int    $referenceId  = 0,
+        string $referenceType = ''
+    ): void {
+        $db   = \Config\Database::connect();
+        $user = $db->table('users')->where('client_id', $clientId)->where('role', 'client')->get()->getRowArray();
+        if ($user) {
+            $this->insertNotification((int) $user['id'], $type, $title, $message, $referenceId, $referenceType);
+        }
+    }
+
     private function insertNotification(
         int $userId, string $type, string $title,
         string $message, int $referenceId, string $referenceType

@@ -104,7 +104,7 @@
           <td class="fw-semibold small"><?= esc($p['payment_number']) ?></td>
           <td class="small"><?= esc($p['client_name'] ?? '—') ?></td>
           <td class="small text-muted"><?= esc($p['invoice_number'] ?? '—') ?></td>
-          <td class="fw-bold text-success">₹<?= number_format($p['amount'],2) ?></td>
+          <td class="fw-bold text-success"><?= currencySymbol($p['currency'] ?? 'INR') ?><?= number_format($p['amount'],2) ?></td>
           <td><span class="badge bg-light text-dark border small"><?= ucwords(str_replace('_',' ',$p['method']??'')) ?></span></td>
           <td class="font-monospace small text-muted"><?= esc($p['transaction_id'] ?? '—') ?></td>
           <td class="small"><?= $p['payment_date'] ? date('d M Y',strtotime($p['payment_date'])) : date('d M Y',strtotime($p['created_at'])) ?></td>

@@ -82,9 +82,9 @@
           <td class="small text-muted"><?= esc($inv['project_name'] ?? '—') ?></td>
           <td class="small"><?= date('d M Y',strtotime($inv['invoice_date'])) ?></td>
           <td class="small <?= $isOverdue ? 'text-danger fw-semibold' : '' ?>"><?= date('d M Y',strtotime($inv['due_date'])) ?></td>
-          <td class="fw-semibold small">₹<?= number_format($inv['total'],0) ?></td>
-          <td class="small text-success">₹<?= number_format($inv['paid_amount'],0) ?></td>
-          <td class="small <?= $bal > 0 ? 'text-danger fw-semibold' : 'text-success' ?>">₹<?= number_format($bal,0) ?></td>
+          <td class="fw-semibold small"><?= currencySymbol($inv['currency'] ?? 'INR') ?><?= number_format($inv['total'],0) ?></td>
+          <td class="small text-success"><?= currencySymbol($inv['currency'] ?? 'INR') ?><?= number_format($inv['paid_amount'],0) ?></td>
+          <td class="small <?= $bal > 0 ? 'text-danger fw-semibold' : 'text-success' ?>"><?= currencySymbol($inv['currency'] ?? 'INR') ?><?= number_format($bal,0) ?></td>
           <td><span class="badge bg-<?= $sc[$inv['status']] ?? 'secondary' ?>"><?= ucfirst($inv['status']) ?></span></td>
         </tr>
         <?php endforeach; ?>

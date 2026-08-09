@@ -25,7 +25,7 @@ class TicketController extends BaseController
         }
         $no = sprintf('TKT/%s/%05d',date('Y'),$this->tm->countAll()+1);
         $id = $this->tm->insert(['ticket_number'=>$no,'client_id'=>session()->get('client_id'),'project_id'=>$this->request->getPost('project_id')?:null,'subject'=>$this->request->getPost('subject'),'description'=>$this->request->getPost('description'),'priority'=>$this->request->getPost('priority'),'status'=>'open']);
-        (new NotificationService())->create(1,'new_ticket','New Support Ticket','New ticket: '.$this->request->getPost('subject'),$id,'ticket');
+        (new NotificationService())->create(0,'new_ticket','New Support Ticket','New ticket: '.$this->request->getPost('subject'),$id,'ticket');
         return redirect()->to("portal/tickets/$id")->with('success','Ticket created: '.$no);
     }
 
@@ -40,6 +40,7 @@ class TicketController extends BaseController
         $ticket = $this->tm->where('id',$id)->where('client_id',session()->get('client_id'))->first();
         if (!$ticket || $ticket['status']==='closed') return $this->jsonError('Cannot reply');
         $this->rm->insert(['ticket_id'=>$id,'user_id'=>session()->get('user_id'),'message'=>$this->request->getPost('message'),'is_admin'=>0]);
+        (new NotificationService())->create(0,'ticket_reply','Client Replied to Ticket','Re: '.$ticket['subject'],$id,'ticket');
         return $this->jsonSuccess('Reply added');
     }
 }

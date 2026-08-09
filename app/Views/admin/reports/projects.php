@@ -81,8 +81,8 @@
           </td>
           <td class="small text-muted"><?= esc($p['client_name'] ?? '—') ?></td>
           <td><span class="badge bg-light text-dark border small"><?= ucwords(str_replace('_',' ',$p['type'] ?? '')) ?></span></td>
-          <td class="fw-semibold small">₹<?= number_format($p['budget'] ?? 0, 0) ?></td>
-          <td class="small text-success">₹<?= number_format($p['advance_paid'] ?? 0, 0) ?></td>
+          <td class="fw-semibold small"><?= currencySymbol($p['currency'] ?? 'INR') ?><?= number_format($p['budget'] ?? 0, 0) ?></td>
+          <td class="small text-success"><?= currencySymbol($p['currency'] ?? 'INR') ?><?= number_format($p['advance_paid'] ?? 0, 0) ?></td>
           <td><span class="badge bg-<?= $sc[$p['status']] ?? 'secondary' ?>"><?= ucwords(str_replace('_',' ',$p['status'])) ?></span></td>
           <td class="small text-muted"><?= ($p['delivery_date']??null) && $p['delivery_date'] !== '0000-00-00' ? date('d M Y',strtotime($p['delivery_date'])) : '—' ?></td>
         </tr>

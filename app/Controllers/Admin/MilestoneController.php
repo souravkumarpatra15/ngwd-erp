@@ -5,6 +5,7 @@ namespace App\Controllers\Admin;
 use App\Controllers\BaseController;
 use App\Models\MilestoneModel;
 use App\Models\MilestoneNoteModel;
+use App\Services\NotificationService;
 use App\Services\PaymentService;
 
 class MilestoneController extends BaseController
@@ -60,6 +61,13 @@ class MilestoneController extends BaseController
         if (!$ms) return $this->jsonError('Milestone not found.');
         if (in_array($ms['status'], ['completed', 'paid'])) return $this->jsonError('This milestone is already completed/paid.');
         $order = (new PaymentService())->createOrder($ms['amount'], 'milestone', $id, $ms['client_id']);
+        if ($order) {
+            (new NotificationService())->createForClient(
+                (int) $ms['client_id'], 'payment_due', 'Payment Link Ready',
+                "\"{$ms['title']}\" — " . currencySymbol($ms['currency'] ?? 'INR') . number_format($ms['amount'], 2) . ' is ready to pay',
+                (int) $id, 'milestone'
+            );
+        }
         return $order ? $this->jsonSuccess('Link created', ['url' => base_url("portal/pay-milestone/$id"), 'order' => $order]) : $this->jsonError('Could not create Razorpay order. Check your keys in Settings.');
     }
 
@@ -88,7 +96,8 @@ class MilestoneController extends BaseController
         if ($message === '') return $this->jsonError('Note cannot be empty.');
 
         $ms = $this->db->table('milestones')
-            ->select('milestones.id')
+            ->select('milestones.id, milestones.title, projects.client_id')
+            ->join('projects', 'projects.id = milestones.project_id', 'left')
             ->where('milestones.id', $id)->get()->getRowArray();
         if (!$ms) return $this->jsonError('Milestone not found.');
 
@@ -98,6 +107,13 @@ class MilestoneController extends BaseController
             'message'      => $message,
             'is_admin'     => 1,
         ]);
+
+        if (!empty($ms['client_id'])) {
+            (new NotificationService())->createForClient(
+                (int) $ms['client_id'], 'milestone_note', 'New Note on Milestone',
+                "\"{$ms['title']}\": {$message}", (int) $id, 'milestone'
+            );
+        }
 
         return $this->jsonSuccess('Note added');
     }

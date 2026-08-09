@@ -7,6 +7,12 @@ $.ajaxSetup({ headers: { 'X-CSRF-Token': CSRF_TOKEN } });
 const CURRENCY_SYMBOLS = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AUD: 'A$', CAD: 'C$', AED: 'د.إ', SGD: 'S$' };
 function curSym(code) { return CURRENCY_SYMBOLS[code] || (code ? code + ' ' : '₹'); }
 
+// Belt-and-braces: after ANY jQuery AJAX request finishes — success or
+// error — make sure the loader isn't left spinning. Individual showLoader()
+// call sites that only hide it on success (missing a .fail() handler) are
+// the most common cause of a stuck "Sending..." overlay.
+$(document).ajaxComplete(function () { if (typeof hideLoader === 'function') hideLoader(); });
+
 // Select2
 $(document).ready(function () {
   $('select.select2').select2({ theme: 'bootstrap-5', width: '100%' });

@@ -4,6 +4,7 @@ use App\Controllers\BaseController;
 use App\Models\TicketModel;
 use App\Models\TicketReplyModel;
 use App\Services\EmailService;
+use App\Services\NotificationService;
 
 class TicketController extends BaseController
 {
@@ -29,6 +30,7 @@ class TicketController extends BaseController
         (new TicketModel())->update($id, ['status'=>'in_progress']);
         $client = $this->db->table('clients')->where('id',$ticket['client_id'])->get()->getRowArray();
         (new EmailService())->send($client['email'],"Reply on Ticket #{$ticket['ticket_number']}","<p>Dear {$client['name']},</p><p><strong>Reply:</strong><br>{$msg}</p><p>View: ".base_url("portal/tickets/$id")."</p>");
+        (new NotificationService())->createForClient($ticket['client_id'], 'ticket_reply', 'New Reply on Your Ticket', "Re: {$ticket['subject']}", (int) $id, 'ticket');
         return $this->jsonSuccess('Reply sent');
     }
 

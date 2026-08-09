@@ -40,7 +40,15 @@ class WebhookController extends BaseController
                 $pr = $prm->find($inv['project_id']);
                 $prm->update($inv['project_id'],['total_paid'=>$pr['total_paid']+$order['amount']]);
             }
+            $currency = $inv['currency'] ?? 'INR';
+        } elseif ($order['entity_type']==='milestone') {
+            $ms = (new \App\Models\MilestoneModel())->find($order['entity_id']);
+            $currency = $ms['currency'] ?? 'INR';
+        } else {
+            $currency = 'INR';
         }
-        (new NotificationService())->create(1,'payment_received','Payment Received','₹'.$order['amount'].' via Razorpay',$pid,'payment');
+        $amountStr = currencySymbol($currency) . number_format($order['amount'], 2);
+        (new NotificationService())->create(0,'payment_received','Payment Received',$amountStr.' via Razorpay',$pid,'payment');
+        (new NotificationService())->createForClient((int) $order['client_id'],'payment_confirmed','Payment Received',"We've received your payment of {$amountStr}. Thank you!",$pid,'payment');
     }
 }

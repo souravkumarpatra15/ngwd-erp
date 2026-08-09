@@ -13,6 +13,7 @@ use App\Models\HostingModel;
 use App\Services\PDFService;
 use App\Services\EmailService;
 use App\Services\WhatsAppService;
+use App\Services\NotificationService;
 use App\Services\PaymentService;
 
 class InvoiceController extends BaseController
@@ -247,6 +248,7 @@ class InvoiceController extends BaseController
         $res     = (new EmailService())->sendInvoice($invoice, $path);
         if ($res) {
             $this->im->update($id, ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);
+            (new NotificationService())->createForClient($invoice['client_id'], 'invoice_sent', 'New Invoice', "Invoice {$invoice['invoice_number']} — " . currencySymbol($invoice['currency'] ?? 'INR') . number_format($invoice['total'], 2), (int) $id, 'invoice');
             return $this->jsonSuccess('Invoice emailed!');
         }
         return $this->jsonError('Failed to send email.');
@@ -261,6 +263,7 @@ class InvoiceController extends BaseController
         $res = (new WhatsAppService())->sendMessage($inv['client_whatsapp'], $msg);
         if ($res) {
             $this->im->update($id, ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);
+            (new NotificationService())->createForClient($inv['client_id'], 'invoice_sent', 'New Invoice', "Invoice {$inv['invoice_number']} — " . currencySymbol($inv['currency'] ?? 'INR') . number_format($inv['total'], 2), (int) $id, 'invoice');
             return $this->jsonSuccess('WhatsApp sent!');
         }
         return $this->jsonError('Failed.');

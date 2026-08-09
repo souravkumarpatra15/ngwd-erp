@@ -68,7 +68,7 @@
           <td><a href="<?= base_url('admin/payments/'.($p['id']??'')) ?>" class="fw-semibold text-decoration-none small"><?= esc($p['payment_number']) ?></a></td>
           <td class="small"><?= esc($p['client_name'] ?? '—') ?></td>
           <td class="small text-muted"><?= esc($p['project_name'] ?? '—') ?></td>
-          <td class="fw-bold text-success">₹<?= number_format($p['amount'], 2) ?></td>
+          <td class="fw-bold text-success"><?= currencySymbol($p['currency'] ?? 'INR') ?><?= number_format($p['amount'], 2) ?></td>
           <td><span class="badge bg-light text-dark border small"><?= ucwords(str_replace('_',' ',$p['method']??'')) ?></span></td>
           <td class="small text-muted"><?= $p['payment_date'] ? date('d M Y',strtotime($p['payment_date'])) : '—' ?></td>
         </tr>

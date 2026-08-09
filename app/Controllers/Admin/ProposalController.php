@@ -8,6 +8,7 @@ use App\Models\ClientModel;
 use App\Services\PDFService;
 use App\Services\EmailService;
 use App\Services\WhatsAppService;
+use App\Services\NotificationService;
 
 class ProposalController extends BaseController
 {
@@ -62,6 +63,7 @@ class ProposalController extends BaseController
         $res = (new EmailService())->sendProposal($p, $path);
         if ($res) {
             $this->pm->update($id, ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);
+            (new NotificationService())->createForClient($p['client_id'], 'proposal_sent', 'New Proposal', "\"{$p['title']}\" is ready for your review", (int) $id, 'proposal');
             return $this->jsonSuccess('Emailed!');
         }
         return $this->jsonError('Failed');
@@ -73,6 +75,7 @@ class ProposalController extends BaseController
         $res = (new WhatsAppService())->sendMessage($p['client_whatsapp'], $msg);
         if ($res) {
             $this->pm->update($id, ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);
+            (new NotificationService())->createForClient($p['client_id'], 'proposal_sent', 'New Proposal', "\"{$p['title']}\" is ready for your review", (int) $id, 'proposal');
             return $this->jsonSuccess('WhatsApp sent!');
         }
         return $this->jsonError('Failed');

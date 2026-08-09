@@ -123,11 +123,9 @@
 
           <!-- Notifications -->
           <li class="nav-item dropdown">
-            <a class="btn btn-sm btn-outline-secondary position-relative" data-bs-toggle="dropdown" href="#">
+            <a class="btn btn-sm btn-outline-secondary position-relative" data-bs-toggle="dropdown" href="#" id="notifBellBtn">
               <i class="bi bi-bell fs-6"></i>
-              <?php if (($unread_notifications ?? 0) > 0): ?>
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:9px"><?= $unread_notifications ?></span>
-              <?php endif; ?>
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="notifBadge" style="font-size:9px"></span>
             </a>
             <div class="dropdown-menu dropdown-menu-end shadow p-0" style="width:320px">
               <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
@@ -135,7 +133,7 @@
                 <a href="#" class="text-muted small" id="markAllRead">Mark all read</a>
               </div>
               <div id="notifList" style="max-height:280px;overflow-y:auto">
-                <p class="text-center text-muted py-3 small">No new notifications</p>
+                <p class="text-center text-muted py-3 small">Loading…</p>
               </div>
               <div class="p-2 border-top text-center">
                 <a href="<?= base_url('admin/notifications') ?>" class="text-primary small">View All</a>
@@ -314,10 +312,56 @@
       $.post('<?= base_url('admin/notifications/read-all') ?>', {
         csrf_test_name: $('meta[name=csrf-token]').attr('content')
       }, () => {
-        document.querySelector('.badge.bg-danger')?.remove();
+        loadNotifications();
         showToast('All notifications marked as read', 'info');
       });
     });
+
+    // Live notification bell — poll every 25s, render list, badge, and
+    // beep once when new notifications arrive since the last check.
+    let notifSeenIds = null;
+    function timeAgo(iso) {
+      const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+      if (s < 60) return 'just now';
+      if (s < 3600) return Math.floor(s / 60) + 'm ago';
+      if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+      return Math.floor(s / 86400) + 'd ago';
+    }
+    function renderNotifList(items) {
+      if (!items.length) return '<p class="text-center text-muted py-3 small mb-0">No notifications yet</p>';
+      return items.map(n => `
+        <a href="#" class="dropdown-item notif-item ${n.is_read == 0 ? 'bg-light' : ''}" data-id="${n.id}" style="white-space:normal;border-bottom:1px solid #f0f0f0;padding:10px 14px">
+          <div class="d-flex justify-content-between">
+            <strong class="small">${n.title}</strong>
+            ${n.is_read == 0 ? '<span class="badge bg-primary rounded-pill" style="font-size:8px">new</span>' : ''}
+          </div>
+          <div class="small text-muted">${n.message || ''}</div>
+          <div class="small text-muted" style="font-size:10px">${timeAgo(n.created_at)}</div>
+        </a>`).join('');
+    }
+    function loadNotifications() {
+      $.get('<?= base_url('admin/notifications/recent') ?>', res => {
+        const badge = document.getElementById('notifBadge');
+        if (res.unread > 0) { badge.textContent = res.unread; badge.classList.remove('d-none'); }
+        else { badge.classList.add('d-none'); }
+        document.getElementById('notifList').innerHTML = renderNotifList(res.notifications);
+
+        const ids = res.notifications.map(n => n.id).join(',');
+        if (notifSeenIds !== null && ids !== notifSeenIds && res.unread > 0) {
+          const newestKnown = notifSeenIds.split(',')[0];
+          if (res.notifications.length && String(res.notifications[0].id) !== newestKnown) playNotifSound();
+        }
+        notifSeenIds = ids;
+      }).fail(() => {});
+    }
+    document.addEventListener('click', e => {
+      const item = e.target.closest('.notif-item');
+      if (!item) return;
+      e.preventDefault();
+      $.post(`<?= base_url('admin/notifications/read/') ?>${item.dataset.id}`, { csrf_test_name: CSRF_TOKEN }, () => loadNotifications());
+    });
+    loadNotifications();
+    setInterval(loadNotifications, 25000);
   </script>
   <?= $this->renderSection('scripts') ?>
 </body>

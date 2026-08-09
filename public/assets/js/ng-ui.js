@@ -1,6 +1,43 @@
 /* ===============================
+   NGWebD Notification Sound
+   Web Audio beep — no external audio file to host/miss.
+   Browsers block audio until a user gesture, so the context is created
+   lazily on first click/keypress and reused (not recreated) after that.
+================================ */
+let ngAudioCtx = null;
+function ngUnlockAudio() {
+  if (ngAudioCtx) return;
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (Ctx) ngAudioCtx = new Ctx();
+}
+document.addEventListener('click', ngUnlockAudio, { once: true });
+document.addEventListener('keydown', ngUnlockAudio, { once: true });
+
+function playNotifSound() {
+  try {
+    if (!ngAudioCtx) return; // no user gesture yet — browser would block it anyway
+    if (ngAudioCtx.state === 'suspended') ngAudioCtx.resume();
+    [0, 0.12].forEach((delay, i) => {
+      const osc = ngAudioCtx.createOscillator();
+      const gain = ngAudioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = i === 0 ? 880 : 1108;
+      gain.gain.setValueAtTime(0.001, ngAudioCtx.currentTime + delay);
+      gain.gain.linearRampToValueAtTime(0.15, ngAudioCtx.currentTime + delay + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, ngAudioCtx.currentTime + delay + 0.18);
+      osc.connect(gain).connect(ngAudioCtx.destination);
+      osc.start(ngAudioCtx.currentTime + delay);
+      osc.stop(ngAudioCtx.currentTime + delay + 0.2);
+    });
+  } catch (e) { /* audio not available — fail silently */ }
+}
+
+
+/* ===============================
    NGWebD Loader
 ================================ */
+let ngLoaderFailsafe = null;
+
 function showLoader(text = "Please wait...") {
   const loader = document.getElementById("ngLoader");
   const loaderText = document.getElementById("ngLoaderText");
@@ -12,10 +49,17 @@ function showLoader(text = "Please wait...") {
   if (loader) {
     loader.classList.add("show");
   }
+
+  // Failsafe: if whatever triggered this never calls hideLoader() (e.g. a
+  // request errors out with no .fail() handler, or times out silently),
+  // force it closed after 20s instead of leaving the user stuck forever.
+  clearTimeout(ngLoaderFailsafe);
+  ngLoaderFailsafe = setTimeout(hideLoader, 20000);
 }
 
 function hideLoader() {
   const loader = document.getElementById("ngLoader");
+  clearTimeout(ngLoaderFailsafe);
 
   if (loader) {
     loader.classList.remove("show");

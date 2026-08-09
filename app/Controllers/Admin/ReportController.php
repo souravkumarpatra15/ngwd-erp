@@ -24,10 +24,12 @@ class ReportController extends BaseController
         $month = (int) ($this->request->getGet('month') ?? 0);
 
         $b = $this->db->table('payments')
-            ->select('payments.*, clients.name as client_name, projects.name as project_name, invoices.invoice_number')
+            ->select("payments.*, clients.name as client_name, projects.name as project_name, invoices.invoice_number,
+                      COALESCE(invoices.currency, milestones.currency, 'INR') as currency")
             ->join('clients',  'clients.id  = payments.client_id',  'left')
             ->join('projects', 'projects.id = payments.project_id', 'left')
             ->join('invoices', 'invoices.id = payments.invoice_id', 'left')
+            ->join('milestones', 'milestones.id = payments.milestone_id', 'left')
             ->where('payments.status', 'completed')
             ->where("YEAR(payments.created_at)", $year);
 
@@ -127,9 +129,11 @@ class ReportController extends BaseController
         $method = $this->request->getGet('method') ?? '';
 
         $b = $this->db->table('payments')
-            ->select('payments.*, clients.name as client_name, invoices.invoice_number')
+            ->select("payments.*, clients.name as client_name, invoices.invoice_number,
+                      COALESCE(invoices.currency, milestones.currency, 'INR') as currency")
             ->join('clients',  'clients.id  = payments.client_id',  'left')
             ->join('invoices', 'invoices.id = payments.invoice_id', 'left')
+            ->join('milestones', 'milestones.id = payments.milestone_id', 'left')
             ->where('payments.status', 'completed')
             ->where("YEAR(payments.created_at)", $year);
 
@@ -224,15 +228,17 @@ class ReportController extends BaseController
                 $filename = "revenue_{$year}";
                 $headers  = ['Payment #', 'Client', 'Project', 'Invoice', 'Amount', 'Method', 'Date'];
                 $rows     = $this->db->table('payments')
-                    ->select('payments.payment_number, clients.name as client_name, projects.name as project_name, invoices.invoice_number, payments.amount, payments.method, payments.created_at')
+                    ->select("payments.payment_number, clients.name as client_name, projects.name as project_name, invoices.invoice_number, payments.amount, payments.method, payments.created_at,
+                              COALESCE(invoices.currency, milestones.currency, 'INR') as currency")
                     ->join('clients', 'clients.id=payments.client_id', 'left')
                     ->join('projects', 'projects.id=payments.project_id', 'left')
                     ->join('invoices', 'invoices.id=payments.invoice_id', 'left')
+                    ->join('milestones', 'milestones.id=payments.milestone_id', 'left')
                     ->where('payments.status', 'completed')
                     ->where("YEAR(payments.created_at)", (int)$year)
                     ->get()->getResultArray();
                 foreach ($rows as $r) {
-                    $data[] = [$r['payment_number'], $r['client_name'], $r['project_name'], $r['invoice_number'], '₹' . $r['amount'], $r['method'], date('d M Y', strtotime($r['created_at']))];
+                    $data[] = [$r['payment_number'], $r['client_name'], $r['project_name'], $r['invoice_number'], ($r['currency'] ?? 'INR') . ' ' . $r['amount'], $r['method'], date('d M Y', strtotime($r['created_at']))];
                 }
                 break;
 
@@ -256,7 +262,7 @@ class ReportController extends BaseController
                     ->where("YEAR(projects.created_at)", (int)$year)
                     ->get()->getResultArray();
                 foreach ($rows as $r) {
-                    $data[] = [$r['project_number'], $r['name'], $r['client_name'], $r['type'], '₹' . ($r['budget'] ?? 0), '₹' . ($r['advance_paid'] ?? 0), $r['status'], $r['delivery_date'] ?? ''];
+                    $data[] = [$r['project_number'], $r['name'], $r['client_name'], $r['type'], ($r['currency'] ?? 'INR') . ' ' . ($r['budget'] ?? 0), ($r['currency'] ?? 'INR') . ' ' . ($r['advance_paid'] ?? 0), $r['status'], $r['delivery_date'] ?? ''];
                 }
                 break;
 
@@ -271,7 +277,8 @@ class ReportController extends BaseController
                     ->get()->getResultArray();
                 foreach ($rows as $r) {
                     $bal = $r['balance_due'] ?? ($r['total'] - $r['paid_amount']);
-                    $data[] = [$r['invoice_number'], $r['client_name'], $r['project_name'], date('d M Y', strtotime($r['invoice_date'])), date('d M Y', strtotime($r['due_date'])), '₹' . $r['total'], '₹' . $r['paid_amount'], '₹' . $bal, $r['status']];
+                    $cur = ($r['currency'] ?? 'INR') . ' ';
+                    $data[] = [$r['invoice_number'], $r['client_name'], $r['project_name'], date('d M Y', strtotime($r['invoice_date'])), date('d M Y', strtotime($r['due_date'])), $cur . $r['total'], $cur . $r['paid_amount'], $cur . $bal, $r['status']];
                 }
                 break;
 
@@ -279,14 +286,16 @@ class ReportController extends BaseController
                 $filename = "payments_{$year}";
                 $headers  = ['Payment #', 'Client', 'Invoice', 'Amount', 'Method', 'Ref/UTR', 'Date'];
                 $rows     = $this->db->table('payments')
-                    ->select('payments.*, clients.name as client_name, invoices.invoice_number')
+                    ->select("payments.*, clients.name as client_name, invoices.invoice_number,
+                              COALESCE(invoices.currency, milestones.currency, 'INR') as currency")
                     ->join('clients', 'clients.id=payments.client_id', 'left')
                     ->join('invoices', 'invoices.id=payments.invoice_id', 'left')
+                    ->join('milestones', 'milestones.id=payments.milestone_id', 'left')
                     ->where('payments.status', 'completed')
                     ->where("YEAR(payments.created_at)", (int)$year)
                     ->get()->getResultArray();
                 foreach ($rows as $r) {
-                    $data[] = [$r['payment_number'], $r['client_name'], $r['invoice_number'] ?? '', '₹' . $r['amount'], $r['method'], $r['transaction_id'] ?? '', date('d M Y', strtotime($r['created_at']))];
+                    $data[] = [$r['payment_number'], $r['client_name'], $r['invoice_number'] ?? '', ($r['currency'] ?? 'INR') . ' ' . $r['amount'], $r['method'], $r['transaction_id'] ?? '', date('d M Y', strtotime($r['created_at']))];
                 }
                 break;
 

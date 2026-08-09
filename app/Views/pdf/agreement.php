@@ -82,6 +82,31 @@
       color: #666
     }
 
+    .digital-stamp {
+      display: inline-block;
+      border: 2px solid #16a34a;
+      border-radius: 8px;
+      color: #16a34a;
+      padding: 6px 10px;
+      transform: rotate(-3deg);
+      font-size: 9px;
+      line-height: 1.4;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    .digital-stamp .stamp-check {
+      font-size: 16px;
+      display: block;
+    }
+
+    .digital-stamp .stamp-name {
+      font-weight: bold;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+    }
+
     .footer {
       padding: 15px 40px;
       text-align: center;
@@ -177,7 +202,17 @@
         <div class="sign-meta"><strong><?= esc($settings['signatory_name'] ?? ($settings['company_name'] ?? '')) ?></strong><br><?= esc($settings['signatory_title'] ?? 'Service Provider') ?><br>Date: <?= !empty($agreement['sent_at']) ? date('d/m/Y', strtotime($agreement['sent_at'])) : date('d/m/Y') ?></div>
       </div>
       <div class="sign-col">
-        <div class="sign-line"></div>
+        <?php if ($agreement['status'] === 'signed'): ?>
+          <div class="digital-stamp">
+            <span class="stamp-check">&#10003;</span>
+            <span class="stamp-name"><?= esc($agreement['client_name']) ?></span><br>
+            Digitally Signed<br>
+            <?= date('d M Y, h:i A', strtotime($agreement['signed_at'])) ?><br>
+            IP: <?= esc($agreement['signature_ip'] ?? 'N/A') ?>
+          </div>
+        <?php else: ?>
+          <div class="sign-line"></div>
+        <?php endif; ?>
         <div class="sign-meta"><strong><?= esc($agreement['client_name']) ?></strong><br>Client<br>Date: <?= $agreement['status'] === 'signed' ? date('d/m/Y', strtotime($agreement['signed_at'])) : '_______________' ?></div>
       </div>
     </div>
