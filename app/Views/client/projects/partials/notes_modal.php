@@ -23,8 +23,6 @@
 <script>
 (function ($) {
     const NOTES_BASE = '<?= base_url('portal/milestones/notes/') ?>';
-    const csrfMeta = document.querySelector('meta[name=csrf-token]');
-    const CSRF = csrfMeta ? csrfMeta.content : '';
 
     function esc(s) { return $('<div>').text(s || '').html(); }
 
@@ -75,7 +73,7 @@
       const $input = $('#msNoteMessage');
       $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
       $input.prop('disabled', true);
-      $.post(NOTES_BASE + id, { message: msg, csrf_test_name: CSRF }, function (res) {
+      $.post(NOTES_BASE + id, { message: msg, csrf_test_name: getCsrfToken() }, function (res) {
         if (res.success) { $input.val(''); loadThread(id); }
         else alert(res.message || 'Could not send note. Please try again.');
       }).fail(function () {

@@ -310,7 +310,7 @@
     document.getElementById('markAllRead')?.addEventListener('click', e => {
       e.preventDefault();
       $.post('<?= base_url('admin/notifications/read-all') ?>', {
-        csrf_test_name: $('meta[name=csrf-token]').attr('content')
+        csrf_test_name: getCsrfToken()
       }, () => {
         loadNotifications();
         showToast('All notifications marked as read', 'info');
@@ -358,7 +358,7 @@
       const item = e.target.closest('.notif-item');
       if (!item) return;
       e.preventDefault();
-      $.post(`<?= base_url('admin/notifications/read/') ?>${item.dataset.id}`, { csrf_test_name: CSRF_TOKEN }, () => loadNotifications());
+      $.post(`<?= base_url('admin/notifications/read/') ?>${item.dataset.id}`, { csrf_test_name: getCsrfToken() }, () => loadNotifications());
     });
     loadNotifications();
     setInterval(loadNotifications, 25000);

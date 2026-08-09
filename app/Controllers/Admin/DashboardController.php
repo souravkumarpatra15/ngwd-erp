@@ -46,7 +46,7 @@ class DashboardController extends BaseController
     public function notifications() {
         return view('admin/notifications/index', [
             'title'         => 'Notifications',
-            'notifications' => (new NotificationModel())->getUserNotifications(session()->get('user_id')),
+            'notifications' => (new NotificationModel())->getUserNotifications(session()->get('user_id'), 100),
         ]);
     }
 

@@ -58,7 +58,7 @@
     const $input = $('#msNoteMessage');
     $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
     $input.prop('disabled', true);
-    $.post(NOTES_BASE + id, { message: msg, csrf_test_name: CSRF_TOKEN }, res => {
+    $.post(NOTES_BASE + id, { message: msg, csrf_test_name: getCsrfToken() }, res => {
       if (res.success) { $input.val(''); loadThread(id); }
       else alert(res.message || 'Could not send note. Please try again.');
     }).fail(() => {

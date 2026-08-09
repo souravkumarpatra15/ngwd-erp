@@ -293,16 +293,15 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .fw-bold, strong { font-family: 'Sora', '
       notifSeenIds = ids;
     }).fail(() => {});
   }
-  const csrfToken = document.querySelector('meta[name=csrf-token]')?.content || '';
   document.getElementById('markAllRead')?.addEventListener('click', e => {
     e.preventDefault();
-    $.post('<?= base_url('portal/notifications/read-all') ?>', { csrf_test_name: csrfToken }, () => loadNotifications());
+    $.post('<?= base_url('portal/notifications/read-all') ?>', { csrf_test_name: getCsrfToken() }, () => loadNotifications());
   });
   document.addEventListener('click', e => {
     const item = e.target.closest('.notif-item');
     if (!item) return;
     e.preventDefault();
-    $.post(`<?= base_url('portal/notifications/read/') ?>${item.dataset.id}`, { csrf_test_name: csrfToken }, () => loadNotifications());
+    $.post(`<?= base_url('portal/notifications/read/') ?>${item.dataset.id}`, { csrf_test_name: getCsrfToken() }, () => loadNotifications());
   });
   loadNotifications();
   setInterval(loadNotifications, 25000);

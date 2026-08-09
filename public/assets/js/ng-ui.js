@@ -1,4 +1,20 @@
 /* ===============================
+   NGWebD CSRF Token (always-fresh)
+   CI4 regenerates the CSRF token after every successful POST (Security
+   config: regenerate=true). A token captured once at page load — a JS
+   const or a static <meta> read — goes stale after the first POST,
+   causing 403s on any second request on the same page (chat-style
+   sends, repeated "mark as read" clicks, etc). CSRF here is cookie-based,
+   so reading the cookie fresh on every request always gets the current
+   value without needing a page reload.
+================================ */
+function getCsrfToken() {
+  const m = document.cookie.match(/(?:^|;\s*)csrf_cookie_name=([^;]+)/);
+  if (m) return decodeURIComponent(m[1]);
+  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+}
+
+/* ===============================
    NGWebD Notification Sound
    Web Audio beep — no external audio file to host/miss.
    Browsers block audio until a user gesture, so the context is created
