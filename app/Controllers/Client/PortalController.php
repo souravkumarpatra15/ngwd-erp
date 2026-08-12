@@ -58,6 +58,7 @@ class PortalController extends BaseController
             'title'      => $project['name'],
             'project'    => $project,
             'milestones' => (new MilestoneModel())->where('project_id',$id)->orderBy('sort_order')->findAll(),
+            'progress'   => (new ProjectModel())->getProgress($id),
         ]);
     }
 

@@ -6,7 +6,7 @@ class ClientModel extends Model {
     protected $primaryKey = 'id';
     protected $useTimestamps = true;
     protected $useSoftDeletes = true;
-    protected $allowedFields = ['client_number','name','company_name','phone','whatsapp','email','gst_number','pan_number','address','city','state','pincode','website','notes','lead_id','is_active','created_by'];
+    protected $allowedFields = ['client_number','name','company_name','phone','whatsapp','email','gst_number','pan_number','address','city','state','country','pincode','website','notes','lead_id','is_active','created_by'];
     public function search($term) {
         return $this->like('name',$term)->orLike('email',$term)->orLike('phone',$term)->select('id,name,email,phone')->limit(10)->findAll();
     }

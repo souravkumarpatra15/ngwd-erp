@@ -33,6 +33,29 @@ class ProjectController extends BaseController
         if ($status) $b->where('projects.status',$status);
         $total = (clone $b)->countAllResults();
         $data  = $b->orderBy('projects.created_at','DESC')->limit($length,$start)->get()->getResultArray();
+
+        // "progress" isn't a stored column — projects.progress never existed, so the
+        // datatable's progress bar always rendered 0%. Compute it from milestone
+        // completion, same convention as ProjectModel::getProgress() (used on the
+        // project detail page) — 0% for projects with no milestones yet.
+        $ids = array_column($data, 'id');
+        $msStats = [];
+        if ($ids) {
+            $rows = $this->db->table('milestones')
+                ->select('project_id, COUNT(*) as total, SUM(status IN ("completed","paid")) as done')
+                ->whereIn('project_id', $ids)
+                ->groupBy('project_id')
+                ->get()->getResultArray();
+            foreach ($rows as $r) $msStats[$r['project_id']] = $r;
+        }
+        foreach ($data as &$row) {
+            $stat = $msStats[$row['id']] ?? null;
+            $row['progress'] = ($stat && (int) $stat['total'] > 0)
+                ? (int) round(((int) $stat['done'] / (int) $stat['total']) * 100)
+                : 0;
+        }
+        unset($row);
+
         return $this->response->setJSON(['draw'=>intval($this->request->getGet('draw')),'recordsTotal'=>$total,'recordsFiltered'=>$total,'data'=>$data]);
     }
 

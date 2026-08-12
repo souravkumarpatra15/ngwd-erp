@@ -88,10 +88,10 @@ const projectsTable = $('#projectsTable').DataTable({
       const m = {pending:'secondary',development:'primary',testing:'info',revision:'warning',completed:'success',on_hold:'danger',cancelled:'dark'};
       return `<span class="badge bg-${m[d]||'secondary'}">${(d||'').replace(/_/g,' ')}</span>`;
     }},
-    { data: 'end_date', render: d => {
+    { data: 'delivery_date', render: (d,t,r) => {
       if (!d || d === '0000-00-00') return '—';
       const dt = new Date(d); const today = new Date();
-      const overdue = dt < today;
+      const overdue = dt < today && !['completed','cancelled'].includes(r.status);
       return `<span class="${overdue?'text-danger fw-semibold':''}">${dt.toLocaleDateString('en-IN')}</span>`;
     }},
     { data: null, orderable: false, width: '110px', render: (d,t,r) => `

@@ -47,6 +47,16 @@ $balance = ($project['budget'] ?? 0) - ($project['total_paid'] ?? 0);
         </div>
       </div>
     </div>
+    <div class="mt-3 pt-3 border-top">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="text-muted small">Milestone Progress</span>
+        <span class="fw-semibold small"><?= (int) $progress ?>%</span>
+      </div>
+      <div class="progress" style="height:6px">
+        <?php $pc = $progress >= 100 ? 'success' : ($progress >= 60 ? 'info' : ($progress >= 30 ? 'warning' : 'danger')); ?>
+        <div class="progress-bar bg-<?= $pc ?>" style="width:<?= (int) $progress ?>%"></div>
+      </div>
+    </div>
   </div>
 </div>
 

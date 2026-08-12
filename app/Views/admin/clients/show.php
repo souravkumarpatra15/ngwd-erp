@@ -73,7 +73,7 @@
 <?= view('admin/clients/partials/table_section', [
   'title' => 'Projects',
   'items' => $projects,
-  'columns' => ['project_number', 'title', 'status', 'created_at']
+  'columns' => ['project_number', 'name', 'status', 'created_at']
 ]) ?>
 
 <?= view('admin/clients/partials/table_section', [

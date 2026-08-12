@@ -70,11 +70,10 @@
                     data: 'phone'
                 },
                 {
-                    data: 'status',
+                    data: 'is_active',
                     render: function(data) {
-                        let status = data || 'active';
-                        let cls = status === 'active' ? 'success' : 'secondary';
-                        return `<span class="badge bg-${cls}">${status}</span>`;
+                        let active = data === undefined || data == 1;
+                        return `<span class="badge bg-${active ? 'success' : 'secondary'}">${active ? 'Active' : 'Inactive'}</span>`;
                     }
                 },
                 {
