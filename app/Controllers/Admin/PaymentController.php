@@ -93,9 +93,16 @@ class PaymentController extends BaseController
                     throw new \RuntimeException('Linked invoice not found.');
                 }
 
+                $outstanding = max(0, (float) $inv['total'] - (float) $inv['paid_amount']);
+                if ($amount > $outstanding) {
+                    throw new \InvalidArgumentException(
+                        'Payment amount cannot exceed the invoice balance of ' . number_format($outstanding, 2) . '.'
+                    );
+                }
+
                 $newPaid    = (float) $inv['paid_amount'] + $amount;
                 $newBalance = max(0, (float) $inv['total'] - $newPaid);
-                $newStatus  = $newPaid >= (float) $inv['total'] ? 'paid' : 'partial';
+                $newStatus  = $newBalance <= 0 ? 'paid' : 'partial';
 
                 $updateData = [
                     'paid_amount' => $newPaid,
@@ -138,6 +145,9 @@ class PaymentController extends BaseController
             }
 
             $this->db->transCommit();
+        } catch (\InvalidArgumentException $e) {
+            $this->db->transRollback();
+            return redirect()->back()->withInput()->with('error', $e->getMessage());
         } catch (\Throwable $e) {
             $this->db->transRollback();
             log_message('error', 'Payment transaction failed: {message}', ['message' => $e->getMessage()]);
