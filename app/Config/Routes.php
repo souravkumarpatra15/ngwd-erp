@@ -44,6 +44,15 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('leads/send-whatsapp/(:num)', 'Admin\LeadController::sendWhatsApp/$1');
         $routes->post('leads/send-email/(:num)', 'Admin\LeadController::sendEmail/$1');
 
+        // Marketing Leads (client-facing ad campaign leads)
+        $routes->get('marketing-leads', 'Admin\MarketingLeadController::index');
+        $routes->get('marketing-leads/datatable', 'Admin\MarketingLeadController::datatable');
+        $routes->post('marketing-leads/store', 'Admin\MarketingLeadController::store');
+        $routes->get('marketing-leads/edit/(:num)', 'Admin\MarketingLeadController::edit/$1');
+        $routes->post('marketing-leads/update/(:num)', 'Admin\MarketingLeadController::update/$1');
+        $routes->post('marketing-leads/delete/(:num)', 'Admin\MarketingLeadController::delete/$1');
+        $routes->post('marketing-leads/upload-csv', 'Admin\MarketingLeadController::uploadCsv');
+
         // Clients
         $routes->get('clients', 'Admin\ClientController::index');
         $routes->get('clients/datatable', 'Admin\ClientController::datatable');
@@ -218,6 +227,8 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->get('agreements/sign/(:num)', 'Client\PortalController::signAgreement/$1');
         $routes->post('agreements/sign/(:num)', 'Client\PortalController::processSign/$1');
         $routes->get('documents', 'Client\PortalController::documents');
+        $routes->get('marketing-leads', 'Client\PortalController::marketingLeads');
+        $routes->post('marketing-leads/status/(:num)', 'Client\PortalController::updateMarketingLeadStatus/$1');
         $routes->get('tickets', 'Client\TicketController::index');
         $routes->get('tickets/create', 'Client\TicketController::create');
         $routes->post('tickets/store', 'Client\TicketController::store');

@@ -10,6 +10,7 @@ use App\Models\DocumentModel;
 use App\Models\MilestoneModel;
 use App\Models\MilestoneNoteModel;
 use App\Models\NotificationModel;
+use App\Models\MarketingLeadModel;
 use App\Services\NotificationService;
 
 class PortalController extends BaseController
@@ -142,5 +143,33 @@ class PortalController extends BaseController
     public function documents() {
         $docs=$this->db->table('documents')->where('client_id',$this->cid())->orderBy('created_at','DESC')->get()->getResultArray();
         return view('client/documents/index',['title'=>'Documents','documents'=>$docs]);
+    }
+
+    public function marketingLeads() {
+        $cid = $this->cid();
+        $mlm = new MarketingLeadModel();
+        $projectId = (int) ($this->request->getGet('project_id') ?? 0);
+        $status    = (string) ($this->request->getGet('status') ?? '');
+        return view('client/marketing_leads/index', [
+            'title'    => 'My Leads',
+            'leads'    => $mlm->getForClient($cid, $projectId, $status),
+            'projects' => (new ProjectModel())->where('client_id', $cid)->where('deleted_at IS NULL')->orderBy('name')->findAll(),
+            'counts'   => $mlm->getStatusCounts($cid),
+            'filter_project_id' => $projectId,
+            'filter_status'     => $status,
+        ]);
+    }
+
+    public function updateMarketingLeadStatus($id) {
+        $mlm = new MarketingLeadModel();
+        $lead = $mlm->find((int) $id);
+        if (!$lead || (int) $lead['client_id'] !== $this->cid()) return $this->jsonError('Lead not found.');
+
+        $status = (string) $this->request->getPost('status');
+        if (!in_array($status, ['new','contacted','interested','not_interested','converted','junk'], true)) {
+            return $this->jsonError('Invalid status.');
+        }
+        $mlm->update((int) $id, ['status' => $status]);
+        return $this->jsonSuccess('Status updated.');
     }
 }

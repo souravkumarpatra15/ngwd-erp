@@ -52,6 +52,8 @@
           <i class="bi bi-person-plus"></i> Leads</a>
         <a href="<?= base_url('admin/clients') ?>" class="sidebar-link <?= isActive('admin/clients') ?>">
           <i class="bi bi-people"></i> Clients</a>
+        <a href="<?= base_url('admin/marketing-leads') ?>" class="sidebar-link <?= isActive('admin/marketing-leads') ?>">
+          <i class="bi bi-megaphone"></i> Marketing Leads</a>
 
         <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Projects</div>
         <a href="<?= base_url('admin/projects') ?>" class="sidebar-link <?= isActive('admin/projects') ?>">
