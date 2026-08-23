@@ -87,8 +87,14 @@ class PaymentController extends BaseController
             }
 
             if ($invoiceId) {
-                $im  = new InvoiceModel();
-                $inv = $im->find($invoiceId);
+                $im = new InvoiceModel();
+                // Lock the invoice row for the duration of the transaction so two
+                // concurrent payments cannot both pass the balance check.
+                $inv = $this->db->query(
+                    'SELECT * FROM invoices WHERE id = ? FOR UPDATE',
+                    [$invoiceId]
+                )->getRowArray();
+
                 if (!$inv) {
                     throw new \RuntimeException('Linked invoice not found.');
                 }
@@ -120,7 +126,13 @@ class PaymentController extends BaseController
 
             if ($projectId) {
                 $prm = new ProjectModel();
-                $pr  = $prm->find($projectId);
+                // Lock the project row before reading total_paid to prevent lost
+                // updates when multiple payments are recorded concurrently.
+                $pr = $this->db->query(
+                    'SELECT * FROM projects WHERE id = ? FOR UPDATE',
+                    [$projectId]
+                )->getRowArray();
+
                 if (!$pr) {
                     throw new \RuntimeException('Linked project not found.');
                 }
@@ -154,52 +166,6 @@ class PaymentController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Payment could not be recorded. No financial changes were saved.');
         }
 
-        $this->logActivity('payments', $pid, 'created', "Payment {$payNo}: ₹{$amount}");
-        return redirect()->to("admin/payments/$pid")->with('success', "Payment recorded: $payNo");
-    }
-
-    public function show($id)
-    {
-        $p = $this->db->table('payments')
-            ->select("payments.*, clients.name as client_name, clients.email as client_email,
-                      projects.name as project_name, invoices.invoice_number,
-                      COALESCE(invoices.currency, milestones.currency, 'INR') as currency")
-            ->join('clients',  'clients.id  = payments.client_id',  'left')
-            ->join('projects', 'projects.id = payments.project_id', 'left')
-            ->join('invoices', 'invoices.id = payments.invoice_id', 'left')
-            ->join('milestones', 'milestones.id = payments.milestone_id', 'left')
-            ->where('payments.id', $id)
-            ->get()->getRowArray();
-
-        if (!$p) return redirect()->to('admin/payments');
-        return view('admin/payments/show', ['title' => 'Payment', 'payment' => $p]);
-    }
-
-    public function receipt($id)
-    {
-        $p = $this->db->table('payments')
-            ->select("payments.*, clients.name as client_name, clients.address as client_address,
-                      clients.email as client_email, projects.name as project_name,
-                      COALESCE(invoices.currency, milestones.currency, 'INR') as currency")
-            ->join('clients',  'clients.id  = payments.client_id',  'left')
-            ->join('projects', 'projects.id = payments.project_id', 'left')
-            ->join('invoices', 'invoices.id = payments.invoice_id', 'left')
-            ->join('milestones', 'milestones.id = payments.milestone_id', 'left')
-            ->where('payments.id', $id)
-            ->get()->getRowArray();
-
-        return (new PDFService())->generateReceipt($p, $this->settings);
-    }
-
-    public function milestonesByProject($projectId)
-    {
-        $milestones = $this->db->table('milestones')
-            ->select('id, title, amount, status')
-            ->where('project_id', $projectId)
-            ->whereNotIn('status', ['paid'])
-            ->orderBy('sort_order')
-            ->get()->getResultArray();
-
-        return $this->response->setJSON(['status' => 'success', 'data' => $milestones]);
+        return redirect()->to('/admin/payments')->with('success', 'Payment recorded successfully.');
     }
 }
