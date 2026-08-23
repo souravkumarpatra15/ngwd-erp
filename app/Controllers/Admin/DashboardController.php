@@ -22,6 +22,7 @@ class DashboardController extends BaseController
         $domainModel  = new DomainModel();
         $hostingModel = new HostingModel();
         $revenueByCurrency = $paymentModel->getMonthlyRevenueByCurrency();
+        $pendingPaymentsByCurrency = $this->getPendingPaymentsByCurrency($invoiceModel);
 
         return view('admin/dashboard/index', [
             'title'              => 'Dashboard',
@@ -30,8 +31,9 @@ class DashboardController extends BaseController
             'active_projects'    => $projectModel->where('status','development')->countAllResults(),
             'completed_projects' => $projectModel->where('status','completed')->countAllResults(),
             'pending_proposals'  => (new ProposalModel())->where('status','sent')->countAllResults(),
-            'pending_payments'   => $invoiceModel->where('status !=','paid')->sumBy('balance_due'),
-            // Do not display a single mixed-currency monetary total.
+            // Never add balances from different currencies into one total.
+            'pending_payments'   => null,
+            'pending_payments_by_currency' => $pendingPaymentsByCurrency,
             'monthly_revenue'    => null,
             'monthly_revenue_by_currency' => $revenueByCurrency,
             'domain_renewals'    => $domainModel->getExpiringCount(30),
@@ -44,6 +46,22 @@ class DashboardController extends BaseController
             'lead_conversion_chart' => $leadModel->getConversionChart(),
             'project_status_chart'  => $projectModel->getStatusChart(),
         ]);
+    }
+
+    private function getPendingPaymentsByCurrency(InvoiceModel $invoiceModel): array
+    {
+        $rows = $invoiceModel->db->table('invoices')
+            ->select("currency, SUM(balance_due) AS total")
+            ->where('status !=', 'paid')
+            ->groupBy('currency')
+            ->get()->getResultArray();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $currency = strtoupper((string) ($row['currency'] ?: 'INR'));
+            $result[$currency] = (float) $row['total'];
+        }
+        return $result;
     }
 
     public function notifications() {
