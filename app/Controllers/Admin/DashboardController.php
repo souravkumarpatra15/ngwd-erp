@@ -21,6 +21,7 @@ class DashboardController extends BaseController
         $invoiceModel = new InvoiceModel();
         $domainModel  = new DomainModel();
         $hostingModel = new HostingModel();
+        $revenueByCurrency = $paymentModel->getMonthlyRevenueByCurrency();
 
         return view('admin/dashboard/index', [
             'title'              => 'Dashboard',
@@ -30,7 +31,9 @@ class DashboardController extends BaseController
             'completed_projects' => $projectModel->where('status','completed')->countAllResults(),
             'pending_proposals'  => (new ProposalModel())->where('status','sent')->countAllResults(),
             'pending_payments'   => $invoiceModel->where('status !=','paid')->sumBy('balance_due'),
-            'monthly_revenue'    => $paymentModel->getMonthlyRevenue(),
+            // Do not display a single mixed-currency monetary total.
+            'monthly_revenue'    => null,
+            'monthly_revenue_by_currency' => $revenueByCurrency,
             'domain_renewals'    => $domainModel->getExpiringCount(30),
             'hosting_renewals'   => $hostingModel->getExpiringCount(30),
             'todays_followups'   => $leadModel->getTodaysFollowUps(),
@@ -50,7 +53,6 @@ class DashboardController extends BaseController
         ]);
     }
 
-    // Polled by the bell dropdown for live updates (list + unread count).
     public function notificationsRecent() {
         $nm = new NotificationModel();
         return $this->response->setJSON([
