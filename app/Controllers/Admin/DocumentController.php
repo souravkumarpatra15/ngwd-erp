@@ -15,10 +15,20 @@ class DocumentController extends BaseController
         $this->dm = new DocumentModel();
     }
 
+    private function storageRoot(): string
+    {
+        return rtrim(WRITEPATH, '/\\') . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR;
+    }
+
+    private function storagePath(string $relativePath): string
+    {
+        $relativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
+        return $this->storageRoot() . $relativePath;
+    }
+
     // ── LIST ──────────────────────────────────────────────────
     public function index()
     {
-        // Join client + project names for display
         $documents = $this->db->table('documents')
             ->select('documents.*, clients.name as client_name, projects.name as project_name')
             ->join('clients',  'clients.id  = documents.client_id',  'left')
@@ -29,7 +39,7 @@ class DocumentController extends BaseController
         return view('admin/documents/index', [
             'title'     => 'Documents',
             'documents' => $documents,
-            'clients'   => (new ClientModel())->orderBy('name')->findAll(), // ← was missing!
+            'clients'   => (new ClientModel())->orderBy('name')->findAll(),
         ]);
     }
 
@@ -54,32 +64,42 @@ class DocumentController extends BaseController
             return redirect()->back()->with('error', $this->validator->getError('file'));
         }
 
-        // Get information BEFORE move
         $originalName = $file->getClientName();
-        $mimeType     = $file->getClientMimeType();   // <-- use this
+        $mimeType     = $file->getClientMimeType();
         $size         = $file->getSize();
 
         $newName = $file->getRandomName();
-        $folder  = FCPATH . 'uploads/' . date('Y/m/') . '/';
+        $relativeDirectory = date('Y/m/');
+        $folder = $this->storageRoot() . str_replace('/', DIRECTORY_SEPARATOR, $relativeDirectory);
 
-        if (!is_dir($folder)) {
-            mkdir($folder, 0777, true);
+        if (!is_dir($folder) && !mkdir($folder, 0755, true) && !is_dir($folder)) {
+            return redirect()->back()->with('error', 'Unable to create secure document storage directory.');
         }
 
-        $file->move($folder, $newName);
+        try {
+            $file->move($folder, $newName);
+        } catch (\Throwable $e) {
+            log_message('error', 'Document upload failed: {message}', ['message' => $e->getMessage()]);
+            return redirect()->back()->with('error', 'Unable to store the uploaded document.');
+        }
 
-        $this->dm->insert([
+        $storedPath = 'documents/' . str_replace('/', '/', $relativeDirectory) . $newName;
+
+        if (!$this->dm->insert([
             'client_id'  => $this->request->getPost('client_id') ?: null,
             'project_id' => $this->request->getPost('project_id') ?: null,
             'category'   => $this->request->getPost('category') ?: 'other',
             'title'      => $this->request->getPost('title') ?: $originalName,
             'file_name'  => $originalName,
-            'file_path'  => 'uploads/' . date('Y/m/') . '/' . $newName,
+            'file_path'  => $storedPath,
             'file_size'  => $size,
             'file_type'  => $mimeType,
             'notes'      => $this->request->getPost('notes') ?: '',
             'created_by' => session()->get('user_id'),
-        ]);
+        ])) {
+            @unlink($folder . DIRECTORY_SEPARATOR . $newName);
+            return redirect()->back()->with('error', 'Unable to save document information.');
+        }
 
         return redirect()->back()->with('success', 'Document uploaded successfully.');
     }
@@ -90,12 +110,15 @@ class DocumentController extends BaseController
         $doc = $this->dm->find($id);
         if (!$doc) return redirect()->back()->with('error', 'Document not found.');
 
-        $path = FCPATH . $doc['file_path'];
-        if (!file_exists($path)) {
+        $path = $this->storagePath($doc['file_path']);
+        $storageRoot = realpath($this->storageRoot());
+        $realPath = realpath($path);
+
+        if (!$storageRoot || !$realPath || !is_file($realPath) || !str_starts_with($realPath, $storageRoot . DIRECTORY_SEPARATOR)) {
             return redirect()->back()->with('error', 'File no longer exists on the server.');
         }
 
-        return $this->response->download($path, null)->setFileName($doc['file_name']);
+        return $this->response->download($realPath, null)->setFileName($doc['file_name']);
     }
 
     // ── DELETE ────────────────────────────────────────────────
@@ -104,9 +127,8 @@ class DocumentController extends BaseController
         $doc = $this->dm->find($id);
         if (!$doc) return $this->jsonError('Document not found.');
 
-        // Try to delete file from disk
-        $path = FCPATH . $doc['file_path'];
-        if (file_exists($path)) @unlink($path);
+        $path = $this->storagePath($doc['file_path']);
+        if (is_file($path)) @unlink($path);
 
         $this->dm->delete($id);
         $this->logActivity('documents', $id, 'delete', "Deleted: {$doc['file_name']}");
