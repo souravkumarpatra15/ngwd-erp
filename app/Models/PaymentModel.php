@@ -49,4 +49,12 @@ class PaymentModel extends Model {
             ->groupBy("COALESCE(invoices.currency, milestones.currency, 'INR')")->get()->getResultArray();
         $result=[]; foreach($rows as $row){$currency=strtoupper((string)($row['currency']??'INR'));$result[$currency]=($result[$currency]??0)+(float)$row['total'];} return $result;
     }
+
+    public function getPaidTotalsByClient(int $clientId): array {
+        $rows = $this->db->table('payments')->select("COALESCE(invoices.currency, milestones.currency, 'INR') AS currency, SUM(payments.amount) AS total")
+            ->join('invoices','invoices.id = payments.invoice_id','left')->join('milestones','milestones.id = payments.milestone_id','left')
+            ->where('payments.client_id',$clientId)->where('payments.status','completed')
+            ->groupBy("COALESCE(invoices.currency, milestones.currency, 'INR')")->get()->getResultArray();
+        $result=[]; foreach($rows as $row){$currency=strtoupper((string)($row['currency']??'INR'));$result[$currency]=($result[$currency]??0)+(float)$row['total'];} return $result;
+    }
 }
