@@ -60,12 +60,15 @@ class DashboardController extends BaseController
     }
 
     public function markRead($id) {
-        (new NotificationModel())->markRead($id);
+        $userId = (int) session()->get('user_id');
+        if (!(new NotificationModel())->markRead((int) $id, $userId)) {
+            return $this->jsonError('Notification not found.');
+        }
         return $this->jsonSuccess('Marked as read');
     }
 
     public function markAllRead() {
-        (new NotificationModel())->markAllRead(session()->get('user_id'));
+        (new NotificationModel())->markAllRead((int) session()->get('user_id'));
         return $this->jsonSuccess('All marked as read');
     }
 
