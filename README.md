@@ -59,11 +59,11 @@ server {
 
 ---
 
-## Default Login
+## First Login
 - URL: http://yourdomain.com/login
-- Email: admin@ngwebdconsulting.com
-- Password: **Admin@123**
-- ⚠️ Change password immediately after first login!
+- Create/use an administrator account through your installation process or database seeder.
+- **Do not use or publish a shared/default production password.**
+- Set a strong unique password before exposing the ERP to the internet.
 
 ---
 
@@ -152,7 +152,7 @@ ngwd-erp/
 ---
 
 ## Security Checklist
-- [ ] Change default admin password
+- [ ] Create a unique administrator password; never use a shared/default credential
 - [ ] Set `CI_ENVIRONMENT = production` in `.env`
 - [ ] Configure SSL/HTTPS
 - [ ] Keep `.env` out of version control
