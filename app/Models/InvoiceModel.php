@@ -70,6 +70,10 @@ class InvoiceModel extends Model
 
     public function sumBy(string $col): float
     {
+        $allowed = ['subtotal','tax_amount','discount','total','paid_amount','balance_due'];
+        if (!in_array($col, $allowed, true)) {
+            throw new \InvalidArgumentException('Invalid invoice aggregate column.');
+        }
         return (float) ($this->selectSum($col)->get()->getRowArray()[$col] ?? 0);
     }
 
