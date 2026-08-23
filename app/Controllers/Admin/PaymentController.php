@@ -6,7 +6,6 @@ use App\Models\PaymentModel;
 use App\Models\InvoiceModel;
 use App\Models\ProjectModel;
 use App\Models\ClientModel;
-use App\Services\PDFService;
 
 class PaymentController extends BaseController
 {
@@ -62,11 +61,56 @@ class PaymentController extends BaseController
         $amount      = (float) $this->request->getPost('amount');
         $clientId    = (int) $this->request->getPost('client_id');
 
-        $payNo = sprintf('PAY/%s/%05d', date('Y'), $this->pm->countAll() + 1);
-
         $this->db->transBegin();
 
         try {
+            // Validate every supplied relationship server-side. IDs from a form are
+            // untrusted; an invoice/project/milestone must all belong to the same client.
+            $invoice = null;
+            if ($invoiceId) {
+                $invoice = $this->db->query(
+                    'SELECT * FROM invoices WHERE id = ? FOR UPDATE',
+                    [$invoiceId]
+                )->getRowArray();
+                if (!$invoice) throw new \RuntimeException('Linked invoice not found.');
+                if ((int) $invoice['client_id'] !== $clientId) throw new \RuntimeException('Invoice does not belong to the selected client.');
+                if ($projectId && (int) ($invoice['project_id'] ?? 0) !== (int) $projectId) throw new \RuntimeException('Invoice does not belong to the selected project.');
+                if ($milestoneId && (int) ($invoice['milestone_id'] ?? 0) !== (int) $milestoneId) throw new \RuntimeException('Invoice does not belong to the selected milestone.');
+            }
+
+            $project = null;
+            if ($projectId) {
+                $project = $this->db->query(
+                    'SELECT * FROM projects WHERE id = ? FOR UPDATE',
+                    [$projectId]
+                )->getRowArray();
+                if (!$project) throw new \RuntimeException('Linked project not found.');
+                if ((int) $project['client_id'] !== $clientId) throw new \RuntimeException('Project does not belong to the selected client.');
+            }
+
+            if ($milestoneId) {
+                $milestone = $this->db->query(
+                    'SELECT milestones.*, projects.client_id AS project_client_id
+                     FROM milestones
+                     LEFT JOIN projects ON projects.id = milestones.project_id
+                     WHERE milestones.id = ? FOR UPDATE',
+                    [$milestoneId]
+                )->getRowArray();
+                if (!$milestone) throw new \RuntimeException('Linked milestone not found.');
+                if ((int) $milestone['project_client_id'] !== $clientId) throw new \RuntimeException('Milestone does not belong to the selected client.');
+                if ($projectId && (int) $milestone['project_id'] !== (int) $projectId) throw new \RuntimeException('Milestone does not belong to the selected project.');
+            }
+
+            if ($invoice) {
+                $outstanding = max(0, (float) $invoice['total'] - (float) $invoice['paid_amount']);
+                if ($amount > $outstanding) {
+                    throw new \InvalidArgumentException(
+                        'Payment amount cannot exceed the invoice balance of ' . number_format($outstanding, 2) . '.'
+                    );
+                }
+            }
+
+            $payNo = sprintf('PAY/%s/%05d', date('Y'), $this->pm->countAll() + 1);
             $pid = $this->pm->insert([
                 'payment_number'  => $payNo,
                 'client_id'       => $clientId,
@@ -81,81 +125,26 @@ class PaymentController extends BaseController
                 'status'          => 'completed',
                 'created_by'      => session()->get('user_id'),
             ]);
-
-            if ($pid === false) {
-                throw new \RuntimeException('Unable to create payment record.');
-            }
+            if ($pid === false) throw new \RuntimeException('Unable to create payment record.');
 
             if ($invoiceId) {
-                $im = new InvoiceModel();
-                // Lock the invoice row for the duration of the transaction so two
-                // concurrent payments cannot both pass the balance check.
-                $inv = $this->db->query(
-                    'SELECT * FROM invoices WHERE id = ? FOR UPDATE',
-                    [$invoiceId]
-                )->getRowArray();
-
-                if (!$inv) {
-                    throw new \RuntimeException('Linked invoice not found.');
-                }
-
-                $outstanding = max(0, (float) $inv['total'] - (float) $inv['paid_amount']);
-                if ($amount > $outstanding) {
-                    throw new \InvalidArgumentException(
-                        'Payment amount cannot exceed the invoice balance of ' . number_format($outstanding, 2) . '.'
-                    );
-                }
-
-                $newPaid    = (float) $inv['paid_amount'] + $amount;
-                $newBalance = max(0, (float) $inv['total'] - $newPaid);
+                $newPaid    = (float) $invoice['paid_amount'] + $amount;
+                $newBalance = max(0, (float) $invoice['total'] - $newPaid);
                 $newStatus  = $newBalance <= 0 ? 'paid' : 'partial';
-
-                $updateData = [
-                    'paid_amount' => $newPaid,
-                    'balance_due' => $newBalance,
-                    'status'      => $newStatus,
-                ];
-                if ($newStatus === 'paid') {
-                    $updateData['paid_at'] = date('Y-m-d H:i:s');
-                }
-
-                if (!$im->update($invoiceId, $updateData)) {
-                    throw new \RuntimeException('Unable to update linked invoice.');
-                }
+                $updateData = ['paid_amount' => $newPaid, 'balance_due' => $newBalance, 'status' => $newStatus];
+                if ($newStatus === 'paid') $updateData['paid_at'] = date('Y-m-d H:i:s');
+                if (!(new InvoiceModel())->update($invoiceId, $updateData)) throw new \RuntimeException('Unable to update linked invoice.');
             }
 
-            if ($projectId) {
-                $prm = new ProjectModel();
-                // Lock the project row before reading total_paid to prevent lost
-                // updates when multiple payments are recorded concurrently.
-                $pr = $this->db->query(
-                    'SELECT * FROM projects WHERE id = ? FOR UPDATE',
-                    [$projectId]
-                )->getRowArray();
-
-                if (!$pr) {
-                    throw new \RuntimeException('Linked project not found.');
-                }
-
-                if (!$prm->update($projectId, ['total_paid' => (float) $pr['total_paid'] + $amount])) {
-                    throw new \RuntimeException('Unable to update linked project.');
-                }
+            if ($projectId && !(new ProjectModel())->update($projectId, ['total_paid' => (float) $project['total_paid'] + $amount])) {
+                throw new \RuntimeException('Unable to update linked project.');
             }
 
-            if ($milestoneId) {
-                $updated = $this->db->table('milestones')
-                    ->where('id', $milestoneId)
-                    ->update(['status' => 'paid']);
-
-                if (!$updated) {
-                    throw new \RuntimeException('Unable to update linked milestone.');
-                }
+            if ($milestoneId && !$this->db->table('milestones')->where('id', $milestoneId)->update(['status' => 'paid'])) {
+                throw new \RuntimeException('Unable to update linked milestone.');
             }
 
-            if (!$this->db->transStatus()) {
-                throw new \RuntimeException('Payment transaction failed.');
-            }
-
+            if (!$this->db->transStatus()) throw new \RuntimeException('Payment transaction failed.');
             $this->db->transCommit();
         } catch (\InvalidArgumentException $e) {
             $this->db->transRollback();
