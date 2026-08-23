@@ -37,13 +37,19 @@ class PortalController extends BaseController
 
     public function dashboard() {
         $cid = $this->cid();
+        $paidRows = $this->db->table('payments')
+            ->select("COALESCE(NULLIF(currency, ''), 'INR') AS currency, SUM(amount) AS total")
+            ->where('client_id',$cid)->where('status','completed')->groupBy('currency')->get()->getResultArray();
+        $totalPaidByCurrency = [];
+        foreach ($paidRows as $row) $totalPaidByCurrency[strtoupper((string)$row['currency'])] = (float)$row['total'];
         return view('client/dashboard/index', [
             'title'            => 'My Dashboard',
             'projects'         => (new ProjectModel())->where('client_id',$cid)->findAll(),
             'pending_invoices' => (new InvoiceModel())->where('client_id',$cid)->whereNotIn('status',['paid','cancelled'])->findAll(),
             'recent_payments'  => (new PaymentModel())->where('client_id',$cid)->orderBy('created_at','DESC')->limit(5)->findAll(),
             'total_projects'   => (new ProjectModel())->where('client_id',$cid)->countAllResults(),
-            'total_paid'       => $this->db->table('payments')->where('client_id',$cid)->where('status','completed')->selectSum('amount')->get()->getRowArray()['amount'] ?? 0,
+            'total_paid'       => null,
+            'total_paid_by_currency' => $totalPaidByCurrency,
         ]);
     }
 
