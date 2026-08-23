@@ -17,9 +17,20 @@ class PaymentModel extends Model {
         return $chart;
     }
     public function getRecent($limit=5) {
+        $limit = max(1, min((int) $limit, 100));
         return $this->db->table('payments')->select('payments.*, clients.name as client_name')->join('clients','clients.id = payments.client_id','left')->where('payments.status','completed')->orderBy('payments.created_at','DESC')->limit($limit)->get()->getResultArray();
     }
     public function getDataTable($search,$start,$length,$status='') {
+        // DataTables values are request-controlled. Clamp them before passing them
+        // to SQL so a forged request cannot request an unbounded result set.
+        $start = max(0, (int) $start);
+        $length = (int) $length;
+        if ($length < 1) $length = 25;
+        $length = min($length, 100);
+
+        $base = $this->db->table('payments');
+        $total = $base->countAllResults();
+
         $b = $this->db->table('payments')
             ->select("payments.*, clients.name as client_name, projects.name as project_name,
                       COALESCE(invoices.currency, milestones.currency, 'INR') as currency")
@@ -29,8 +40,8 @@ class PaymentModel extends Model {
             ->join('milestones','milestones.id = payments.milestone_id','left');
         if ($search) $b->groupStart()->like('clients.name',$search)->orLike('payments.transaction_id',$search)->orLike('payments.payment_number',$search)->groupEnd();
         if ($status) $b->where('payments.status',$status);
-        $total = (clone $b)->countAllResults();
+        $filtered = (clone $b)->countAllResults();
         $data = $b->orderBy('payments.created_at','DESC')->limit($length,$start)->get()->getResultArray();
-        return compact('total','data') + ['filtered'=>$total];
+        return compact('total','filtered','data');
     }
 }
