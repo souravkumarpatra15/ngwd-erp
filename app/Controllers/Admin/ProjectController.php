@@ -60,7 +60,6 @@ class ProjectController extends BaseController
         unset($data['csrf_test_name']);
         $id = $this->projectModel->insert($data);
         $this->logActivity('projects', $id, 'created', 'Project: ' . $data['name']);
-        // The creator is automatically added as a project manager.
         $userId = (int) session()->get('user_id');
         if ($userId > 0) (new ProjectMemberModel())->addMember((int)$id, $userId, 'project_manager', 'manage');
         return redirect()->to("admin/projects/$id")->with('success','Project created!');
@@ -69,6 +68,17 @@ class ProjectController extends BaseController
     public function show($id) {
         $project = $this->projectModel->getWithClient($id);
         if (!$project) return redirect()->to('admin/projects');
+
+        if ($this->request->getGet('dashboard') === '1') {
+            return view('admin/projects/dashboard', [
+                'title' => $project['name'] . ' — PMS Dashboard',
+                'project' => $project,
+                'stats' => $this->getProjectDashboardStats((int)$id),
+                'members' => (new ProjectMemberModel())->getByProject((int)$id),
+                'activities' => (new ActivityModel())->where('module','projects')->where('module_id',$id)->orderBy('created_at','DESC')->limit(12)->findAll(),
+            ]);
+        }
+
         return view('admin/projects/show', [
             'title'      => $project['name'],
             'project'    => $project,
@@ -81,10 +91,45 @@ class ProjectController extends BaseController
         ]);
     }
 
+    protected function getProjectDashboardStats(int $projectId): array
+    {
+        $today = date('Y-m-d');
+        $tasks = $this->db->table('tasks')->select('status, COUNT(*) AS total')->where('project_id',$projectId)->groupBy('status')->get()->getResultArray();
+        $taskStats = [];
+        foreach ($tasks as $row) $taskStats[$row['status']] = (int)$row['total'];
+        $totalTasks = array_sum($taskStats);
+        $doneTasks = ($taskStats['done'] ?? 0) + ($taskStats['completed'] ?? 0);
+        $milestoneStats = $this->db->table('milestones')->select('status, COUNT(*) AS total')->where('project_id',$projectId)->groupBy('status')->get()->getResultArray();
+        $milestones = [];
+        foreach ($milestoneStats as $row) $milestones[$row['status']] = (int)$row['total'];
+        $totalMilestones = array_sum($milestones);
+        $doneMilestones = ($milestones['completed'] ?? 0) + ($milestones['paid'] ?? 0);
+        $overdueTasks = (int)$this->db->table('tasks')->where('project_id',$projectId)->where('due_date <',$today)->whereNotIn('status',['done','completed','cancelled'])->countAllResults();
+        $upcomingTasks = (int)$this->db->table('tasks')->where('project_id',$projectId)->where('due_date >=',$today)->where('due_date <=',date('Y-m-d',strtotime('+7 days')))->whereNotIn('status',['done','completed','cancelled'])->countAllResults();
+        $overdueMilestones = (int)$this->db->table('milestones')->where('project_id',$projectId)->where('due_date <',$today)->whereNotIn('status',['completed','paid','cancelled'])->countAllResults();
+        $pendingApprovals = 0;
+        if ($this->db->tableExists('deliverables')) {
+            $pendingApprovals = (int)$this->db->table('deliverables')->where('project_id',$projectId)->whereIn('status',['submitted','under_review'])->countAllResults();
+        }
+        return [
+            'task_stats'=>$taskStats,
+            'total_tasks'=>$totalTasks,
+            'done_tasks'=>$doneTasks,
+            'task_progress'=>$totalTasks ? (int)round(($doneTasks/$totalTasks)*100) : 0,
+            'milestone_stats'=>$milestones,
+            'total_milestones'=>$totalMilestones,
+            'done_milestones'=>$doneMilestones,
+            'milestone_progress'=>$totalMilestones ? (int)round(($doneMilestones/$totalMilestones)*100) : 0,
+            'overdue_tasks'=>$overdueTasks,
+            'upcoming_tasks'=>$upcomingTasks,
+            'overdue_milestones'=>$overdueMilestones,
+            'pending_approvals'=>$pendingApprovals,
+        ];
+    }
+
     public function edit($id) {
         return view('admin/projects/edit', ['title'=>'Edit Project','project'=>$this->projectModel->find($id),'clients'=>(new ClientModel())->findAll()]);
     }
-
     public function update($id) { $data=$this->request->getPost();unset($data['csrf_test_name']);$this->projectModel->update($id,$data);return redirect()->to("admin/projects/$id")->with('success','Updated!'); }
     public function delete($id) { $this->projectModel->delete($id);return $this->jsonSuccess('Deleted'); }
     public function updateStatus($id) { $s=$this->request->getPost('status');$this->projectModel->update($id,['status'=>$s]);$this->logActivity('projects',$id,'status_changed',"Status: $s");return $this->jsonSuccess('Status updated'); }
