@@ -22,17 +22,10 @@ class ClientUserController extends BaseController
         return in_array((string) session()->get('user_role'), ['superadmin', 'admin', 'manager'], true);
     }
 
-    private function clientOrRedirect(int $clientId): ?array
-    {
-        $client = $this->clientModel->find($clientId);
-        if (!$client) return null;
-        return $client;
-    }
-
     public function index(int $clientId)
     {
         if (!$this->canManage()) return redirect()->to('admin/clients')->with('error', 'Access denied.');
-        $client = $this->clientOrRedirect($clientId);
+        $client = $this->clientModel->find($clientId);
         if (!$client) return redirect()->to('admin/clients')->with('error', 'Client not found.');
 
         return view('admin/clients/users', [
@@ -45,7 +38,7 @@ class ClientUserController extends BaseController
     public function store(int $clientId)
     {
         if (!$this->canManage()) return redirect()->back()->with('error', 'Access denied.');
-        if (!$this->clientOrRedirect($clientId)) return redirect()->to('admin/clients')->with('error', 'Client not found.');
+        if (!$this->clientModel->find($clientId)) return redirect()->to('admin/clients')->with('error', 'Client not found.');
 
         $rules = [
             'name' => 'required|min_length[2]|max_length[100]',
@@ -54,12 +47,10 @@ class ClientUserController extends BaseController
             'password_confirm' => 'required|matches[password]',
             'client_role' => 'required|in_list[owner,manager,member,viewer]',
         ];
-        if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
-        }
+        if (!$this->validate($rules)) return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
 
         try {
-            $id = $this->userModel->createClientUser(
+            $this->userModel->createClientUser(
                 $clientId,
                 (string) $this->request->getPost('name'),
                 (string) $this->request->getPost('email'),
@@ -92,8 +83,9 @@ class ClientUserController extends BaseController
         if (!$this->validate($rules)) return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
 
         $email = strtolower(trim((string) $this->request->getPost('email')));
-        $duplicate = $this->userModel->where('email', $email)->where('id !=', $userId)->first();
-        if ($duplicate) return redirect()->back()->withInput()->with('error', 'Email address is already registered.');
+        if ($this->userModel->where('email', $email)->where('id !=', $userId)->first()) {
+            return redirect()->back()->withInput()->with('error', 'Email address is already registered.');
+        }
 
         $data = [
             'name' => trim((string) $this->request->getPost('name')),
@@ -115,9 +107,7 @@ class ClientUserController extends BaseController
         if (!$user) return $this->jsonError('Client user not found.');
 
         $activeOwners = $this->userModel->where('client_id', $clientId)->where('role', 'client')->where('client_role', 'owner')->where('is_active', 1)->countAllResults();
-        if ((int) $user['is_active'] === 1 && $user['client_role'] === 'owner' && $activeOwners <= 1) {
-            return $this->jsonError('At least one active client owner must remain.');
-        }
+        if ((int) $user['is_active'] === 1 && $user['client_role'] === 'owner' && $activeOwners <= 1) return $this->jsonError('At least one active client owner must remain.');
 
         $newStatus = (int) !$user['is_active'];
         $this->userModel->update($userId, ['is_active' => $newStatus]);
@@ -132,17 +122,11 @@ class ClientUserController extends BaseController
         if (!$user) return $this->jsonError('Client user not found.');
 
         $activeOwners = $this->userModel->where('client_id', $clientId)->where('role', 'client')->where('client_role', 'owner')->where('is_active', 1)->countAllResults();
-        if ($user['client_role'] === 'owner' && (int) $user['is_active'] === 1 && $activeOwners <= 1) {
-            return $this->jsonError('The last active client owner cannot be deleted.');
-        }
+        if ($user['client_role'] === 'owner' && (int) $user['is_active'] === 1 && $activeOwners <= 1) return $this->jsonError('The last active client owner cannot be removed.');
 
-        // Soft-delete where supported; otherwise deactivate to preserve audit history.
-        if ($this->userModel->useSoftDeletes) {
-            $this->userModel->delete($userId);
-        } else {
-            $this->userModel->update($userId, ['is_active' => 0]);
-        }
-        $this->logActivity('clients', $clientId, 'client_user_deleted', 'Removed portal user: ' . $user['email']);
+        // Preserve the account and audit history; disable access instead of hard deleting.
+        $this->userModel->update($userId, ['is_active' => 0]);
+        $this->logActivity('clients', $clientId, 'client_user_removed', 'Removed portal user: ' . $user['email']);
         return $this->jsonSuccess('Client user removed.');
     }
 }
