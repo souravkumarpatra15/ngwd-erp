@@ -14,7 +14,13 @@
   <link rel="stylesheet" href="<?= base_url('assets/css/custom.css') ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/ng-ui.css') ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/admin-modern.css') ?>">
+  <link rel="stylesheet" href="<?= base_url('assets/css/admin-app-theme.css') ?>">
   <meta name="base-url" data-base-url="<?= base_url('/') ?>">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="NGWD ERP">
 </head>
 
 <body>
@@ -224,6 +230,58 @@
 
   </div>
 
+  <!-- ── Mobile App-Style Bottom Nav ── -->
+  <nav id="mobileBottomNav">
+    <a href="<?= base_url('admin/dashboard') ?>" class="mbn-item <?= isActive('admin/dashboard') ? 'active' : '' ?>">
+      <i class="bi bi-speedometer2"></i><span>Home</span>
+    </a>
+    <a href="<?= base_url('admin/clients') ?>" class="mbn-item <?= isActive('admin/clients') ? 'active' : '' ?>">
+      <i class="bi bi-people"></i><span>Clients</span>
+    </a>
+    <div style="width:56px"></div> <!-- spacer for center FAB -->
+    <a href="<?= base_url('admin/notifications') ?>" class="mbn-item <?= isActive('admin/notifications') ? 'active' : '' ?>" id="mbnNotifLink">
+      <span class="mbn-dot" id="mbnNotifDot"></span>
+      <i class="bi bi-bell"></i><span>Alerts</span>
+    </a>
+    <a href="#" class="mbn-item" id="mbnMenuBtn">
+      <i class="bi bi-grid-3x3-gap"></i><span>Menu</span>
+    </a>
+  </nav>
+
+  <button type="button" id="mobileFab" data-bs-toggle="modal" data-bs-target="#mobileQuickAddSheet" aria-label="Quick Add">
+    <i class="bi bi-plus-lg"></i>
+  </button>
+
+  <!-- Mobile Quick Add bottom sheet -->
+  <div class="modal fade mobile-sheet" id="mobileQuickAddSheet" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="sheet-handle"></div>
+        <div class="px-3 pt-1 pb-2">
+          <h6 class="fw-bold mb-1 px-2">Quick Add</h6>
+          <a href="<?= base_url('admin/leads/create') ?>" class="sheet-action">
+            <span class="sheet-icon bg-primary"><i class="bi bi-person-plus"></i></span> Add Lead
+          </a>
+          <a href="<?= base_url('admin/clients/create') ?>" class="sheet-action">
+            <span class="sheet-icon" style="background:#16a34a"><i class="bi bi-people"></i></span> Add Client
+          </a>
+          <a href="<?= base_url('admin/projects/create') ?>" class="sheet-action">
+            <span class="sheet-icon" style="background:#f59e0b"><i class="bi bi-folder-plus"></i></span> Add Project
+          </a>
+          <a href="<?= base_url('admin/invoices/create') ?>" class="sheet-action">
+            <span class="sheet-icon" style="background:#0ea5e9"><i class="bi bi-receipt"></i></span> Create Invoice
+          </a>
+          <a href="<?= base_url('admin/payments/create') ?>" class="sheet-action">
+            <span class="sheet-icon" style="background:#ef4444"><i class="bi bi-cash"></i></span> Record Payment
+          </a>
+          <a href="<?= base_url('admin/marketing-leads') ?>" class="sheet-action">
+            <span class="sheet-icon" style="background:#7c3aed"><i class="bi bi-megaphone"></i></span> Marketing Lead
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="ngToastContainer"></div>
 
   <script src="<?= base_url('assets/js/ng-ui.js') ?>"></script>
@@ -307,6 +365,7 @@
     document.getElementById('sidebarOpen')?.addEventListener('click', handleSidebarToggleClick);
     document.getElementById('sidebarToggle')?.addEventListener('click', handleSidebarToggleClick);
     document.getElementById('sidebarBackdrop')?.addEventListener('click', closeMobileSidebar);
+    document.getElementById('mbnMenuBtn')?.addEventListener('click', e => { e.preventDefault(); openMobileSidebar(); });
     document.querySelectorAll('#sidebar .sidebar-link').forEach(a => a.addEventListener('click', () => { if (isMobileNav()) closeMobileSidebar(); }));
     // Mark all notifications read
     document.getElementById('markAllRead')?.addEventListener('click', e => {
@@ -347,6 +406,7 @@
         if (res.unread > 0) { badge.textContent = res.unread; badge.classList.remove('d-none'); }
         else { badge.classList.add('d-none'); }
         document.getElementById('notifList').innerHTML = renderNotifList(res.notifications);
+        document.getElementById('mbnNotifDot')?.classList.toggle('show', res.unread > 0);
 
         const ids = res.notifications.map(n => n.id).join(',');
         if (notifSeenIds !== null && ids !== notifSeenIds && res.unread > 0) {
