@@ -12,6 +12,8 @@ use App\Models\MilestoneNoteModel;
 use App\Models\NotificationModel;
 use App\Models\MarketingLeadModel;
 use App\Models\TaskModel;
+use App\Models\DeliverableModel;
+use App\Models\DeliverableApprovalModel;
 use App\Services\NotificationService;
 
 class PortalController extends BaseController
@@ -41,12 +43,12 @@ class PortalController extends BaseController
         $cid = $this->cid();
         $totalPaidByCurrency = (new PaymentModel())->getPaidTotalsByClient($cid);
         return view('client/dashboard/index', [
-            'title'            => 'My Dashboard',
-            'projects'         => (new ProjectModel())->where('client_id',$cid)->findAll(),
+            'title' => 'My Dashboard',
+            'projects' => (new ProjectModel())->where('client_id',$cid)->findAll(),
             'pending_invoices' => (new InvoiceModel())->where('client_id',$cid)->whereNotIn('status',['paid','cancelled'])->findAll(),
-            'recent_payments'  => (new PaymentModel())->where('client_id',$cid)->orderBy('created_at','DESC')->limit(5)->findAll(),
-            'total_projects'   => (new ProjectModel())->where('client_id',$cid)->countAllResults(),
-            'total_paid'       => null,
+            'recent_payments' => (new PaymentModel())->where('client_id',$cid)->orderBy('created_at','DESC')->limit(5)->findAll(),
+            'total_projects' => (new ProjectModel())->where('client_id',$cid)->countAllResults(),
+            'total_paid' => null,
             'total_paid_by_currency' => $totalPaidByCurrency,
         ]);
     }
@@ -59,12 +61,51 @@ class PortalController extends BaseController
         $project = (new ProjectModel())->getWithClient($id);
         if (!$project || (int) $project['client_id'] !== $this->cid()) return redirect()->to('portal/projects');
         $tasks = (new TaskModel())->getAllWithDetails(['project_id' => (int) $id]);
+        $deliverables = (new DeliverableModel())->getByProject((int)$id);
         return view('client/projects/detail', [
             'title' => $project['name'], 'project' => $project,
             'milestones' => (new MilestoneModel())->where('project_id',$id)->orderBy('sort_order')->findAll(),
             'progress' => (new ProjectModel())->getProgress($id),
             'tasks' => $tasks,
+            'deliverables' => $deliverables,
         ]);
+    }
+
+    public function deliverableDetail($id) {
+        $dm = new DeliverableModel();
+        $item = $dm->getWithDetails((int)$id);
+        if (!$item || !$this->ownProject((int)$item['project_id'])) return redirect()->to('portal/projects');
+        $history = (new DeliverableApprovalModel())->history((int)$id);
+        return view('client/deliverables/detail', ['title'=>$item['title'],'deliverable'=>$item,'history'=>$history]);
+    }
+
+    protected function ownProject(int $projectId): bool {
+        return (bool)$this->db->table('projects')->select('id')->where('id',$projectId)->where('client_id',$this->cid())->where('deleted_at IS NULL')->get()->getRowArray();
+    }
+
+    public function reviewDeliverable($id) {
+        $dm = new DeliverableModel();
+        $item = $dm->find((int)$id);
+        if (!$item || !$this->ownProject((int)$item['project_id'])) return $this->jsonError('Deliverable not found.');
+        if (!in_array($item['status'], ['submitted','under_review','changes_requested'], true)) return $this->jsonError('This deliverable is not available for client review.');
+        $action = (string)$this->request->getPost('action');
+        $comment = trim((string)$this->request->getPost('comment'));
+        if ($action === 'changes_requested' && ($comment === '' || mb_strlen($comment) > 5000)) return $this->jsonError('Please provide change-request feedback (1–5000 characters).');
+        if (!in_array($action, ['approved','changes_requested'], true)) return $this->jsonError('Invalid review action.');
+        $now = date('Y-m-d H:i:s');
+        $update = ['status'=>$action,'reviewed_at'=>$now];
+        if ($action === 'approved') { $update['approved_at']=$now; $update['approved_by']=(int)session()->get('user_id'); }
+        $db = $this->db;
+        $db->transStart();
+        $dm->update((int)$id, $update);
+        (new DeliverableApprovalModel())->insert([
+            'deliverable_id'=>(int)$id,'project_id'=>(int)$item['project_id'],'user_id'=>(int)session()->get('user_id'),
+            'action'=>$action,'comment'=>$comment ?: null,'created_at'=>$now,
+        ]);
+        $db->transComplete();
+        if (!$db->transStatus()) return $this->jsonError('Could not save the review.');
+        (new NotificationService())->create(0,'deliverable_review', $action === 'approved' ? 'Deliverable approved' : 'Changes requested', 'Client reviewed deliverable: '.$item['title'], (int)$id, 'deliverable');
+        return $this->jsonSuccess($action === 'approved' ? 'Deliverable approved.' : 'Changes requested and sent to the project team.');
     }
 
     protected function ownMilestone(int $milestoneId): ?array {
@@ -111,64 +152,12 @@ class PortalController extends BaseController
     }
 
     public function proposals() { return view('client/proposals/index',['title'=>'Proposals','proposals'=>(new ProposalModel())->where('client_id',$this->cid())->whereIn('status',['sent','accepted','revision','rejected'])->findAll()]); }
-
-    public function proposalDetail($id) {
-        $p=(new ProposalModel())->where('id',(int)$id)->where('client_id',$this->cid())->first();
-        if(!$p)return redirect()->to('portal/proposals');
-        return view('client/proposals/detail',['title'=>'Proposal','proposal'=>$p]);
-    }
-
-    public function respondProposal($id) {
-        $id=(int)$id; $p=$this->db->table('proposals')->where('id',$id)->where('client_id',$this->cid())->get()->getRowArray();
-        if(!$p)return $this->jsonError('Proposal not found.'); if($p['status']!=='sent')return $this->jsonError('This proposal has already been responded to.');
-        $action=$this->request->getPost('action'); $now=date('Y-m-d H:i:s');
-        if($action==='accept'){$this->db->table('proposals')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->update(['status'=>'accepted','accepted_at'=>$now,'updated_at'=>$now]); (new NotificationService())->create(0,'proposal_accepted','Proposal Accepted',"\"{$p['title']}\" was accepted by the client",$id,'proposal'); return $this->jsonSuccess('Thank you! The proposal has been accepted.');}
-        if($action==='revision'){$this->db->table('proposals')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->update(['status'=>'revision','updated_at'=>$now]); (new NotificationService())->create(0,'proposal_revision','Revision Requested',"Client requested a revision on \"{$p['title']}\"",$id,'proposal'); return $this->jsonSuccess('Revision requested. We will get back to you shortly.');}
-        return $this->jsonError('Invalid action.');
-    }
-
+    public function proposalDetail($id) { $p=(new ProposalModel())->where('id',(int)$id)->where('client_id',$this->cid())->first(); if(!$p)return redirect()->to('portal/proposals'); return view('client/proposals/detail',['title'=>'Proposal','proposal'=>$p]); }
+    public function respondProposal($id) { $id=(int)$id; $p=$this->db->table('proposals')->where('id',$id)->where('client_id',$this->cid())->get()->getRowArray(); if(!$p)return $this->jsonError('Proposal not found.'); if($p['status']!=='sent')return $this->jsonError('This proposal has already been responded to.'); $action=$this->request->getPost('action'); $now=date('Y-m-d H:i:s'); if($action==='accept'){$this->db->table('proposals')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->update(['status'=>'accepted','accepted_at'=>$now,'updated_at'=>$now]); (new NotificationService())->create(0,'proposal_accepted','Proposal Accepted',"\"{$p['title']}\" was accepted by the client",$id,'proposal'); return $this->jsonSuccess('Thank you! The proposal has been accepted.');} if($action==='revision'){$this->db->table('proposals')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->update(['status'=>'revision','updated_at'=>$now]); (new NotificationService())->create(0,'proposal_revision','Revision Requested',"Client requested a revision on \"{$p['title']}\"",$id,'proposal'); return $this->jsonSuccess('Revision requested. We will get back to you shortly.');} return $this->jsonError('Invalid action.'); }
     public function agreements() { return view('client/agreements/index',['title'=>'Agreements','agreements'=>$this->db->table('agreements')->where('client_id',$this->cid())->whereIn('status',['sent','signed','rejected'])->get()->getResultArray()]); }
-
     public function signAgreement($id) { $ag=$this->db->table('agreements')->where('id',(int)$id)->where('client_id',$this->cid())->where('status','sent')->get()->getRowArray(); if(!$ag)return redirect()->to('portal/agreements'); return view('client/agreements/sign',['title'=>'Sign Agreement','agreement'=>$ag]); }
-
-    public function processSign($id) {
-        $id=(int)$id; $ag=$this->db->table('agreements')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->get()->getRowArray();
-        if(!$ag)return redirect()->to('portal/agreements'); $action=$this->request->getPost('action');
-        if($action==='sign'){$this->db->table('agreements')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->update(['status'=>'signed','signed_at'=>date('Y-m-d H:i:s'),'signature_ip'=>$this->request->getIPAddress()]); (new NotificationService())->create(0,'agreement_signed','Agreement Signed',"\"{$ag['title']}\" was signed by the client",$id,'agreement'); return redirect()->to('portal/agreements')->with('success','Agreement signed successfully!');}
-        if($action==='reject'){$this->db->table('agreements')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->update(['status'=>'rejected']); (new NotificationService())->create(0,'agreement_rejected','Agreement Rejected',"\"{$ag['title']}\" was rejected by the client",$id,'agreement'); return redirect()->to('portal/agreements')->with('info','Agreement rejected.');}
-        return redirect()->to('portal/agreements')->with('error','Invalid action.');
-    }
-
-    public function documents() {
-        $docs=$this->db->table('documents')->where('client_id',$this->cid())->orderBy('created_at','DESC')->get()->getResultArray();
-        return view('client/documents/index',['title'=>'Documents','documents'=>$docs]);
-    }
-
-    public function marketingLeads() {
-        $cid = $this->cid();
-        $mlm = new MarketingLeadModel();
-        $projectId = (int) ($this->request->getGet('project_id') ?? 0);
-        $status    = (string) ($this->request->getGet('status') ?? '');
-        return view('client/marketing_leads/index', [
-            'title'    => 'My Leads',
-            'leads'    => $mlm->getForClient($cid, $projectId, $status),
-            'projects' => (new ProjectModel())->where('client_id', $cid)->where('deleted_at IS NULL')->orderBy('name')->findAll(),
-            'counts'   => $mlm->getStatusCounts($cid),
-            'filter_project_id' => $projectId,
-            'filter_status'     => $status,
-        ]);
-    }
-
-    public function updateMarketingLeadStatus($id) {
-        $mlm = new MarketingLeadModel();
-        $lead = $mlm->find((int) $id);
-        if (!$lead || (int) $lead['client_id'] !== $this->cid()) return $this->jsonError('Lead not found.');
-
-        $status = (string) $this->request->getPost('status');
-        if (!in_array($status, ['new','contacted','interested','not_interested','converted','junk'], true)) {
-            return $this->jsonError('Invalid status.');
-        }
-        $mlm->update((int) $id, ['status' => $status]);
-        return $this->jsonSuccess('Status updated.');
-    }
+    public function processSign($id) { $id=(int)$id; $ag=$this->db->table('agreements')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->get()->getRowArray(); if(!$ag)return redirect()->to('portal/agreements'); $action=$this->request->getPost('action'); if($action==='sign'){$this->db->table('agreements')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->update(['status'=>'signed','signed_at'=>date('Y-m-d H:i:s'),'signature_ip'=>$this->request->getIPAddress()]); (new NotificationService())->create(0,'agreement_signed','Agreement Signed',"\"{$ag['title']}\" was signed by the client",$id,'agreement'); return redirect()->to('portal/agreements')->with('success','Agreement signed successfully!');} if($action==='reject'){$this->db->table('agreements')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->update(['status'=>'rejected']); (new NotificationService())->create(0,'agreement_rejected','Agreement Rejected',"\"{$ag['title']}\" was rejected by the client",$id,'agreement'); return redirect()->to('portal/agreements')->with('info','Agreement rejected.');} return redirect()->to('portal/agreements')->with('error','Invalid action.'); }
+    public function documents() { $docs=$this->db->table('documents')->where('client_id',$this->cid())->orderBy('created_at','DESC')->get()->getResultArray(); return view('client/documents/index',['title'=>'Documents','documents'=>$docs]); }
+    public function marketingLeads() { $cid=$this->cid(); $mlm=new MarketingLeadModel(); $projectId=(int)($this->request->getGet('project_id')??0); $status=(string)($this->request->getGet('status')??''); return view('client/marketing_leads/index',['title'=>'My Leads','leads'=>$mlm->getForClient($cid,$projectId,$status),'projects'=>(new ProjectModel())->where('client_id',$cid)->where('deleted_at IS NULL')->orderBy('name')->findAll(),'counts'=>$mlm->getStatusCounts($cid),'filter_project_id'=>$projectId,'filter_status'=>$status]); }
+    public function updateMarketingLeadStatus($id) { $mlm=new MarketingLeadModel(); $lead=$mlm->find((int)$id); if(!$lead||(int)$lead['client_id']!==$this->cid())return $this->jsonError('Lead not found.'); $status=(string)$this->request->getPost('status'); if(!in_array($status,['new','contacted','interested','not_interested','converted','junk'],true))return $this->jsonError('Invalid status.'); $mlm->update((int)$id,['status'=>$status]); return $this->jsonSuccess('Status updated.'); }
 }
