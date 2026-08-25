@@ -5,15 +5,12 @@ use CodeIgniter\Router\RouteCollection;
 /** @var RouteCollection $routes */
 
 $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
-
     // ── Auth ───────────────────────────────────────────────────
     $routes->get('/',  'Auth\LoginController::index');
     $routes->get('login',  'Auth\LoginController::index');
     $routes->post('login', 'Auth\LoginController::process');
     $routes->get('logout', 'Auth\LoginController::logout');
     $routes->get('admin/search', 'Admin\SearchController::index');
-
-    // Password Reset
     $routes->get('forgot-password', 'Auth\ForgotPasswordController::index');
     $routes->post('forgot-password', 'Auth\ForgotPasswordController::sendLink');
     $routes->get('reset-password/(:segment)', 'Auth\ForgotPasswordController::resetForm/$1');
@@ -44,7 +41,7 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('leads/send-whatsapp/(:num)', 'Admin\LeadController::sendWhatsApp/$1');
         $routes->post('leads/send-email/(:num)', 'Admin\LeadController::sendEmail/$1');
 
-        // Marketing Leads (client-facing ad campaign leads)
+        // Marketing Leads
         $routes->get('marketing-leads', 'Admin\MarketingLeadController::index');
         $routes->get('marketing-leads/datatable', 'Admin\MarketingLeadController::datatable');
         $routes->post('marketing-leads/store', 'Admin\MarketingLeadController::store');
@@ -62,6 +59,11 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->get('clients/edit/(:num)', 'Admin\ClientController::edit/$1');
         $routes->post('clients/update/(:num)', 'Admin\ClientController::update/$1');
         $routes->post('clients/delete/(:num)', 'Admin\ClientController::delete/$1');
+        $routes->get('clients/(:num)/users', 'Admin\ClientUserController::index/$1');
+        $routes->post('clients/(:num)/users/store', 'Admin\ClientUserController::store/$1');
+        $routes->post('clients/(:num)/users/(:num)/update', 'Admin\ClientUserController::update/$1/$2');
+        $routes->post('clients/(:num)/users/(:num)/toggle', 'Admin\ClientUserController::toggle/$1/$2');
+        $routes->post('clients/(:num)/users/(:num)/delete', 'Admin\ClientUserController::delete/$1/$2');
 
         // Projects
         $routes->get('projects', 'Admin\ProjectController::index');
@@ -74,6 +76,10 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('projects/delete/(:num)', 'Admin\ProjectController::delete/$1');
         $routes->post('projects/status/(:num)', 'Admin\ProjectController::updateStatus/$1');
         $routes->get('projects/by-client/(:num)', 'Admin\ProjectController::byClient/$1');
+        $routes->get('projects/(:num)/members', 'Admin\ProjectMemberController::index/$1');
+        $routes->post('projects/(:num)/members/store', 'Admin\ProjectMemberController::store/$1');
+        $routes->post('projects/(:num)/members/(:num)/update', 'Admin\ProjectMemberController::update/$1/$2');
+        $routes->post('projects/(:num)/members/(:num)/delete', 'Admin\ProjectMemberController::delete/$1/$2');
 
         // Proposals
         $routes->get('proposals', 'Admin\ProposalController::index');
@@ -137,8 +143,8 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('invoices/void/(:num)', 'Admin\InvoiceController::void/$1');
         $routes->get('ajax/invoices/(:num)',  'Admin\InvoiceController::byClient/$1');
         $routes->get('ajax/invoice-milestones/(:num)', 'Admin\InvoiceController::ajaxMilestones/$1');
-        $routes->get('ajax/invoice-domains/(:num)',    'Admin\InvoiceController::ajaxDomains/$1');
-        $routes->get('ajax/invoice-hostings/(:num)',   'Admin\InvoiceController::ajaxHostings/$1');
+        $routes->get('ajax/invoice-domains/(:num)', 'Admin\InvoiceController::ajaxDomains/$1');
+        $routes->get('ajax/invoice-hostings/(:num)', 'Admin\InvoiceController::ajaxHostings/$1');
 
         // Domains
         $routes->get('domains', 'Admin\DomainController::index');
@@ -205,7 +211,6 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('users/update/(:num)', 'Admin\UserManagementController::update/$1');
         $routes->post('users/delete/(:num)', 'Admin\UserManagementController::delete/$1');
         $routes->post('users/toggle-active/(:num)', 'Admin\UserManagementController::toggleActive/$1');
-        
     });
 
     // ── Client Portal ──────────────────────────────────────────
