@@ -49,10 +49,20 @@ class ClientController extends BaseController
         $data = array_merge($this->request->getPost(), ['client_number' => $this->generateNumber('CLT', $this->clientModel), 'created_by' => session()->get('user_id')]);
         unset($data['csrf_test_name']);
         $clientId = $this->clientModel->insert($data);
+
+        // Preserve the existing primary client login while making it an explicit owner.
         if (!empty($data['email'])) {
             $um = new UserModel();
-            if (!$um->where('email', $data['email'])->first()) {
-                $um->insert(['name' => $data['name'], 'email' => $data['email'], 'password' => password_hash('Client@' . rand(1000, 9999), PASSWORD_BCRYPT), 'role' => 'client', 'client_id' => $clientId, 'is_active' => 1]);
+            if (!$um->where('email', strtolower(trim($data['email'])))->first()) {
+                $um->insert([
+                    'name' => $data['name'],
+                    'email' => strtolower(trim($data['email'])),
+                    'password' => password_hash(bin2hex(random_bytes(12)), PASSWORD_DEFAULT),
+                    'role' => 'client',
+                    'client_id' => $clientId,
+                    'client_role' => 'owner',
+                    'is_active' => 1,
+                ]);
             }
         }
         $this->logActivity('clients', $clientId, 'created', 'Client: ' . $data['name']);
@@ -64,7 +74,7 @@ class ClientController extends BaseController
         $client = $this->clientModel->find($id);
         if (!$client) return redirect()->to('admin/clients');
         return view('admin/clients/show', [
-            'title'        => $client['name'] . 'hgfyhg',
+            'title'        => $client['name'],
             'client'       => $client,
             'projects'     => (new ProjectModel())->where('client_id', $id)->findAll(),
             'invoices'     => (new InvoiceModel())->where('client_id', $id)->orderBy('created_at', 'DESC')->limit(10)->findAll(),
@@ -90,21 +100,8 @@ class ClientController extends BaseController
     public function delete($id)
     {
         $client = $this->clientModel->find($id);
-
-        if (!$client) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'Client not found',
-                'csrf' => csrf_hash()
-            ]);
-        }
-
+        if (!$client) return $this->response->setJSON(['status' => 'error', 'message' => 'Client not found', 'csrf' => csrf_hash()]);
         $this->clientModel->delete($id);
-
-        return $this->response->setJSON([
-            'status'  => 'success',
-            'message' => 'Client deleted successfully',
-            'csrf' => csrf_hash()
-        ]);
+        return $this->response->setJSON(['status' => 'success', 'message' => 'Client deleted successfully', 'csrf' => csrf_hash()]);
     }
 }
