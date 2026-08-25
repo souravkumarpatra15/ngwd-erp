@@ -7,6 +7,7 @@ use App\Models\MilestoneModel;
 use App\Models\TaskModel;
 use App\Models\DocumentModel;
 use App\Models\ActivityModel;
+use App\Models\ProjectMemberModel;
 
 class ProjectController extends BaseController
 {
@@ -33,29 +34,17 @@ class ProjectController extends BaseController
         if ($status) $b->where('projects.status',$status);
         $total = (clone $b)->countAllResults();
         $data  = $b->orderBy('projects.created_at','DESC')->limit($length,$start)->get()->getResultArray();
-
-        // "progress" isn't a stored column — projects.progress never existed, so the
-        // datatable's progress bar always rendered 0%. Compute it from milestone
-        // completion, same convention as ProjectModel::getProgress() (used on the
-        // project detail page) — 0% for projects with no milestones yet.
         $ids = array_column($data, 'id');
         $msStats = [];
         if ($ids) {
-            $rows = $this->db->table('milestones')
-                ->select('project_id, COUNT(*) as total, SUM(status IN ("completed","paid")) as done')
-                ->whereIn('project_id', $ids)
-                ->groupBy('project_id')
-                ->get()->getResultArray();
+            $rows = $this->db->table('milestones')->select('project_id, COUNT(*) as total, SUM(status IN ("completed","paid")) as done')->whereIn('project_id', $ids)->groupBy('project_id')->get()->getResultArray();
             foreach ($rows as $r) $msStats[$r['project_id']] = $r;
         }
         foreach ($data as &$row) {
             $stat = $msStats[$row['id']] ?? null;
-            $row['progress'] = ($stat && (int) $stat['total'] > 0)
-                ? (int) round(((int) $stat['done'] / (int) $stat['total']) * 100)
-                : 0;
+            $row['progress'] = ($stat && (int) $stat['total'] > 0) ? (int) round(((int) $stat['done'] / (int) $stat['total']) * 100) : 0;
         }
         unset($row);
-
         return $this->response->setJSON(['draw'=>intval($this->request->getGet('draw')),'recordsTotal'=>$total,'recordsFiltered'=>$total,'data'=>$data]);
     }
 
@@ -70,7 +59,10 @@ class ProjectController extends BaseController
         $data = array_merge($this->request->getPost(), ['project_number'=>$this->generateNumber('PROJ',$this->projectModel),'created_by'=>session()->get('user_id')]);
         unset($data['csrf_test_name']);
         $id = $this->projectModel->insert($data);
-        $this->logActivity('projects', $id, 'created', 'Project: '.$data['name']);
+        $this->logActivity('projects', $id, 'created', 'Project: ' . $data['name']);
+        // The creator is automatically added as a project manager.
+        $userId = (int) session()->get('user_id');
+        if ($userId > 0) (new ProjectMemberModel())->addMember((int)$id, $userId, 'project_manager', 'manage');
         return redirect()->to("admin/projects/$id")->with('success','Project created!');
     }
 
@@ -84,6 +76,7 @@ class ProjectController extends BaseController
             'tasks'      => (new TaskModel())->where('project_id',$id)->orderBy('created_at','DESC')->findAll(),
             'documents'  => (new DocumentModel())->where('project_id',$id)->findAll(),
             'activities' => (new ActivityModel())->where('module','projects')->where('module_id',$id)->orderBy('created_at','DESC')->limit(20)->findAll(),
+            'members'    => (new ProjectMemberModel())->getByProject((int)$id),
             'progress'   => $this->projectModel->getProgress($id),
         ]);
     }
