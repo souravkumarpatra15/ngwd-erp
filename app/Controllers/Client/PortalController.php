@@ -11,6 +11,7 @@ use App\Models\MilestoneModel;
 use App\Models\MilestoneNoteModel;
 use App\Models\NotificationModel;
 use App\Models\MarketingLeadModel;
+use App\Models\TaskModel;
 use App\Services\NotificationService;
 
 class PortalController extends BaseController
@@ -57,10 +58,12 @@ class PortalController extends BaseController
     public function projectDetail($id) {
         $project = (new ProjectModel())->getWithClient($id);
         if (!$project || (int) $project['client_id'] !== $this->cid()) return redirect()->to('portal/projects');
+        $tasks = (new TaskModel())->getAllWithDetails(['project_id' => (int) $id]);
         return view('client/projects/detail', [
             'title' => $project['name'], 'project' => $project,
             'milestones' => (new MilestoneModel())->where('project_id',$id)->orderBy('sort_order')->findAll(),
             'progress' => (new ProjectModel())->getProgress($id),
+            'tasks' => $tasks,
         ]);
     }
 
