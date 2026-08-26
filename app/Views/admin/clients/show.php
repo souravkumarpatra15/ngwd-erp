@@ -7,6 +7,7 @@
     <small class="text-muted"><?= esc($client['client_number'] ?? '') ?></small>
   </div>
   <div>
+    <a href="<?= base_url('admin/clients/' . $client['id'] . '/users') ?>" class="btn btn-outline-success btn-sm"><i class="bi bi-people me-1"></i>Portal Users</a>
     <a href="<?= base_url('admin/clients/edit/' . $client['id']) ?>" class="btn btn-warning btn-sm">Edit</a>
     <a href="<?= base_url('admin/clients') ?>" class="btn btn-secondary btn-sm">Back</a>
   </div>

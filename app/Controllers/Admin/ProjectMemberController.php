@@ -25,7 +25,7 @@ class ProjectMemberController extends BaseController
 
     private function canManage(int $projectId): bool
     {
-        return $this->pmsAuth->canManageProjectTeam($projectId);
+        return $this->pmsAuth->canManageProjectTeam((string) session()->get('user_role'), (int) session()->get('user_id'), $projectId);
     }
 
     public function index(int $projectId)

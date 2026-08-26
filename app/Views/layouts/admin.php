@@ -68,6 +68,8 @@
           <i class="bi bi-flag"></i> Milestones</a>
         <a href="<?= base_url('admin/tasks') ?>" class="sidebar-link <?= isActive('admin/tasks') ?>">
           <i class="bi bi-check2-square"></i> Tasks</a>
+        <a href="<?= base_url('admin/deliverables') ?>" class="sidebar-link <?= isActive('admin/deliverables') ?>">
+          <i class="bi bi-box-seam"></i> Deliverables</a>
 
         <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Sales</div>
         <a href="<?= base_url('admin/proposals') ?>" class="sidebar-link <?= isActive('admin/proposals') ?>">
