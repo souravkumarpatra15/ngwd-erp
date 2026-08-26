@@ -120,4 +120,40 @@ class PmsAuthorizationService
 
         return !empty($row);
     }
+
+    // ── Client-role permission model ──────────────────────────────
+    // Client portal roles form a simple hierarchy: viewer < member < manager < owner.
+    // These helpers gate actions per the client-user permission model, independent
+    // of the tenant boundary checks above (both must pass).
+
+    private const CLIENT_ROLE_RANK = ['viewer' => 1, 'member' => 2, 'manager' => 3, 'owner' => 4];
+
+    private function clientRoleRank(?string $clientRole): int
+    {
+        return self::CLIENT_ROLE_RANK[strtolower((string) $clientRole)] ?? 0;
+    }
+
+    /** Viewers can look but not touch: no comments, no uploads, no approvals. */
+    public function clientCanComment(?string $clientRole): bool
+    {
+        return $this->clientRoleRank($clientRole) >= self::CLIENT_ROLE_RANK['member'];
+    }
+
+    /** Only Manager and Owner can approve or request changes on a deliverable. */
+    public function clientCanApproveDeliverable(?string $clientRole): bool
+    {
+        return $this->clientRoleRank($clientRole) >= self::CLIENT_ROLE_RANK['manager'];
+    }
+
+    /** Only the Client Owner manages who else from their org can log in. */
+    public function clientCanManageUsers(?string $clientRole): bool
+    {
+        return $this->clientRoleRank($clientRole) >= self::CLIENT_ROLE_RANK['owner'];
+    }
+
+    /** Manager and Owner may view the org's user list read-only; below that, hidden entirely. */
+    public function clientCanViewUsers(?string $clientRole): bool
+    {
+        return $this->clientRoleRank($clientRole) >= self::CLIENT_ROLE_RANK['manager'];
+    }
 }

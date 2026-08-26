@@ -44,6 +44,7 @@ class LoginController extends BaseController
             'user_email' => $user['email'],
             'user_role' => $user['role'],
             'client_id' => $user['client_id'],
+            'client_role' => $user['client_role'] ?? null,
             'logged_in' => true,
         ]);
 

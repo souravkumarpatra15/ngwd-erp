@@ -109,6 +109,9 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .fw-bold, strong { font-family: 'Sora', '
       <a href="<?= base_url('portal/agreements') ?>" class="portal-link <?= isActive('portal/agreements') ?>"><i class="bi bi-file-earmark-check"></i> Agreements</a>
       <a href="<?= base_url('portal/documents') ?>" class="portal-link <?= isActive('portal/documents') ?>"><i class="bi bi-folder"></i> Documents</a>
       <a href="<?= base_url('portal/marketing-leads') ?>" class="portal-link <?= isActive('portal/marketing-leads') ?>"><i class="bi bi-megaphone"></i> My Leads</a>
+      <?php if (in_array(strtolower((string) session()->get('client_role')), ['manager', 'owner'], true)): ?>
+        <a href="<?= base_url('portal/team') ?>" class="portal-link <?= isActive('portal/team') ?>"><i class="bi bi-people"></i> Team</a>
+      <?php endif; ?>
       <a href="<?= base_url('portal/tickets') ?>" class="portal-link <?= isActive('portal/tickets') ?>"><i class="bi bi-headset"></i> Support</a>
     </div>
     <div class="p-3 border-top border-white border-opacity-25">
