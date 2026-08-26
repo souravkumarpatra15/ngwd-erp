@@ -64,5 +64,20 @@ jobs:
           done
           exit 1
 
+      - name: Run application migrations
+        env:
+          database.tests.hostname: 127.0.0.1
+          database.tests.database: ngwd_erp_test
+          database.tests.username: ngwd_test
+          database.tests.password: ngwd_test
+          database.tests.DBDriver: MySQLi
+          database.tests.port: 3306
+        run: php spark migrate --all
+
+      - name: Verify PMS membership table
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u ngwd_test -pngwd_test ngwd_erp_test \
+            -e "SHOW TABLES LIKE 'project_members';"
+
       - name: Run PMS authorization tests
         run: vendor/bin/phpunit tests/unit/Services --colors=always
