@@ -19,145 +19,47 @@ use App\Services\NotificationService;
 class PortalController extends BaseController
 {
     protected function cid(): int { return (int) session()->get('client_id'); }
+    protected function isClientUser(): bool { return strtolower((string)session()->get('user_role')) === 'client' && $this->cid() > 0 && (int)session()->get('user_id') > 0; }
 
-    public function notificationsRecent() {
-        $nm = new NotificationModel();
-        return $this->response->setJSON([
-            'notifications' => $nm->getUserNotifications((int) session()->get('user_id'), 8),
-            'unread'        => $nm->getUnreadCount((int) session()->get('user_id')),
-        ]);
-    }
-
-    public function markNotificationRead($id) {
-        $userId = (int) session()->get('user_id');
-        if (!(new NotificationModel())->markRead((int) $id, $userId)) return $this->jsonError('Notification not found.');
-        return $this->jsonSuccess('Marked as read');
-    }
-
-    public function markAllNotificationsRead() {
-        (new NotificationModel())->markAllRead((int) session()->get('user_id'));
-        return $this->jsonSuccess('All marked as read');
-    }
-
-    public function dashboard() {
-        $cid = $this->cid();
-        $totalPaidByCurrency = (new PaymentModel())->getPaidTotalsByClient($cid);
-        return view('client/dashboard/index', [
-            'title' => 'My Dashboard',
-            'projects' => (new ProjectModel())->where('client_id',$cid)->findAll(),
-            'pending_invoices' => (new InvoiceModel())->where('client_id',$cid)->whereNotIn('status',['paid','cancelled'])->findAll(),
-            'recent_payments' => (new PaymentModel())->where('client_id',$cid)->orderBy('created_at','DESC')->limit(5)->findAll(),
-            'total_projects' => (new ProjectModel())->where('client_id',$cid)->countAllResults(),
-            'total_paid' => null,
-            'total_paid_by_currency' => $totalPaidByCurrency,
-        ]);
-    }
-
-    public function projects() {
-        return view('client/projects/index', ['title'=>'My Projects','projects'=>(new ProjectModel())->where('client_id',$this->cid())->where('deleted_at IS NULL')->orderBy('created_at','DESC')->findAll()]);
-    }
-
-    public function projectDetail($id) {
-        $project = (new ProjectModel())->getWithClient($id);
-        if (!$project || (int) $project['client_id'] !== $this->cid()) return redirect()->to('portal/projects');
-        $tasks = (new TaskModel())->getAllWithDetails(['project_id' => (int) $id]);
-        $deliverables = (new DeliverableModel())->getByProject((int)$id);
-        return view('client/projects/detail', [
-            'title' => $project['name'], 'project' => $project,
-            'milestones' => (new MilestoneModel())->where('project_id',$id)->orderBy('sort_order')->findAll(),
-            'progress' => (new ProjectModel())->getProgress($id),
-            'tasks' => $tasks,
-            'deliverables' => $deliverables,
-        ]);
-    }
-
-    public function deliverableDetail($id) {
-        $dm = new DeliverableModel();
-        $item = $dm->getWithDetails((int)$id);
-        if (!$item || !$this->ownProject((int)$item['project_id'])) return redirect()->to('portal/projects');
-        $history = (new DeliverableApprovalModel())->history((int)$id);
-        return view('client/deliverables/detail', ['title'=>$item['title'],'deliverable'=>$item,'history'=>$history]);
-    }
-
-    protected function ownProject(int $projectId): bool {
-        return (bool)$this->db->table('projects')->select('id')->where('id',$projectId)->where('client_id',$this->cid())->where('deleted_at IS NULL')->get()->getRowArray();
-    }
+    public function notificationsRecent() { $nm=new NotificationModel(); return $this->response->setJSON(['notifications'=>$nm->getUserNotifications((int)session()->get('user_id'),8),'unread'=>$nm->getUnreadCount((int)session()->get('user_id'))]); }
+    public function markNotificationRead($id) { $userId=(int)session()->get('user_id'); if(!(new NotificationModel())->markRead((int)$id,$userId))return $this->jsonError('Notification not found.'); return $this->jsonSuccess('Marked as read'); }
+    public function markAllNotificationsRead() { (new NotificationModel())->markAllRead((int)session()->get('user_id')); return $this->jsonSuccess('All marked as read'); }
+    public function dashboard() { $cid=$this->cid(); $totalPaidByCurrency=(new PaymentModel())->getPaidTotalsByClient($cid); return view('client/dashboard/index',['title'=>'My Dashboard','projects'=>(new ProjectModel())->where('client_id',$cid)->findAll(),'pending_invoices'=>(new InvoiceModel())->where('client_id',$cid)->whereNotIn('status',['paid','cancelled'])->findAll(),'recent_payments'=>(new PaymentModel())->where('client_id',$cid)->orderBy('created_at','DESC')->limit(5)->findAll(),'total_projects'=>(new ProjectModel())->where('client_id',$cid)->countAllResults(),'total_paid'=>null,'total_paid_by_currency'=>$totalPaidByCurrency]); }
+    public function projects() { return view('client/projects/index',['title'=>'My Projects','projects'=>(new ProjectModel())->where('client_id',$this->cid())->where('deleted_at IS NULL')->orderBy('created_at','DESC')->findAll()]); }
+    public function projectDetail($id) { $project=(new ProjectModel())->getWithClient($id); if(!$project||(int)$project['client_id']!==$this->cid())return redirect()->to('portal/projects'); return view('client/projects/detail',['title'=>$project['name'],'project'=>$project,'milestones'=>(new MilestoneModel())->where('project_id',$id)->orderBy('sort_order')->findAll(),'progress'=>(new ProjectModel())->getProgress($id),'tasks'=>(new TaskModel())->getAllWithDetails(['project_id'=>(int)$id]),'deliverables'=>(new DeliverableModel())->getByProject((int)$id)]); }
+    public function deliverableDetail($id) { $dm=new DeliverableModel(); $item=$dm->getWithDetails((int)$id); if(!$this->isClientUser()||!$item||!$this->ownProject((int)$item['project_id']))return redirect()->to('portal/projects'); return view('client/deliverables/detail',['title'=>$item['title'],'deliverable'=>$item,'history'=>(new DeliverableApprovalModel())->history((int)$id)]); }
+    protected function ownProject(int $projectId): bool { if(!$this->isClientUser())return false; return (bool)$this->db->table('projects')->select('id')->where('id',$projectId)->where('client_id',$this->cid())->where('deleted_at IS NULL')->get()->getRowArray(); }
 
     public function reviewDeliverable($id) {
-        $dm = new DeliverableModel();
-        $item = $dm->find((int)$id);
-        if (!$item || !$this->ownProject((int)$item['project_id'])) return $this->jsonError('Deliverable not found.');
-        if (!in_array($item['status'], ['submitted','under_review','changes_requested'], true)) return $this->jsonError('This deliverable is not available for client review.');
-        $action = (string)$this->request->getPost('action');
-        $comment = trim((string)$this->request->getPost('comment'));
-        if ($action === 'changes_requested' && ($comment === '' || mb_strlen($comment) > 5000)) return $this->jsonError('Please provide change-request feedback (1–5000 characters).');
-        if (!in_array($action, ['approved','changes_requested'], true)) return $this->jsonError('Invalid review action.');
-        $now = date('Y-m-d H:i:s');
-        $update = ['status'=>$action,'reviewed_at'=>$now];
-        if ($action === 'approved') { $update['approved_at']=$now; $update['approved_by']=(int)session()->get('user_id'); }
-        $db = $this->db;
-        $db->transStart();
-        $dm->update((int)$id, $update);
-        (new DeliverableApprovalModel())->insert([
-            'deliverable_id'=>(int)$id,'project_id'=>(int)$item['project_id'],'user_id'=>(int)session()->get('user_id'),
-            'action'=>$action,'comment'=>$comment ?: null,'created_at'=>$now,
-        ]);
-        $db->transComplete();
-        if (!$db->transStatus()) return $this->jsonError('Could not save the review.');
-        (new NotificationService())->create(0,'deliverable_review', $action === 'approved' ? 'Deliverable approved' : 'Changes requested', 'Client reviewed deliverable: '.$item['title'], (int)$id, 'deliverable');
-        return $this->jsonSuccess($action === 'approved' ? 'Deliverable approved.' : 'Changes requested and sent to the project team.');
+        if(!$this->isClientUser())return $this->jsonError('Client authorization required.');
+        $dm=new DeliverableModel(); $item=$dm->find((int)$id);
+        if(!$item||!$this->ownProject((int)$item['project_id']))return $this->jsonError('Deliverable not found.');
+        if(!in_array($item['status'],['submitted','under_review','changes_requested'],true))return $this->jsonError('This deliverable is not available for client review.');
+        $action=(string)$this->request->getPost('action'); $comment=trim((string)$this->request->getPost('comment'));
+        if($action==='changes_requested'&&($comment===''||mb_strlen($comment)>5000))return $this->jsonError('Please provide change-request feedback (1–5000 characters).');
+        if(!in_array($action,['approved','changes_requested'],true))return $this->jsonError('Invalid review action.');
+        $now=date('Y-m-d H:i:s'); $update=['status'=>$action,'reviewed_at'=>$now]; if($action==='approved'){$update['approved_at']=$now;$update['approved_by']=(int)session()->get('user_id');}
+        $db=$this->db; $db->transStart();
+        $db->table('deliverables')->where('id',(int)$id)->where('project_id',(int)$item['project_id'])->whereIn('status',['submitted','under_review','changes_requested'])->update($update);
+        if($db->affectedRows()!==1){$db->transRollback();return $this->jsonError('Deliverable was already reviewed or is no longer available.');}
+        (new DeliverableApprovalModel())->insert(['deliverable_id'=>(int)$id,'project_id'=>(int)$item['project_id'],'user_id'=>(int)session()->get('user_id'),'action'=>$action,'comment'=>$comment?:null,'created_at'=>$now]);
+        $db->transComplete(); if(!$db->transStatus())return $this->jsonError('Could not save the review.');
+        (new NotificationService())->create(0,'deliverable_review',$action==='approved'?'Deliverable approved':'Changes requested','Client reviewed deliverable: '.$item['title'],(int)$id,'deliverable');
+        return $this->jsonSuccess($action==='approved'?'Deliverable approved.':'Changes requested and sent to the project team.');
     }
-
-    protected function ownMilestone(int $milestoneId): ?array {
-        $ms = $this->db->table('milestones')->select('milestones.*, projects.client_id')
-            ->join('projects','projects.id = milestones.project_id','left')->where('milestones.id',$milestoneId)->get()->getRowArray();
-        return ($ms && (int)$ms['client_id'] === $this->cid()) ? $ms : null;
-    }
-
-    public function milestoneNotes($id) {
-        if (!$this->ownMilestone((int)$id)) return $this->jsonError('Not found.');
-        return $this->response->setJSON(['success'=>true,'notes'=>(new MilestoneNoteModel())->getForMilestone((int)$id)]);
-    }
-
-    public function addMilestoneNote($id) {
-        $ms = $this->ownMilestone((int)$id); if (!$ms) return $this->jsonError('Not found.');
-        $message = trim((string)$this->request->getPost('message'));
-        if ($message === '' || mb_strlen($message) > 5000) return $this->jsonError('Note must contain 1–5000 characters.');
-        (new MilestoneNoteModel())->insert(['milestone_id'=>(int)$id,'user_id'=>(int)session()->get('user_id'),'message'=>$message,'is_admin'=>0]);
-        (new NotificationService())->create(0,'milestone_note','New milestone question',"A client left a note on milestone \"{$ms['title']}\"",(int)$id,'milestone');
-        return $this->jsonSuccess('Note added');
-    }
-
-    public function invoices() {
-        $inv = $this->db->table('invoices')->select('invoices.*, projects.name as project_name, milestones.title as milestone_title, domains.domain_name as domain_name, hostings.provider as hosting_provider, hostings.package as hosting_package')
-            ->join('projects','projects.id = invoices.project_id','left')->join('milestones','milestones.id = invoices.milestone_id','left')->join('domains','domains.id = invoices.domain_id','left')->join('hostings','hostings.id = invoices.hosting_id','left')
-            ->where('invoices.client_id',$this->cid())->orderBy('invoices.created_at','DESC')->get()->getResultArray();
-        return view('client/invoices/index',['title'=>'Invoices','invoices'=>$inv]);
-    }
-
-    public function invoiceDetail($id) {
-        $inv = $this->db->table('invoices')->select('invoices.*, projects.name as project_name, clients.name as client_name, clients.address as client_address, clients.gst_number as client_gst, milestones.title as milestone_title, domains.domain_name as domain_name, hostings.provider as hosting_provider, hostings.package as hosting_package')
-            ->join('projects','projects.id = invoices.project_id','left')->join('clients','clients.id = invoices.client_id','left')->join('milestones','milestones.id = invoices.milestone_id','left')->join('domains','domains.id = invoices.domain_id','left')->join('hostings','hostings.id = invoices.hosting_id','left')
-            ->where('invoices.id',(int)$id)->where('invoices.client_id',$this->cid())->get()->getRowArray();
-        if (!$inv) return redirect()->to('portal/invoices');
-        $items = $this->db->table('invoice_items')->where('invoice_id',(int)$id)->orderBy('sort_order')->get()->getResultArray();
-        return view('client/invoices/detail',['title'=>'Invoice '.$inv['invoice_number'],'invoice'=>$inv,'items'=>$items]);
-    }
-
-    public function payments() {
-        $pays = $this->db->table('payments')->select("payments.*, projects.name as project_name, invoices.invoice_number, milestones.title as milestone_title, COALESCE(invoices.currency, milestones.currency, 'INR') as currency")
-            ->join('projects','projects.id = payments.project_id','left')->join('invoices','invoices.id = payments.invoice_id','left')->join('milestones','milestones.id = payments.milestone_id','left')
-            ->where('payments.client_id',$this->cid())->where('payments.status','completed')->orderBy('payments.created_at','DESC')->get()->getResultArray();
-        return view('client/payments/index',['title'=>'Payment History','payments'=>$pays]);
-    }
-
-    public function proposals() { return view('client/proposals/index',['title'=>'Proposals','proposals'=>(new ProposalModel())->where('client_id',$this->cid())->whereIn('status',['sent','accepted','revision','rejected'])->findAll()]); }
-    public function proposalDetail($id) { $p=(new ProposalModel())->where('id',(int)$id)->where('client_id',$this->cid())->first(); if(!$p)return redirect()->to('portal/proposals'); return view('client/proposals/detail',['title'=>'Proposal','proposal'=>$p]); }
-    public function respondProposal($id) { $id=(int)$id; $p=$this->db->table('proposals')->where('id',$id)->where('client_id',$this->cid())->get()->getRowArray(); if(!$p)return $this->jsonError('Proposal not found.'); if($p['status']!=='sent')return $this->jsonError('This proposal has already been responded to.'); $action=$this->request->getPost('action'); $now=date('Y-m-d H:i:s'); if($action==='accept'){$this->db->table('proposals')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->update(['status'=>'accepted','accepted_at'=>$now,'updated_at'=>$now]); (new NotificationService())->create(0,'proposal_accepted','Proposal Accepted',"\"{$p['title']}\" was accepted by the client",$id,'proposal'); return $this->jsonSuccess('Thank you! The proposal has been accepted.');} if($action==='revision'){$this->db->table('proposals')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->update(['status'=>'revision','updated_at'=>$now]); (new NotificationService())->create(0,'proposal_revision','Revision Requested',"Client requested a revision on \"{$p['title']}\"",$id,'proposal'); return $this->jsonSuccess('Revision requested. We will get back to you shortly.');} return $this->jsonError('Invalid action.'); }
-    public function agreements() { return view('client/agreements/index',['title'=>'Agreements','agreements'=>$this->db->table('agreements')->where('client_id',$this->cid())->whereIn('status',['sent','signed','rejected'])->get()->getResultArray()]); }
-    public function signAgreement($id) { $ag=$this->db->table('agreements')->where('id',(int)$id)->where('client_id',$this->cid())->where('status','sent')->get()->getRowArray(); if(!$ag)return redirect()->to('portal/agreements'); return view('client/agreements/sign',['title'=>'Sign Agreement','agreement'=>$ag]); }
-    public function processSign($id) { $id=(int)$id; $ag=$this->db->table('agreements')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->get()->getRowArray(); if(!$ag)return redirect()->to('portal/agreements'); $action=$this->request->getPost('action'); if($action==='sign'){$this->db->table('agreements')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->update(['status'=>'signed','signed_at'=>date('Y-m-d H:i:s'),'signature_ip'=>$this->request->getIPAddress()]); (new NotificationService())->create(0,'agreement_signed','Agreement Signed',"\"{$ag['title']}\" was signed by the client",$id,'agreement'); return redirect()->to('portal/agreements')->with('success','Agreement signed successfully!');} if($action==='reject'){$this->db->table('agreements')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->update(['status'=>'rejected']); (new NotificationService())->create(0,'agreement_rejected','Agreement Rejected',"\"{$ag['title']}\" was rejected by the client",$id,'agreement'); return redirect()->to('portal/agreements')->with('info','Agreement rejected.');} return redirect()->to('portal/agreements')->with('error','Invalid action.'); }
-    public function documents() { $docs=$this->db->table('documents')->where('client_id',$this->cid())->orderBy('created_at','DESC')->get()->getResultArray(); return view('client/documents/index',['title'=>'Documents','documents'=>$docs]); }
-    public function marketingLeads() { $cid=$this->cid(); $mlm=new MarketingLeadModel(); $projectId=(int)($this->request->getGet('project_id')??0); $status=(string)($this->request->getGet('status')??''); return view('client/marketing_leads/index',['title'=>'My Leads','leads'=>$mlm->getForClient($cid,$projectId,$status),'projects'=>(new ProjectModel())->where('client_id',$cid)->where('deleted_at IS NULL')->orderBy('name')->findAll(),'counts'=>$mlm->getStatusCounts($cid),'filter_project_id'=>$projectId,'filter_status'=>$status]); }
-    public function updateMarketingLeadStatus($id) { $mlm=new MarketingLeadModel(); $lead=$mlm->find((int)$id); if(!$lead||(int)$lead['client_id']!==$this->cid())return $this->jsonError('Lead not found.'); $status=(string)$this->request->getPost('status'); if(!in_array($status,['new','contacted','interested','not_interested','converted','junk'],true))return $this->jsonError('Invalid status.'); $mlm->update((int)$id,['status'=>$status]); return $this->jsonSuccess('Status updated.'); }
+    protected function ownMilestone(int $milestoneId): ?array { if(!$this->isClientUser())return null; $ms=$this->db->table('milestones')->select('milestones.*, projects.client_id')->join('projects','projects.id = milestones.project_id','left')->where('milestones.id',$milestoneId)->get()->getRowArray(); return($ms&&(int)$ms['client_id']===$this->cid())?$ms:null; }
+    public function milestoneNotes($id) { if(!$this->ownMilestone((int)$id))return $this->jsonError('Not found.'); return $this->response->setJSON(['success'=>true,'notes'=>(new MilestoneNoteModel())->getForMilestone((int)$id)]); }
+    public function addMilestoneNote($id) { $ms=$this->ownMilestone((int)$id);if(!$ms)return $this->jsonError('Not found.');$message=trim((string)$this->request->getPost('message'));if($message===''||mb_strlen($message)>5000)return $this->jsonError('Note must contain 1–5000 characters.');(new MilestoneNoteModel())->insert(['milestone_id'=>(int)$id,'user_id'=>(int)session()->get('user_id'),'message'=>$message,'is_admin'=>0]);(new NotificationService())->create(0,'milestone_note','New milestone question',"A client left a note on milestone \"{$ms['title']}\"",(int)$id,'milestone');return $this->jsonSuccess('Note added'); }
+    public function invoices() { $inv=$this->db->table('invoices')->select('invoices.*, projects.name as project_name, milestones.title as milestone_title, domains.domain_name as domain_name, hostings.provider as hosting_provider, hostings.package as hosting_package')->join('projects','projects.id = invoices.project_id','left')->join('milestones','milestones.id = invoices.milestone_id','left')->join('domains','domains.id = invoices.domain_id','left')->join('hostings','hostings.id = invoices.hosting_id','left')->where('invoices.client_id',$this->cid())->orderBy('invoices.created_at','DESC')->get()->getResultArray();return view('client/invoices/index',['title'=>'Invoices','invoices'=>$inv]); }
+    public function invoiceDetail($id) { $inv=$this->db->table('invoices')->select('invoices.*, projects.name as project_name, clients.name as client_name, clients.address as client_address, clients.gst_number as client_gst, milestones.title as milestone_title, domains.domain_name as domain_name, hostings.provider as hosting_provider, hostings.package as hosting_package')->join('projects','projects.id = invoices.project_id','left')->join('clients','clients.id = invoices.client_id','left')->join('milestones','milestones.id = invoices.milestone_id','left')->join('domains','domains.id = invoices.domain_id','left')->join('hostings','hostings.id = invoices.hosting_id','left')->where('invoices.id',(int)$id)->where('invoices.client_id',$this->cid())->get()->getRowArray();if(!$inv)return redirect()->to('portal/invoices');return view('client/invoices/detail',['title'=>'Invoice '.$inv['invoice_number'],'invoice'=>$inv,'items'=>$this->db->table('invoice_items')->where('invoice_id',(int)$id)->orderBy('sort_order')->get()->getResultArray()]); }
+    public function payments() { $pays=$this->db->table('payments')->select("payments.*, projects.name as project_name, invoices.invoice_number, milestones.title as milestone_title, COALESCE(invoices.currency, milestones.currency, 'INR') as currency")->join('projects','projects.id = payments.project_id','left')->join('invoices','invoices.id = payments.invoice_id','left')->join('milestones','milestones.id = payments.milestone_id','left')->where('payments.client_id',$this->cid())->where('payments.status','completed')->orderBy('payments.created_at','DESC')->get()->getResultArray();return view('client/payments/index',['title'=>'Payment History','payments'=>$pays]); }
+    public function proposals(){return view('client/proposals/index',['title'=>'Proposals','proposals'=>(new ProposalModel())->where('client_id',$this->cid())->whereIn('status',['sent','accepted','revision','rejected'])->findAll()]);}
+    public function proposalDetail($id){$p=(new ProposalModel())->where('id',(int)$id)->where('client_id',$this->cid())->first();if(!$p)return redirect()->to('portal/proposals');return view('client/proposals/detail',['title'=>'Proposal','proposal'=>$p]);}
+    public function respondProposal($id){$id=(int)$id;$p=$this->db->table('proposals')->where('id',$id)->where('client_id',$this->cid())->get()->getRowArray();if(!$p)return $this->jsonError('Proposal not found.');if($p['status']!=='sent')return $this->jsonError('This proposal has already been responded to.');$action=$this->request->getPost('action');$now=date('Y-m-d H:i:s');if($action==='accept'){$this->db->table('proposals')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->update(['status'=>'accepted','accepted_at'=>$now,'updated_at'=>$now]);(new NotificationService())->create(0,'proposal_accepted','Proposal Accepted',"\"{$p['title']}\" was accepted by the client",$id,'proposal');return $this->jsonSuccess('Thank you! The proposal has been accepted.');}if($action==='revision'){$this->db->table('proposals')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->update(['status'=>'revision','updated_at'=>$now]);(new NotificationService())->create(0,'proposal_revision','Revision Requested',"Client requested a revision on \"{$p['title']}\"",$id,'proposal');return $this->jsonSuccess('Revision requested. We will get back to you shortly.');}return $this->jsonError('Invalid action.');}
+    public function agreements(){return view('client/agreements/index',['title'=>'Agreements','agreements'=>$this->db->table('agreements')->where('client_id',$this->cid())->whereIn('status',['sent','signed','rejected'])->get()->getResultArray()]);}
+    public function signAgreement($id){$ag=$this->db->table('agreements')->where('id',(int)$id)->where('client_id',$this->cid())->where('status','sent')->get()->getRowArray();if(!$ag)return redirect()->to('portal/agreements');return view('client/agreements/sign',['title'=>'Sign Agreement','agreement'=>$ag]);}
+    public function processSign($id){$id=(int)$id;$ag=$this->db->table('agreements')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->get()->getRowArray();if(!$ag)return redirect()->to('portal/agreements');$action=$this->request->getPost('action');if($action==='sign'){$this->db->table('agreements')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->update(['status'=>'signed','signed_at'=>date('Y-m-d H:i:s'),'signature_ip'=>$this->request->getIPAddress()]);(new NotificationService())->create(0,'agreement_signed','Agreement Signed',"\"{$ag['title']}\" was signed by the client",$id,'agreement');return redirect()->to('portal/agreements')->with('success','Agreement signed successfully!');}if($action==='reject'){$this->db->table('agreements')->where('id',$id)->where('client_id',$this->cid())->where('status','sent')->update(['status'=>'rejected']);(new NotificationService())->create(0,'agreement_rejected','Agreement Rejected',"\"{$ag['title']}\" was rejected by the client",$id,'agreement');return redirect()->to('portal/agreements')->with('info','Agreement rejected.');}return redirect()->to('portal/agreements')->with('error','Invalid action.');}
+    public function documents(){return view('client/documents/index',['title'=>'Documents','documents'=>$this->db->table('documents')->where('client_id',$this->cid())->orderBy('created_at','DESC')->get()->getResultArray()]);}
+    public function marketingLeads(){ $cid=$this->cid();$mlm=new MarketingLeadModel();$projectId=(int)($this->request->getGet('project_id')??0);$status=(string)($this->request->getGet('status')??'');return view('client/marketing_leads/index',['title'=>'My Leads','leads'=>$mlm->getForClient($cid,$projectId,$status),'projects'=>(new ProjectModel())->where('client_id',$cid)->where('deleted_at IS NULL')->orderBy('name')->findAll(),'counts'=>$mlm->getStatusCounts($cid),'filter_project_id'=>$projectId,'filter_status'=>$status]);}
+    public function updateMarketingLeadStatus($id){$mlm=new MarketingLeadModel();$lead=$mlm->find((int)$id);if(!$lead||(int)$lead['client_id']!==$this->cid())return $this->jsonError('Lead not found.');$status=(string)$this->request->getPost('status');if(!in_array($status,['new','contacted','interested','not_interested','converted','junk'],true))return $this->jsonError('Invalid status.');$mlm->update((int)$id,['status'=>$status]);return $this->jsonSuccess('Status updated.');}
 }
