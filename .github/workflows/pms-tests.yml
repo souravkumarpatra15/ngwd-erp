@@ -1,0 +1,49 @@
+name: PMS Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  pms-tests:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: ngwebd_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl, mysqli, pdo_mysql
+          coverage: none
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Validate application bootstrap
+        env:
+          CI_ENVIRONMENT: testing
+          database.default.hostname: 127.0.0.1
+          database.default.database: ngwebd_test
+          database.default.username: root
+          database.default.password: root
+          database.default.DBDriver: MySQLi
+          database.default.port: 3306
+        run: php spark list >/dev/null
+      - name: Report test foundation status
+        run: |
+          echo "PMS test workflow is installed."
+          echo "Full PHPUnit execution will be enabled after the repository's test bootstrap is finalized."
