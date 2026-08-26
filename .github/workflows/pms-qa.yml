@@ -12,7 +12,32 @@ permissions:
 jobs:
   pms-qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: ngwd_erp_test
+          MYSQL_USER: ngwd_test
+          MYSQL_PASSWORD: ngwd_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      CI_ENVIRONMENT: testing
+      database.tests.hostname: 127.0.0.1
+      database.tests.database: ngwd_erp_test
+      database.tests.username: ngwd_test
+      database.tests.password: ngwd_test
+      database.tests.DBDriver: MySQLi
+      database.tests.port: 3306
 
     steps:
       - name: Checkout
@@ -22,7 +47,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, intl, pdo_mysql
+          extensions: mbstring, intl, mysqli, pdo_mysql
           coverage: none
 
       - name: Validate Composer configuration
@@ -30,6 +55,14 @@ jobs:
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -P 3306 -u root -proot --silent; then exit 0; fi
+            sleep 2
+          done
+          exit 1
 
       - name: Run PMS authorization tests
         run: vendor/bin/phpunit tests/unit/Services --colors=always
