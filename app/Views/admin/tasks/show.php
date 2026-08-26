@@ -23,8 +23,8 @@
 </div>
 <?= $this->endSection() ?>
 <?= $this->section('scripts') ?><script>
-const BASE='<?= base_url() ?>', CSRF=CSRF_TOKEN, TASK_ID=<?= (int)$task['id'] ?>;
-$('#subtaskForm').on('submit',function(e){e.preventDefault();$.post(`${BASE}admin/tasks/${TASK_ID}/subtasks`,$(this).serialize(),r=>{showToast(r.message,r.status);if(r.status==='success')location.reload()},'json')});
-$('#commentForm').on('submit',function(e){e.preventDefault();$.post(`${BASE}admin/tasks/${TASK_ID}/comments`,$(this).serialize(),r=>{showToast(r.message,r.status);if(r.status==='success')location.reload()},'json')});
-$(document).on('change','.subtask-toggle',function(){const id=$(this).data('id');$.post(`${BASE}admin/tasks/subtasks/${id}/toggle`,{csrf_test_name:CSRF},r=>{showToast(r.message,r.status);if(r.status!=='success')location.reload()},'json')});
+const BASE='<?= base_url() ?>', TASK_ID=<?= (int)$task['id'] ?>;
+$('#subtaskForm').on('submit',function(e){e.preventDefault();$(this).find('input[name="csrf_test_name"]').val(getCsrfToken());$.post(`${BASE}admin/tasks/${TASK_ID}/subtasks`,$(this).serialize(),r=>{showToast(r.message,r.status);if(r.status==='success')location.reload()},'json')});
+$('#commentForm').on('submit',function(e){e.preventDefault();$(this).find('input[name="csrf_test_name"]').val(getCsrfToken());$.post(`${BASE}admin/tasks/${TASK_ID}/comments`,$(this).serialize(),r=>{showToast(r.message,r.status);if(r.status==='success')location.reload()},'json')});
+$(document).on('change','.subtask-toggle',function(){const id=$(this).data('id');$.post(`${BASE}admin/tasks/subtasks/${id}/toggle`,{csrf_test_name:getCsrfToken()},r=>{showToast(r.message,r.status);if(r.status!=='success')location.reload()},'json')});
 </script><?= $this->endSection() ?>
