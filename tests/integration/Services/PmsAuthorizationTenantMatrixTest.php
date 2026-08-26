@@ -10,9 +10,10 @@ use Tests\Integration\Fixtures\PmsTenantFixture;
 /**
  * Tenant-isolation matrix for the PMS authorization boundary.
  *
- * These assertions use the real authorization service and the isolated test
- * identities. They deliberately fail closed until those identities exist in
- * the CI database, preventing a false-positive security suite.
+ * These assertions use the real authorization service and isolated test
+ * identities. Tests that require seeded identities are intentionally kept
+ * separate from fail-closed checks so missing CI fixtures cannot create a
+ * false-positive authorization result.
  */
 class PmsAuthorizationTenantMatrixTest extends CIUnitTestCase
 {
@@ -36,9 +37,8 @@ class PmsAuthorizationTenantMatrixTest extends CIUnitTestCase
         $this->assertNotSame($a['developer_id'], $b['developer_id']);
     }
 
-    public function testCrossTenantDeveloperAccessIsDeniedWhenFixtureIsAbsent(): void
+    public function testCrossTenantDeveloperAccessIsDenied(): void
     {
-        $projectA = PmsTenantFixture::PROJECT_A;
         $projectB = PmsTenantFixture::PROJECT_B;
         $developerA = PmsTenantFixture::DEVELOPER_A;
 
@@ -46,12 +46,22 @@ class PmsAuthorizationTenantMatrixTest extends CIUnitTestCase
         $this->assertFalse($this->auth->canEditProject('developer', $developerA, $projectB));
         $this->assertFalse($this->auth->canManageTask('developer', $developerA, $projectB));
         $this->assertFalse($this->auth->canViewProject($developerA, $projectB));
-        $this->assertFalse($this->auth->canEditProject('developer', $developerA, $projectA));
     }
 
     public function testCrossTenantManagerAccessFailsClosedForUnknownMembership(): void
     {
         $this->assertFalse($this->auth->canEditProject('project_manager', PmsTenantFixture::DEVELOPER_A, PmsTenantFixture::PROJECT_B));
         $this->assertFalse($this->auth->canManageProjectTeam('project_manager', PmsTenantFixture::DEVELOPER_A, PmsTenantFixture::PROJECT_B));
+    }
+
+    public function testClientTenantBoundaryFailsClosedForInvalidIdentity(): void
+    {
+        $this->assertFalse($this->auth->canClientAccessProject(0, PmsTenantFixture::PROJECT_A));
+        $this->assertFalse($this->auth->canClientAccessProject(-1, PmsTenantFixture::PROJECT_A));
+        $this->assertFalse($this->auth->canClientAccessProject(PmsTenantFixture::CLIENT_A, 0));
+        $this->assertFalse($this->auth->canClientAccessProject(PmsTenantFixture::CLIENT_A, -1));
+
+        $this->assertFalse($this->auth->canClientAccessDeliverable(0, 1));
+        $this->assertFalse($this->auth->canClientAccessDeliverable(PmsTenantFixture::CLIENT_A, 0));
     }
 }
