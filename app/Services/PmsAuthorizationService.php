@@ -84,6 +84,36 @@ class PmsAuthorizationService
     }
 
     /**
+     * Returns null when the role has unrestricted org-wide visibility
+     * (superadmin/admin), or an array of project ids the user may see
+     * otherwise — active project membership only. Callers should treat
+     * null as "no WHERE filter needed" and an array (even empty) as
+     * "filter to exactly these ids".
+     */
+    public function getVisibleProjectIds(?string $role, int $userId): ?array
+    {
+        if ($this->isPrivilegedInternal($role)) {
+            return null;
+        }
+
+        $rows = $this->members->select('project_id')
+            ->where('user_id', $userId)
+            ->where('is_active', 1)
+            ->findAll();
+
+        return array_values(array_unique(array_map(static fn($r) => (int) $r['project_id'], $rows)));
+    }
+
+    /** Combines the project-visibility check with the existing membership rule. */
+    public function canViewProjectScoped(?string $role, int $userId, int $projectId): bool
+    {
+        if ($this->isPrivilegedInternal($role)) {
+            return true;
+        }
+        return $this->members->isMember($projectId, $userId);
+    }
+
+    /**
      * Client-side tenant boundary. A client may access only projects whose
      * client_id matches the authenticated client identity.
      */

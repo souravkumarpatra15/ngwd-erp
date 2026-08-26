@@ -28,6 +28,9 @@ class TaskModel extends Model
         foreach (['project_id','milestone_id','status','priority','assigned_to'] as $key) {
             if (!empty($filters[$key])) $b->where('tasks.' . $key, $filters[$key]);
         }
+        if (!empty($filters['project_id_in']) && is_array($filters['project_id_in'])) {
+            $b->whereIn('tasks.project_id', $filters['project_id_in']);
+        }
         if (!empty($filters['due_before'])) $b->where('tasks.due_date <=', $filters['due_before']);
         if (!empty($filters['search'])) $b->groupStart()->like('tasks.title', $filters['search'])->orLike('tasks.description', $filters['search'])->groupEnd();
 
@@ -46,7 +49,7 @@ class TaskModel extends Model
             ->where('tasks.id', $id)->get()->getRowArray() ?: null;
     }
 
-    public function getKanbanBoard(?int $projectId = null): array
+    public function getKanbanBoard(?int $projectId = null, ?array $visibleProjectIds = null): array
     {
         $board = array_fill_keys(self::STATUSES, []);
         $b = $this->db->table('tasks')
@@ -55,6 +58,7 @@ class TaskModel extends Model
             ->join('milestones', 'milestones.id = tasks.milestone_id', 'left')
             ->join('users u', 'u.id = tasks.assigned_to', 'left');
         if ($projectId) $b->where('tasks.project_id', $projectId);
+        elseif ($visibleProjectIds !== null) $b->whereIn('tasks.project_id', $visibleProjectIds ?: [0]);
         $tasks = $b->orderBy('tasks.sort_order', 'ASC')->orderBy('tasks.due_date', 'ASC')->get()->getResultArray();
         foreach ($tasks as $task) {
             if (isset($board[$task['status']])) $board[$task['status']][] = $task;

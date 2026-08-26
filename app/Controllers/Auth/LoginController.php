@@ -33,6 +33,12 @@ class LoginController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Invalid email or password.');
         }
 
+        $validRoles = ['superadmin', 'admin', 'manager', 'client'];
+        if (!in_array((string) $user['role'], $validRoles, true)) {
+            log_message('critical', 'Login blocked: user #{id} has an invalid role value ({role}). Check whether the users.role ENUM migration has been run.', ['id' => $user['id'], 'role' => $user['role']]);
+            return redirect()->back()->withInput()->with('error', 'Your account role is not configured correctly. Please contact an administrator.');
+        }
+
         if (password_needs_rehash($user['password'], PASSWORD_DEFAULT)) {
             $userModel->update($user['id'], ['password' => password_hash($password, PASSWORD_DEFAULT)]);
         }

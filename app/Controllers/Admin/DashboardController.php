@@ -11,6 +11,7 @@ use App\Models\HostingModel;
 use App\Models\ProposalModel;
 use App\Models\NotificationModel;
 use App\Models\TaskModel;
+use App\Services\PmsAuthorizationService;
 
 class DashboardController extends BaseController
 {
@@ -24,13 +25,15 @@ class DashboardController extends BaseController
         $hostingModel = new HostingModel();
         $revenueByCurrency = $paymentModel->getMonthlyRevenueByCurrency();
         $pendingPaymentsByCurrency = $this->getPendingPaymentsByCurrency($invoiceModel);
+        $visible = (new PmsAuthorizationService())->getVisibleProjectIds((string) session()->get('user_role'), (int) session()->get('user_id'));
+        $scopeProjects = fn($q) => $visible === null ? $q : $q->whereIn('id', $visible ?: [0]);
 
         return view('admin/dashboard/index', [
             'title'              => 'Dashboard',
             'total_leads'        => $leadModel->countAll(),
             'total_clients'      => $clientModel->countAll(),
-            'active_projects'    => $projectModel->where('status','development')->countAllResults(),
-            'completed_projects' => $projectModel->where('status','completed')->countAllResults(),
+            'active_projects'    => $scopeProjects($projectModel->where('status','development'))->countAllResults(),
+            'completed_projects' => $scopeProjects($projectModel->where('status','completed'))->countAllResults(),
             'pending_proposals'  => (new ProposalModel())->where('status','sent')->countAllResults(),
             // Never add balances from different currencies into one total.
             'pending_payments'   => null,
