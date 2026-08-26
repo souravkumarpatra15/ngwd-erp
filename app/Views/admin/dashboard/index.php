@@ -5,7 +5,7 @@
 <div class="row g-3 mb-4">
 <?php
 $cards = [
-  ['label'=>'Total Leads','value'=>$total_leads,'icon'=>'person-plus','color'=>'primary','link'=>'admin/leads'],
+  ['label'=>'Total Leads','value'=>$total_leads,'icon'=>'graph-up-arrow','color'=>'warning','link'=>'admin/leads'],
   ['label'=>'Total Clients','value'=>$total_clients,'icon'=>'people','color'=>'success','link'=>'admin/clients'],
   ['label'=>'Active Projects','value'=>$active_projects,'icon'=>'folder2-open','color'=>'warning','link'=>'admin/projects'],
   ['label'=>'Completed Projects','value'=>$completed_projects,'icon'=>'check2-circle','color'=>'info','link'=>'admin/projects'],
