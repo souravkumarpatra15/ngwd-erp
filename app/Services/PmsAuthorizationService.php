@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\DeliverableModel;
 use App\Models\ProjectMemberModel;
+use App\Models\ProjectModel;
 
 /**
  * Centralized authorization rules for the PMS layer.
@@ -13,10 +15,14 @@ use App\Models\ProjectMemberModel;
 class PmsAuthorizationService
 {
     private ProjectMemberModel $members;
+    private ProjectModel $projects;
+    private DeliverableModel $deliverables;
 
     public function __construct()
     {
         $this->members = new ProjectMemberModel();
+        $this->projects = new ProjectModel();
+        $this->deliverables = new DeliverableModel();
     }
 
     public function isPrivilegedInternal(?string $role): bool
@@ -87,13 +93,11 @@ class PmsAuthorizationService
             return false;
         }
 
-        $project = $this->members->db->table('projects')
-            ->select('id')
+        $project = $this->projects->select('id')
             ->where('id', $projectId)
             ->where('client_id', $clientId)
             ->where('deleted_at IS NULL')
-            ->get()
-            ->getRowArray();
+            ->first();
 
         return !empty($project);
     }
@@ -107,14 +111,12 @@ class PmsAuthorizationService
             return false;
         }
 
-        $row = $this->members->db->table('deliverables d')
-            ->select('d.id')
-            ->join('projects p', 'p.id = d.project_id', 'inner')
-            ->where('d.id', $deliverableId)
-            ->where('p.client_id', $clientId)
-            ->where('p.deleted_at IS NULL')
-            ->get()
-            ->getRowArray();
+        $row = $this->deliverables->select('deliverables.id')
+            ->join('projects', 'projects.id = deliverables.project_id', 'inner')
+            ->where('deliverables.id', $deliverableId)
+            ->where('projects.client_id', $clientId)
+            ->where('projects.deleted_at IS NULL')
+            ->first();
 
         return !empty($row);
     }
