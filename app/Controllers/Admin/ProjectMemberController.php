@@ -5,6 +5,7 @@ use App\Controllers\BaseController;
 use App\Models\ProjectModel;
 use App\Models\ProjectMemberModel;
 use App\Models\UserModel;
+use App\Services\PmsAuthorizationService;
 
 /** Manage the internal team assigned to a project. */
 class ProjectMemberController extends BaseController
@@ -12,22 +13,24 @@ class ProjectMemberController extends BaseController
     protected ProjectModel $projectModel;
     protected ProjectMemberModel $memberModel;
     protected UserModel $userModel;
+    protected PmsAuthorizationService $pmsAuth;
 
     public function __construct()
     {
         $this->projectModel = new ProjectModel();
         $this->memberModel = new ProjectMemberModel();
         $this->userModel = new UserModel();
+        $this->pmsAuth = new PmsAuthorizationService();
     }
 
-    private function canManage(): bool
+    private function canManage(int $projectId): bool
     {
-        return in_array((string) session()->get('user_role'), ['superadmin', 'admin', 'manager'], true);
+        return $this->pmsAuth->canManageProjectTeam($projectId);
     }
 
     public function index(int $projectId)
     {
-        if (!$this->canManage()) return redirect()->to('admin/projects/' . $projectId)->with('error', 'Access denied.');
+        if (!$this->canManage($projectId)) return redirect()->to('admin/projects/' . $projectId)->with('error', 'Access denied.');
         $project = $this->projectModel->getWithClient($projectId);
         if (!$project) return redirect()->to('admin/projects')->with('error', 'Project not found.');
 
@@ -46,7 +49,7 @@ class ProjectMemberController extends BaseController
 
     public function store(int $projectId)
     {
-        if (!$this->canManage()) return redirect()->back()->with('error', 'Access denied.');
+        if (!$this->canManage($projectId)) return redirect()->back()->with('error', 'Access denied.');
         if (!$this->projectModel->find($projectId)) return redirect()->to('admin/projects')->with('error', 'Project not found.');
 
         $userId = (int) $this->request->getPost('user_id');
@@ -65,7 +68,7 @@ class ProjectMemberController extends BaseController
 
     public function update(int $projectId, int $memberId)
     {
-        if (!$this->canManage()) return $this->jsonError('Access denied.');
+        if (!$this->canManage($projectId)) return $this->jsonError('Access denied.');
         $member = $this->memberModel->where('id', $memberId)->where('project_id', $projectId)->first();
         if (!$member) return $this->jsonError('Project member not found.');
 
@@ -81,7 +84,7 @@ class ProjectMemberController extends BaseController
 
     public function delete(int $projectId, int $memberId)
     {
-        if (!$this->canManage()) return $this->jsonError('Access denied.');
+        if (!$this->canManage($projectId)) return $this->jsonError('Access denied.');
         $member = $this->memberModel->where('id', $memberId)->where('project_id', $projectId)->first();
         if (!$member) return $this->jsonError('Project member not found.');
 
