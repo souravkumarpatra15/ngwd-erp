@@ -76,4 +76,46 @@ class PmsAuthorizationService
     {
         return $this->members->isMember($projectId, $userId);
     }
+
+    /**
+     * Client-side tenant boundary. A client may access only projects whose
+     * client_id matches the authenticated client identity.
+     */
+    public function canClientAccessProject(int $clientId, int $projectId): bool
+    {
+        if ($clientId <= 0 || $projectId <= 0) {
+            return false;
+        }
+
+        $project = $this->members->db->table('projects')
+            ->select('id')
+            ->where('id', $projectId)
+            ->where('client_id', $clientId)
+            ->where('deleted_at IS NULL')
+            ->get()
+            ->getRowArray();
+
+        return !empty($project);
+    }
+
+    /**
+     * Resolve a deliverable's project and apply the same client tenant rule.
+     */
+    public function canClientAccessDeliverable(int $clientId, int $deliverableId): bool
+    {
+        if ($clientId <= 0 || $deliverableId <= 0) {
+            return false;
+        }
+
+        $row = $this->members->db->table('deliverables d')
+            ->select('d.id')
+            ->join('projects p', 'p.id = d.project_id', 'inner')
+            ->where('d.id', $deliverableId)
+            ->where('p.client_id', $clientId)
+            ->where('p.deleted_at IS NULL')
+            ->get()
+            ->getRowArray();
+
+        return !empty($row);
+    }
 }
