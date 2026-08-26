@@ -10,11 +10,14 @@
         <div id="msNotesThread" class="mb-3" style="max-height:320px;overflow-y:auto;">
           <div class="text-center text-muted small py-3">Loading…</div>
         </div>
-        <form id="msNoteForm" class="d-flex gap-2">
+        <form id="msNoteForm" class="d-flex gap-2" <?= strtolower((string) session()->get('client_role')) === 'viewer' ? 'style="display:none"' : '' ?>>
           <input type="hidden" id="msNoteMilestoneId" value="">
           <input type="text" id="msNoteMessage" class="form-control" placeholder="Ask a question or leave a note…" required>
           <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i></button>
         </form>
+        <?php if (strtolower((string) session()->get('client_role')) === 'viewer'): ?>
+          <div class="text-center text-muted small py-2"><i class="bi bi-eye me-1"></i>You have view-only access to this thread.</div>
+        <?php endif; ?>
       </div>
     </div>
   </div>

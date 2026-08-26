@@ -9,8 +9,8 @@ $cards = [
   ['label'=>'Total Clients','value'=>$total_clients,'icon'=>'people','color'=>'success','link'=>'admin/clients'],
   ['label'=>'Active Projects','value'=>$active_projects,'icon'=>'folder2-open','color'=>'warning','link'=>'admin/projects'],
   ['label'=>'Completed Projects','value'=>$completed_projects,'icon'=>'check2-circle','color'=>'info','link'=>'admin/projects'],
-  ['label'=>'Monthly Revenue','value'=>'₹'.number_format($monthly_revenue,0),'icon'=>'cash-stack','color'=>'success','link'=>'admin/reports/revenue'],
-  ['label'=>'Pending Payments','value'=>'₹'.number_format($pending_payments,0),'icon'=>'exclamation-circle','color'=>'danger','link'=>'admin/invoices'],
+  ['label'=>'Monthly Revenue','value'=>renderCurrencyBreakdown($monthly_revenue_by_currency ?? []),'icon'=>'cash-stack','color'=>'success','link'=>'admin/reports/revenue'],
+  ['label'=>'Pending Payments','value'=>renderCurrencyBreakdown($pending_payments_by_currency ?? []),'icon'=>'exclamation-circle','color'=>'danger','link'=>'admin/invoices'],
   ['label'=>'Domain Renewals','value'=>$domain_renewals,'icon'=>'globe','color'=>'secondary','link'=>'admin/domains'],
   ['label'=>'Hosting Renewals','value'=>$hosting_renewals,'icon'=>'server','color'=>'dark','link'=>'admin/hostings'],
 ];
@@ -33,6 +33,46 @@ foreach ($cards as $c): ?>
 </div>
 <?php endforeach; ?>
 </div>
+
+<!-- My Work: personal task breakdown for the logged-in internal user -->
+<?php if (!empty($my_work) && (int) ($my_work['total_open'] ?? 0) > 0): ?>
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+    <div><h6 class="mb-0 fw-semibold"><i class="bi bi-person-check me-2 text-primary"></i>My Work</h6><div class="text-muted small mt-1">Tasks assigned to you across all projects</div></div>
+    <a href="<?= base_url('admin/tasks?assigned_to=' . session()->get('user_id')) ?>" class="btn btn-sm btn-outline-primary">View All Mine</a>
+  </div>
+  <div class="card-body">
+    <div class="row g-3 mb-3">
+      <?php $mw = [['label' => 'Due Today', 'key' => 'today', 'color' => 'warning'], ['label' => 'Overdue', 'key' => 'overdue', 'color' => 'danger'], ['label' => 'Upcoming (7d)', 'key' => 'upcoming', 'color' => 'info'], ['label' => 'Blocked', 'key' => 'blocked', 'color' => 'dark'], ['label' => 'In Review', 'key' => 'review', 'color' => 'primary']]; ?>
+      <?php foreach ($mw as $m): ?>
+        <div class="col-6 col-md">
+          <div class="border rounded-3 p-2 text-center h-100">
+            <div class="fs-5 fw-bold text-<?= $m['color'] ?>"><?= count($my_work[$m['key']] ?? []) ?></div>
+            <div class="text-muted" style="font-size:11px"><?= $m['label'] ?></div>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    </div>
+    <?php if (!empty($my_work['overdue']) || !empty($my_work['today'])): ?>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead><tr><th>Task</th><th>Project</th><th>Due</th><th>Status</th></tr></thead>
+          <tbody>
+            <?php foreach (array_slice(array_merge($my_work['overdue'], $my_work['today']), 0, 6) as $t): ?>
+              <tr>
+                <td class="small fw-semibold"><?= esc($t['title']) ?></td>
+                <td class="small text-muted"><?= esc($t['project_name'] ?? '—') ?></td>
+                <td class="small <?= (strtotime($t['due_date']) < strtotime(date('Y-m-d'))) ? 'text-danger fw-semibold' : '' ?>"><?= !empty($t['due_date']) ? date('d M', strtotime($t['due_date'])) : '—' ?></td>
+                <td><span class="badge bg-secondary"><?= esc(ucwords(str_replace('_', ' ', $t['status']))) ?></span></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    <?php endif; ?>
+  </div>
+</div>
+<?php endif; ?>
 
 <!-- Charts Row -->
 <div class="row g-3 mb-4">

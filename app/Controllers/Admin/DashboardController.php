@@ -10,6 +10,7 @@ use App\Models\DomainModel;
 use App\Models\HostingModel;
 use App\Models\ProposalModel;
 use App\Models\NotificationModel;
+use App\Models\TaskModel;
 
 class DashboardController extends BaseController
 {
@@ -45,6 +46,7 @@ class DashboardController extends BaseController
             'monthly_revenue_chart' => $paymentModel->getMonthlyRevenueChart(),
             'lead_conversion_chart' => $leadModel->getConversionChart(),
             'project_status_chart'  => $projectModel->getStatusChart(),
+            'my_work'            => (new TaskModel())->getMyWork((int) session()->get('user_id')),
         ]);
     }
 

@@ -78,4 +78,28 @@ class TaskModel extends Model
         $rows = $this->select('status, COUNT(*) as cnt')->groupBy('status')->get()->getResultArray();
         return array_column($rows, 'cnt', 'status');
     }
+
+    /**
+     * Personal task breakdown for one internal user (spec §29 "My Tasks"
+     * for PM/Developer dashboards). No separate PM/Developer role exists
+     * on users.role — this works for any internal user based on task
+     * assignment rather than inventing a role that isn't in the schema.
+     */
+    public function getMyWork(int $userId): array
+    {
+        $base = fn() => $this->db->table('tasks')
+            ->select('tasks.*, projects.name as project_name')
+            ->join('projects', 'projects.id = tasks.project_id', 'left')
+            ->where('tasks.assigned_to', $userId)
+            ->whereNotIn('tasks.status', ['done', 'cancelled']);
+
+        return [
+            'today'    => $base()->where('tasks.due_date', date('Y-m-d'))->orderBy('tasks.priority', 'ASC')->get()->getResultArray(),
+            'overdue'  => $base()->where('tasks.due_date <', date('Y-m-d'))->orderBy('tasks.due_date', 'ASC')->get()->getResultArray(),
+            'upcoming' => $base()->where('tasks.due_date >', date('Y-m-d'))->where('tasks.due_date <=', date('Y-m-d', strtotime('+7 days')))->orderBy('tasks.due_date', 'ASC')->get()->getResultArray(),
+            'blocked'  => $base()->where('tasks.status', 'blocked')->get()->getResultArray(),
+            'review'   => $base()->whereIn('tasks.status', ['code_review', 'qa', 'client_review'])->get()->getResultArray(),
+            'total_open' => $base()->countAllResults(),
+        ];
+    }
 }
