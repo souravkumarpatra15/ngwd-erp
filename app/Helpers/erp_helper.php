@@ -45,6 +45,25 @@ if (!function_exists('formatMoney')) {
         return $symbol . number_format($amount, 2);
     }
 }
+if (!function_exists('renderCurrencyBreakdown')) {
+    /**
+     * Render a currency-keyed amount array without converting currencies.
+     * Example: ['INR' => 1000, 'USD' => 25] => "₹1,000.00 · $25.00".
+     */
+    function renderCurrencyBreakdown(array $amounts): string {
+        if ($amounts === []) {
+            return formatMoney(0, 'INR');
+        }
+
+        $parts = [];
+        foreach ($amounts as $currency => $amount) {
+            $code = strtoupper((string) ($currency ?: 'INR'));
+            $parts[] = esc(formatMoney((float) $amount, $code));
+        }
+
+        return implode(' · ', $parts);
+    }
+}
 if (!function_exists('daysUntil')) {
     function daysUntil(string $date): int {
         return (int) ceil((strtotime($date) - time()) / 86400);
