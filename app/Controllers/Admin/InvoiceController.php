@@ -291,7 +291,7 @@ class InvoiceController extends BaseController
     public function byClient($clientId)
     {
         $invoices = $this->db->table('invoices')
-            ->select('id, invoice_number, total, paid_amount, balance_due, status')
+            ->select('id, invoice_number, total, paid_amount, balance_due, status, currency')
             ->where('client_id', $clientId)
             ->whereNotIn('status', ['paid', 'cancelled'])
             ->orderBy('created_at', 'DESC')
