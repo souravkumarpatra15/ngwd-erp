@@ -3,6 +3,7 @@ namespace App\Controllers\Client;
 
 use App\Controllers\BaseController;
 use App\Models\UserModel;
+use App\Models\ModulePermissionModel;
 use App\Services\PmsAuthorizationService;
 
 /**
@@ -32,10 +33,21 @@ class ClientTeamController extends BaseController
         if (!$this->isClientUser() || !$this->auth->clientCanViewUsers($this->role())) {
             return redirect()->to('portal/dashboard')->with('error', 'Access denied.');
         }
+        $users = $this->userModel->findAllByClientId($this->cid());
+        $mpm = new ModulePermissionModel();
+        $extraModules = [];
+        foreach ($users as $u) {
+            $perms = $mpm->forUser((int) $u['id']);
+            $extraModules[$u['id']] = [
+                'invoices' => !empty($perms['invoices']['can_view']),
+                'payments' => !empty($perms['payments']['can_view']),
+            ];
+        }
         return view('client/team/index', [
             'title'     => 'My Team',
-            'users'     => $this->userModel->findAllByClientId($this->cid()),
+            'users'     => $users,
             'canManage' => $this->auth->clientCanManageUsers($this->role()),
+            'extraModules' => $extraModules,
         ]);
     }
 
@@ -55,18 +67,29 @@ class ClientTeamController extends BaseController
         if (!$this->validate($rules)) return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
 
         try {
-            $this->userModel->createClientUser(
+            $newUserId = $this->userModel->createClientUser(
                 $this->cid(),
                 (string) $this->request->getPost('name'),
                 (string) $this->request->getPost('email'),
                 (string) $this->request->getPost('password'),
                 (string) $this->request->getPost('client_role')
             );
+            $this->saveExtraModules((int) $newUserId);
         } catch (\Throwable $e) {
             return redirect()->back()->withInput()->with('error', $e->getMessage());
         }
 
         return redirect()->to('portal/team')->with('success', 'Team member added.');
+    }
+
+    /** Grants explicit view-only access to invoices/payments beyond the member's role default, when checked. */
+    private function saveExtraModules(int $userId): void
+    {
+        $checked = (array) $this->request->getPost('modules');
+        $mpm = new ModulePermissionModel();
+        foreach (['invoices', 'payments'] as $module) {
+            $mpm->upsert($userId, $module, ['can_view' => in_array($module, $checked, true)]);
+        }
     }
 
     public function update(int $userId)
@@ -107,6 +130,7 @@ class ClientTeamController extends BaseController
         if ($this->request->getPost('password')) $data['password'] = password_hash((string) $this->request->getPost('password'), PASSWORD_DEFAULT);
 
         $this->userModel->update($userId, $data);
+        $this->saveExtraModules($userId);
         return redirect()->to('portal/team')->with('success', 'Team member updated.');
     }
 

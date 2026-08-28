@@ -103,8 +103,17 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .fw-bold, strong { font-family: 'Sora', '
     <div class="flex-grow-1 py-2">
       <a href="<?= base_url('portal/dashboard') ?>" class="portal-link <?= isActive('portal/dashboard') ?>"><i class="bi bi-speedometer2"></i> Dashboard</a>
       <a href="<?= base_url('portal/projects') ?>" class="portal-link <?= isActive('portal/projects') ?>"><i class="bi bi-folder2-open"></i> Projects</a>
+      <?php
+        $__cAuth = new \App\Services\PmsAuthorizationService();
+        $__cUid = (int) session()->get('user_id');
+        $__cRole = (string) session()->get('client_role');
+        $__cSee = static fn(string $m) => $__cAuth->hasModulePermission($__cUid, 'client', $__cRole, $m, 'view');
+      ?>
+      <?php if ($__cSee('invoices')): ?>
       <a href="<?= base_url('portal/invoices') ?>" class="portal-link <?= isActive('portal/invoices') ?>"><i class="bi bi-receipt"></i> Invoices</a>
+      <?php endif; if ($__cSee('payments')): ?>
       <a href="<?= base_url('portal/payments') ?>" class="portal-link <?= isActive('portal/payments') ?>"><i class="bi bi-cash-stack"></i> Payments</a>
+      <?php endif; ?>
       <a href="<?= base_url('portal/proposals') ?>" class="portal-link <?= isActive('portal/proposals') ?>"><i class="bi bi-file-earmark-text"></i> Proposals</a>
       <a href="<?= base_url('portal/agreements') ?>" class="portal-link <?= isActive('portal/agreements') ?>"><i class="bi bi-file-earmark-check"></i> Agreements</a>
       <a href="<?= base_url('portal/documents') ?>" class="portal-link <?= isActive('portal/documents') ?>"><i class="bi bi-folder"></i> Documents</a>

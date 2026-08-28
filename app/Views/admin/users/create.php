@@ -20,11 +20,21 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
-                    <select name="role" class="form-select" required>
+                    <select name="role" id="roleSelect" class="form-select" required onchange="document.getElementById('deptWrap').style.display=this.value==='staff'?'block':'none'">
                         <?php foreach ($roles as $val => $label): ?>
                         <option value="<?= $val ?>" <?= old('role') === $val ? 'selected' : '' ?>><?= $label ?></option>
                         <?php endforeach; ?>
                     </select>
+                </div>
+                <div class="col-md-4" id="deptWrap" style="display:<?= old('role')==='staff'?'block':'none' ?>">
+                    <label class="form-label fw-semibold">Department</label>
+                    <select name="department" class="form-select">
+                        <option value="">Select department</option>
+                        <?php foreach ($departments as $d): ?>
+                        <option value="<?= $d ?>" <?= old('department')===$d?'selected':'' ?>><?= ucfirst(str_replace('_',' ',$d)) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <div class="form-text">Controls what a Staff user can see by default (e.g. Developer never sees pricing).</div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>

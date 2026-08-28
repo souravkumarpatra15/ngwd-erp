@@ -21,11 +21,13 @@ class ClientController extends BaseController
 
     public function index()
     {
+        if ($r = $this->requireModule('clients', 'view')) return $r;
         return view('admin/clients/index', ['title' => 'Clients']);
     }
 
     public function datatable()
     {
+        if ($r = $this->requireModule('clients', 'view')) return $r;
         $search = $this->request->getGet('search')['value'] ?? '';
         $start  = $this->request->getGet('start') ?? 0;
         $length = $this->request->getGet('length') ?? 10;

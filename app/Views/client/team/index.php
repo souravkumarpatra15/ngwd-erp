@@ -48,7 +48,8 @@
                 <?php if ($canManage): ?>
                 <td class="pe-4 text-end">
                   <button type="button" class="btn btn-xs btn-outline-warning btn-edit-team-member"
-                    data-id="<?= $u['id'] ?>" data-name="<?= esc($u['name'], 'attr') ?>" data-email="<?= esc($u['email'], 'attr') ?>" data-role="<?= esc($u['client_role'], 'attr') ?>">Edit</button>
+                    data-id="<?= $u['id'] ?>" data-name="<?= esc($u['name'], 'attr') ?>" data-email="<?= esc($u['email'], 'attr') ?>" data-role="<?= esc($u['client_role'], 'attr') ?>"
+                    data-inv="<?= !empty($extraModules[$u['id']]['invoices']) ? '1' : '0' ?>" data-pay="<?= !empty($extraModules[$u['id']]['payments']) ? '1' : '0' ?>">Edit</button>
                   <button type="button" class="btn btn-xs btn-outline-secondary btn-toggle-team-member" data-id="<?= $u['id'] ?>">
                     <?= (int) $u['is_active'] ? 'Disable' : 'Enable' ?>
                   </button>
@@ -85,6 +86,11 @@
               <option value="owner">Owner — full account control</option>
             </select>
           </div>
+          <div class="mb-1 mt-2">
+            <label class="form-label small fw-semibold">Extra Access <span class="text-muted fw-normal">(beyond their role's default)</span></label>
+            <div class="form-check"><input class="form-check-input" type="checkbox" name="modules[]" value="invoices" id="addModInv"><label class="form-check-label small" for="addModInv">Can view Invoices</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" name="modules[]" value="payments" id="addModPay"><label class="form-check-label small" for="addModPay">Can view Payments</label></div>
+          </div>
         </div>
         <div class="modal-footer border-0 pt-0"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary">Add Member</button></div>
       </form>
@@ -113,6 +119,11 @@
               <option value="owner">Owner — full account control</option>
             </select>
           </div>
+          <div class="mb-1 mt-2">
+            <label class="form-label small fw-semibold">Extra Access <span class="text-muted fw-normal">(beyond their role's default)</span></label>
+            <div class="form-check"><input class="form-check-input" type="checkbox" name="modules[]" value="invoices" id="editModInv"><label class="form-check-label small" for="editModInv">Can view Invoices</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" name="modules[]" value="payments" id="editModPay"><label class="form-check-label small" for="editModPay">Can view Payments</label></div>
+          </div>
         </div>
         <div class="modal-footer border-0 pt-0"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary">Save Changes</button></div>
       </form>
@@ -132,6 +143,8 @@
     $('#editTmName').val($(this).data('name'));
     $('#editTmEmail').val($(this).data('email'));
     $('#editTmRole').val($(this).data('role'));
+    $('#editModInv').prop('checked', $(this).data('inv') === 1 || $(this).data('inv') === '1');
+    $('#editModPay').prop('checked', $(this).data('pay') === 1 || $(this).data('pay') === '1');
     bootstrap.Modal.getOrCreateInstance(document.getElementById('editTeamMemberModal')).show();
   });
 

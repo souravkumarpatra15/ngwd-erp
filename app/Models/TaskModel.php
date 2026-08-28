@@ -12,7 +12,7 @@ class TaskModel extends Model
     protected $useTimestamps = true;
     protected $allowedFields = [
         'project_id', 'milestone_id', 'title', 'description', 'priority',
-        'due_date', 'completed_date', 'status', 'sort_order',
+        'due_date', 'completed_date', 'status', 'sort_order', 'is_issue',
         'notes', 'assigned_to', 'created_by',
     ];
 

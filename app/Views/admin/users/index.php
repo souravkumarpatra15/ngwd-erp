@@ -56,6 +56,7 @@ $this->section('content'); ?>
                             <td class="text-muted small"><?= $user['last_login'] ? date('d M Y, H:i', strtotime($user['last_login'])) : 'Never' ?></td>
                             <td class="text-end">
                                 <a href="<?= base_url("admin/users/edit/{$user['id']}") ?>" class="btn btn-outline-primary btn-sm">Edit</a>
+                                <a href="<?= base_url("admin/users/{$user['id']}/permissions") ?>" class="btn btn-outline-info btn-sm" title="Module Permissions"><i class="bi bi-shield-lock"></i></a>
                                 <?php if ((int)$user['id'] !== (int)session()->get('user_id')): ?>
                                     <button class="btn btn-outline-<?= $user['is_active'] ? 'warning' : 'success' ?> btn-sm btn-toggle-active"
                                         data-id="<?= $user['id'] ?>">

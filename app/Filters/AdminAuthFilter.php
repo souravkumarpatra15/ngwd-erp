@@ -16,6 +16,7 @@ class AdminAuthFilter implements FilterInterface
         'superadmin',
         'admin',
         'manager',
+        'staff',
     ];
 
     public function before(RequestInterface $request, $arguments = null)

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\DeliverableModel;
 use App\Models\ProjectMemberModel;
 use App\Models\ProjectModel;
+use App\Models\ModulePermissionModel;
 
 /**
  * Centralized authorization rules for the PMS layer.
@@ -17,17 +18,108 @@ class PmsAuthorizationService
     private ProjectMemberModel $members;
     private ProjectModel $projects;
     private DeliverableModel $deliverables;
+    private ModulePermissionModel $modulePerms;
 
     public function __construct()
     {
         $this->members = new ProjectMemberModel();
         $this->projects = new ProjectModel();
         $this->deliverables = new DeliverableModel();
+        $this->modulePerms = new ModulePermissionModel();
     }
 
     public function isPrivilegedInternal(?string $role): bool
     {
         return in_array(strtolower((string) $role), ['superadmin', 'admin'], true);
+    }
+
+    // ── Internal staff departments (spec: developer/designer/qa/hr/support/
+    // sales_finance permission tiers, distinct from the login-tier role) ──
+
+    public const DEPARTMENTS = ['developer', 'designer', 'qa', 'hr', 'support', 'sales_finance'];
+
+    /** Modules a 'staff' user sees by default with no explicit grant needed — the PMS core. */
+    public const PMS_MODULES = ['dashboard', 'projects', 'tasks', 'kanban', 'milestones', 'deliverables'];
+
+    /** Modules a client-portal Owner always has, regardless of any explicit grants for their team. */
+    public const CLIENT_OWNER_MODULES = ['milestones', 'deliverables', 'tasks', 'documents', 'invoices', 'payments', 'marketing_leads', 'client_team', 'tickets'];
+
+    /** Modules a client team member (non-owner, no explicit grant on file) sees by default. */
+    public const CLIENT_DEFAULT_MODULES = ['milestones', 'deliverables', 'tasks', 'documents'];
+
+    /**
+     * Per-user, per-module CRUD check. Works uniformly for internal staff
+     * and client-portal team members (same users table, same table of
+     * overrides) — this is the one place module access is decided, so
+     * every controller/view calls this instead of re-deriving its own
+     * role logic.
+     */
+    public function hasModulePermission(int $userId, ?string $role, ?string $clientRole, string $module, string $action = 'view'): bool
+    {
+        $role = strtolower((string) $role);
+
+        // Superadmin/Admin: unrestricted everywhere.
+        if (in_array($role, ['superadmin', 'admin'], true)) {
+            return true;
+        }
+
+        // An explicit row always wins when one exists, for anyone —
+        // this is what lets an admin fine-tune a manager or a client
+        // owner down from their default, not just staff/team members up.
+        $explicit = $this->modulePerms->where('user_id', $userId)->where('module', $module)->first();
+        if ($explicit) {
+            return (bool) ($explicit['can_' . $action] ?? false);
+        }
+
+        if ($role === 'manager') {
+            return true; // unchanged baseline: manager = full internal PM access
+        }
+
+        if ($role === 'staff') {
+            // View access to the PMS core is the default; anything else
+            // (CRM, finance, documents, tickets...) needs an explicit grant.
+            return $action === 'view' && in_array($module, self::PMS_MODULES, true);
+        }
+
+        if ($role === 'client') {
+            if (strtolower((string) $clientRole) === 'owner') {
+                return $action === 'view' && in_array($module, self::CLIENT_OWNER_MODULES, true);
+            }
+            return $action === 'view' && in_array($module, self::CLIENT_DEFAULT_MODULES, true);
+        }
+
+        return false;
+    }
+
+    /**
+     * Financial visibility: project budgets, invoices, payments. Per the
+     * agreed model, Superadmin/Admin/Manager always see financials (a
+     * Manager is functionally a project lead and needs cost context);
+     * among departments, only Sales/Finance does. Everyone else — most
+     * notably Developer/Designer/QA — never sees pricing anywhere.
+     */
+    public function canViewFinancials(?string $role, ?string $department = null): bool
+    {
+        if (in_array(strtolower((string) $role), ['superadmin', 'admin', 'manager'], true)) {
+            return true;
+        }
+        return strtolower((string) $department) === 'sales_finance';
+    }
+
+    /**
+     * Client contact visibility (name/email/phone) on project-facing
+     * screens. Developer/Designer/QA see that a project belongs to "a
+     * client" but never who that client is — this was an explicit
+     * decision, not a guess. Applied to every non-elevated department by
+     * the same rule for consistency, since none of HR/Support/QA/Designer/
+     * Developer were asked to see client contact details either.
+     */
+    public function canViewClientContact(?string $role, ?string $department = null): bool
+    {
+        if (in_array(strtolower((string) $role), ['superadmin', 'admin', 'manager'], true)) {
+            return true;
+        }
+        return strtolower((string) $department) === 'sales_finance';
     }
 
     public function isProjectManager(?string $role, int $userId, int $projectId): bool

@@ -28,11 +28,13 @@ class InvoiceController extends BaseController
     // ── LIST ──────────────────────────────────────────────────
     public function index()
     {
+        if ($r = $this->requireModule('invoices', 'view')) return $r;
         return view('admin/invoices/index', ['title' => 'Invoices']);
     }
 
     public function datatable()
     {
+        if ($r = $this->requireModule('invoices', 'view')) return $r;
         $result = $this->im->getDataTable(
             $this->request->getGet('search')['value'] ?? '',
             (int) $this->request->getGet('start'),

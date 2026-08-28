@@ -20,11 +20,13 @@ class LeadController extends BaseController
 
     public function index()
     {
+        if ($r = $this->requireModule('leads', 'view')) return $r;
         return view('admin/leads/index', ['title' => 'Leads']);
     }
 
     public function datatable()
     {
+        if ($r = $this->requireModule('leads', 'view')) return $r;
         $result = $this->leadModel->getDataTable(
             $this->request->getGet('search')['value'] ?? '',
             $this->request->getGet('start') ?? 0,

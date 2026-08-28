@@ -49,17 +49,32 @@
       </div>
 
       <div class="overflow-auto flex-grow-1 py-2">
+        <?php
+          $__staffPerms = null;
+          if ((string) session()->get('user_role') === 'staff') {
+            $__auth = new \App\Services\PmsAuthorizationService();
+            $__uid = (int) session()->get('user_id');
+            $__canSee = static fn(string $m) => $__auth->hasModulePermission($__uid, 'staff', null, $m, 'view');
+          } else {
+            $__canSee = static fn(string $m) => true; // unrestricted: superadmin/admin/manager
+          }
+        ?>
         <div class="px-3 py-1" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Main</div>
         <a href="<?= base_url('admin/dashboard') ?>" class="sidebar-link <?= isActive('admin/dashboard') ?>">
           <i class="bi bi-speedometer2"></i> Dashboard</a>
 
+        <?php if ($__canSee('leads') || $__canSee('clients') || $__canSee('marketing_leads')): ?>
         <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">CRM</div>
+        <?php if ($__canSee('leads')): ?>
         <a href="<?= base_url('admin/leads') ?>" class="sidebar-link <?= isActive('admin/leads') ?>">
           <i class="bi bi-person-plus"></i> Leads</a>
+        <?php endif; if ($__canSee('clients')): ?>
         <a href="<?= base_url('admin/clients') ?>" class="sidebar-link <?= isActive('admin/clients') ?>">
           <i class="bi bi-people"></i> Clients</a>
+        <?php endif; if ($__canSee('marketing_leads')): ?>
         <a href="<?= base_url('admin/marketing-leads') ?>" class="sidebar-link <?= isActive('admin/marketing-leads') ?>">
           <i class="bi bi-megaphone"></i> Marketing Leads</a>
+        <?php endif; endif; ?>
 
         <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Projects</div>
         <a href="<?= base_url('admin/projects') ?>" class="sidebar-link <?= isActive('admin/projects') ?>">
@@ -71,37 +86,58 @@
         <a href="<?= base_url('admin/deliverables') ?>" class="sidebar-link <?= isActive('admin/deliverables') ?>">
           <i class="bi bi-box-seam"></i> Deliverables</a>
 
+        <?php if ($__canSee('proposals') || $__canSee('agreements')): ?>
         <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Sales</div>
+        <?php if ($__canSee('proposals')): ?>
         <a href="<?= base_url('admin/proposals') ?>" class="sidebar-link <?= isActive('admin/proposals') ?>">
           <i class="bi bi-file-earmark-text"></i> Proposals</a>
+        <?php endif; if ($__canSee('agreements')): ?>
         <a href="<?= base_url('admin/agreements') ?>" class="sidebar-link <?= isActive('admin/agreements') ?>">
           <i class="bi bi-file-earmark-check"></i> Agreements</a>
+        <?php endif; endif; ?>
 
+        <?php if ($__canSee('invoices') || $__canSee('payments')): ?>
         <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Billing</div>
+        <?php if ($__canSee('invoices')): ?>
         <a href="<?= base_url('admin/invoices') ?>" class="sidebar-link <?= isActive('admin/invoices') ?>">
           <i class="bi bi-receipt"></i> Invoices</a>
+        <?php endif; if ($__canSee('payments')): ?>
         <a href="<?= base_url('admin/payments') ?>" class="sidebar-link <?= isActive('admin/payments') ?>">
           <i class="bi bi-cash-stack"></i> Payments</a>
+        <?php endif; endif; ?>
 
+        <?php if ($__canSee('domains') || $__canSee('hostings')): ?>
         <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Infrastructure</div>
+        <?php if ($__canSee('domains')): ?>
         <a href="<?= base_url('admin/domains') ?>" class="sidebar-link <?= isActive('admin/domains') ?>">
           <i class="bi bi-globe"></i> Domains</a>
+        <?php endif; if ($__canSee('hostings')): ?>
         <a href="<?= base_url('admin/hostings') ?>" class="sidebar-link <?= isActive('admin/hostings') ?>">
           <i class="bi bi-server"></i> Hosting</a>
+        <?php endif; endif; ?>
 
+        <?php if (in_array((string) session()->get('user_role'), ['superadmin', 'admin'], true)): ?>
         <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Associates</div>
         <a href="<?= base_url('admin/users') ?>" class="sidebar-link <?= isActive('admin/users') ?>">
           <i class="bi bi-people"></i> Users</a>
+        <?php endif; ?>
 
+        <?php if ($__canSee('documents') || $__canSee('tickets') || $__canSee('reports')): ?>
         <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Other</div>
+        <?php if ($__canSee('documents')): ?>
         <a href="<?= base_url('admin/documents') ?>" class="sidebar-link <?= isActive('admin/documents') ?>">
           <i class="bi bi-folder"></i> Documents</a>
+        <?php endif; if ($__canSee('tickets')): ?>
         <a href="<?= base_url('admin/tickets') ?>" class="sidebar-link <?= isActive('admin/tickets') ?>">
           <i class="bi bi-headset"></i> Support</a>
+        <?php endif; if ($__canSee('reports')): ?>
         <a href="<?= base_url('admin/reports') ?>" class="sidebar-link <?= isActive('admin/reports') ?>">
           <i class="bi bi-bar-chart-line"></i> Reports</a>
+        <?php endif; endif; ?>
+        <?php if (in_array((string) session()->get('user_role'), ['superadmin', 'admin'], true)): ?>
         <a href="<?= base_url('admin/settings') ?>" class="sidebar-link <?= isActive('admin/settings') ?>">
           <i class="bi bi-gear"></i> Settings</a>
+        <?php endif; ?>
       </div>
     </nav>
     <div id="sidebarBackdrop" class="sidebar-backdrop"></div>

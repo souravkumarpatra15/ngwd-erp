@@ -9,7 +9,7 @@ class UserModel extends Model
     protected $primaryKey = 'id';
     protected $useTimestamps  = true;
     protected $allowedFields  = [
-        'name', 'email', 'password', 'role', 'client_id', 'client_role',
+        'name', 'email', 'password', 'role', 'department', 'client_id', 'client_role',
         'avatar', 'is_active', 'invited_at', 'last_login', 'remember_token',
     ];
 
@@ -18,7 +18,7 @@ class UserModel extends Model
     /** All non-client admin-side users */
     public function admins()
     {
-        return $this->whereIn('role', ['superadmin', 'admin', 'manager']);
+        return $this->whereIn('role', ['superadmin', 'admin', 'manager', 'staff']);
     }
 
     /** Only active users */
