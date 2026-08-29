@@ -15,6 +15,7 @@ class DocumentController extends BaseController
     private function storagePath(string $relativePath): string { $relativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\')); return $this->storageRoot() . $relativePath; }
 
     public function index() {
+        if($r=$this->requireModule('documents','view'))return $r;
         $documents=$this->db->table('documents')->select('documents.*, clients.name as client_name, projects.name as project_name')->join('clients','clients.id = documents.client_id','left')->join('projects','projects.id = documents.project_id','left')->orderBy('documents.created_at','DESC')->get()->getResultArray();
         return view('admin/documents/index',['title'=>'Documents','documents'=>$documents,'clients'=>(new ClientModel())->orderBy('name')->findAll()]);
     }

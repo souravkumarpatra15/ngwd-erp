@@ -9,6 +9,7 @@ use App\Services\NotificationService;
 class TicketController extends BaseController
 {
     public function index() {
+        if($r=$this->requireModule('tickets','view'))return $r;
         return view('admin/tickets/index', [
             'title'       => 'Support Tickets',
             'tickets'     => $this->db->table('tickets')->select('tickets.*, clients.name as client_name')->join('clients','clients.id = tickets.client_id','left')->orderBy('tickets.created_at','DESC')->get()->getResultArray(),

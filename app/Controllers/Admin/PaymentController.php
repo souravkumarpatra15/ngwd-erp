@@ -11,8 +11,8 @@ class PaymentController extends BaseController
 {
     protected $pm;
     public function __construct(){ $this->pm=new PaymentModel(); }
-    public function index(){ return view('admin/payments/index',['title'=>'Payments']); }
-    public function datatable(){
+    public function index(){ if($r=$this->requireModule('payments','view'))return $r; return view('admin/payments/index',['title'=>'Payments']); }
+    public function datatable(){ if($r=$this->requireModule('payments','view'))return $r;
         $search=$this->request->getGet('search');
         $result=$this->pm->getDataTable(is_array($search)?trim((string)($search['value']??'')):'',max(0,(int)$this->request->getGet('start')),(int)$this->request->getGet('length'));
         return $this->response->setJSON(['draw'=>max(0,(int)$this->request->getGet('draw')),'recordsTotal'=>(int)$result['total'],'recordsFiltered'=>(int)$result['filtered'],'data'=>$result['data']]);

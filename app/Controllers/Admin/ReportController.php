@@ -14,6 +14,7 @@ class ReportController extends BaseController
 {
     public function index()
     {
+        if($r=$this->requireModule('reports','view'))return $r;
         return view('admin/reports/index', ['title' => 'Reports']);
     }
 

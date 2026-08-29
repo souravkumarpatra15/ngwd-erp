@@ -10,7 +10,7 @@ class DomainController extends BaseController
 {
     protected $dm;
     public function __construct() { $this->dm = new DomainModel(); }
-    public function index() { return view('admin/domains/index',['title'=>'Domains','domains'=>$this->dm->getAllWithClient(),'expiring_soon'=>$this->dm->getExpiringCount(30),'expired'=>$this->dm->where('status','expired')->countAllResults()]); }
+    public function index() { if($r=$this->requireModule('domains','view'))return $r; return view('admin/domains/index',['title'=>'Domains','domains'=>$this->dm->getAllWithClient(),'expiring_soon'=>$this->dm->getExpiringCount(30),'expired'=>$this->dm->where('status','expired')->countAllResults()]); }
     public function create() { return view('admin/domains/create',['title'=>'Add Domain','clients'=>(new ClientModel())->findAll()]); }
     public function store() {
         $data=array_merge($this->request->getPost(),['created_by'=>session()->get('user_id')]);unset($data['csrf_test_name']);

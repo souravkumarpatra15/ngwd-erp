@@ -10,7 +10,7 @@ class HostingController extends BaseController
 {
     protected $hm;
     public function __construct() { $this->hm = new HostingModel(); }
-    public function index() { return view('admin/hostings/index',['title'=>'Hosting','hostings'=>$this->hm->getAllWithClient(),'expiring_soon'=>$this->hm->getExpiringCount(30),'expired'=>$this->hm->where('status','expired')->countAllResults()]); }
+    public function index() { if($r=$this->requireModule('hostings','view'))return $r; return view('admin/hostings/index',['title'=>'Hosting','hostings'=>$this->hm->getAllWithClient(),'expiring_soon'=>$this->hm->getExpiringCount(30),'expired'=>$this->hm->where('status','expired')->countAllResults()]); }
     public function create() { return view('admin/hostings/create',['title'=>'Add Hosting','clients'=>(new ClientModel())->findAll()]); }
     public function store() {
         $data=array_merge($this->request->getPost(),['created_by'=>session()->get('user_id')]);unset($data['csrf_test_name']);

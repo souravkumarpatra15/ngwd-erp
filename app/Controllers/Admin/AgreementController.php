@@ -21,6 +21,7 @@ class AgreementController extends BaseController
     // ── LIST ──────────────────────────────────────────────────
     public function index()
     {
+        if($r=$this->requireModule('agreements','view'))return $r;
         $agreements = $this->db->table('agreements')
             ->select('agreements.*, clients.name as client_name, projects.name as project_name')
             ->join('clients',  'clients.id  = agreements.client_id',  'left')

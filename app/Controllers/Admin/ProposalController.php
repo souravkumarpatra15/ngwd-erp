@@ -19,6 +19,7 @@ class ProposalController extends BaseController
     }
     public function index()
     {
+        if($r=$this->requireModule('proposals','view'))return $r;
         return view('admin/proposals/index', ['title' => 'Proposals']);
     }
     public function create()
