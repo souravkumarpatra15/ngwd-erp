@@ -18,6 +18,28 @@ class PaymentController extends BaseController
         return $this->response->setJSON(['draw'=>max(0,(int)$this->request->getGet('draw')),'recordsTotal'=>(int)$result['total'],'recordsFiltered'=>(int)$result['filtered'],'data'=>$result['data']]);
     }
     public function create(){ return view('admin/payments/create',['title'=>'Record Payment','clients'=>(new ClientModel())->orderBy('name')->findAll()]); }
+    private function getPaymentDetail(int $id): ?array {
+        return $this->db->table('payments')
+            ->select("payments.*, clients.name as client_name, projects.name as project_name, invoices.invoice_number, COALESCE(invoices.currency, milestones.currency, 'INR') as currency")
+            ->join('clients','clients.id = payments.client_id','left')
+            ->join('projects','projects.id = payments.project_id','left')
+            ->join('invoices','invoices.id = payments.invoice_id','left')
+            ->join('milestones','milestones.id = payments.milestone_id','left')
+            ->where('payments.id', $id)
+            ->get()->getRowArray();
+    }
+    public function show($id){
+        if($r=$this->requireModule('payments','view'))return $r;
+        $payment=$this->getPaymentDetail((int)$id);
+        if(!$payment) return redirect()->to('admin/payments')->with('error','Payment not found.');
+        return view('admin/payments/show',['title'=>'Payment '.$payment['payment_number'],'payment'=>$payment]);
+    }
+    public function receipt($id){
+        if($r=$this->requireModule('payments','view'))return $r;
+        $payment=$this->getPaymentDetail((int)$id);
+        if(!$payment) return redirect()->to('admin/payments')->with('error','Payment not found.');
+        return (new \App\Services\PDFService())->generateReceipt($payment, $this->settings);
+    }
     public function store(){
         if(!$this->validate(['client_id'=>'required|integer','amount'=>'required|decimal|greater_than[0]','currency'=>'required|exact_length[3]|alpha','method'=>'required|in_list[razorpay,upi,bank_transfer,cash,cheque]','payment_date'=>'required|valid_date'])) return redirect()->back()->withInput()->with('errors',$this->validator->getErrors());
         $invoiceId=$this->request->getPost('invoice_id')?:null; $projectId=$this->request->getPost('project_id')?:null; $milestoneId=$this->request->getPost('milestone_id')?:null; $transactionId=trim((string)($this->request->getPost('transaction_id')?:'')); $amount=(float)$this->request->getPost('amount'); $clientId=(int)$this->request->getPost('client_id'); $currency=strtoupper(trim((string)$this->request->getPost('currency')));

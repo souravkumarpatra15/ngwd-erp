@@ -6,7 +6,7 @@
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
         <div>
-          <span class="badge bg-success me-2">Completed</span>
+          <span class="badge bg-<?= ['completed'=>'success','pending'=>'warning','failed'=>'danger','refunded'=>'secondary'][$payment['status']] ?? 'secondary' ?> me-2"><?= ucfirst($payment['status']) ?></span>
           <span class="text-muted small"><?= esc($payment['payment_number']) ?></span>
         </div>
         <a href="<?= base_url('admin/payments/receipt/'.$payment['id']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-receipt me-1"></i>Receipt</a>
