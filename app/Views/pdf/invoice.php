@@ -59,8 +59,15 @@
       padding-right: 14px
     }
 
+    .logo-badge {
+      display: inline-block;
+      background: #fff;
+      border-radius: 5px;
+      padding: 7px 10px
+    }
+
     .logo-img {
-      height: 42px;
+      height: 34px;
       width: auto;
       max-width: 120px;
       display: block
@@ -280,7 +287,7 @@
         <tr>
           <?php if ($logoUrl): ?>
           <td class="logo-cell">
-            <img src="<?= esc($logoUrl) ?>" alt="<?= esc($settings['company_name'] ?? 'Logo') ?>" class="logo-img">
+            <div class="logo-badge"><img src="<?= esc($logoUrl) ?>" alt="<?= esc($settings['company_name'] ?? 'Logo') ?>" class="logo-img"></div>
           </td>
           <?php endif; ?>
           <td>

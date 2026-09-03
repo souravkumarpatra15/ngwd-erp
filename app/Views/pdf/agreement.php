@@ -20,7 +20,29 @@
     .header {
       background: #1a1a2e;
       color: #fff;
-      padding: 30px 40px
+      padding: 26px 40px;
+      display: table;
+      width: 100%
+    }
+
+    .header-brand {
+      display: table-cell;
+      vertical-align: middle
+    }
+
+    .logo-badge {
+      display: inline-block;
+      background: #fff;
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-bottom: 10px
+    }
+
+    .logo-badge img {
+      height: 30px;
+      width: auto;
+      max-width: 150px;
+      display: block
     }
 
     .header h1 {
@@ -143,9 +165,13 @@
   ?>
 
   <div class="header">
-    <div style="font-size:11px;opacity:.7;margin-bottom:8px"><?= esc($settings['company_name'] ?? '') ?></div>
-    <h1>SERVICE AGREEMENT</h1>
-    <div class="sub">Agreement No: <?= esc($agreement['agreement_number']) ?> &bull; <?= esc($agreement['title']) ?></div>
+    <div class="header-brand">
+      <?php if ($logoUrl): ?><div class="logo-badge"><img src="<?= esc($logoUrl) ?>" alt="<?= esc($settings['company_name'] ?? 'Logo') ?>"></div><?php else: ?>
+      <div style="font-size:11px;opacity:.7;margin-bottom:8px"><?= esc($settings['company_name'] ?? '') ?></div>
+      <?php endif; ?>
+      <h1>SERVICE AGREEMENT</h1>
+      <div class="sub">Agreement No: <?= esc($agreement['agreement_number']) ?> &bull; <?= esc($agreement['title']) ?></div>
+    </div>
   </div>
 
   <?php if (!empty($agreement['client_information'])): ?>

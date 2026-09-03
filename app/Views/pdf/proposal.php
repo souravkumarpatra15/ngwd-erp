@@ -37,9 +37,16 @@
       border-bottom: 5px solid #f4b400
     }
 
+    .cover .logo-badge {
+      display: inline-block;
+      background: #fff;
+      border-radius: 6px;
+      padding: 9px 14px;
+      margin-bottom: 20px
+    }
+
     .cover img.logo {
-      height: 36px;
-      margin-bottom: 20px;
+      height: 32px;
       display: block
     }
 
@@ -251,7 +258,7 @@
 
   <div class="cover">
     <?php if (!empty($logoUrl)): ?>
-      <img class="logo" src="<?= esc($logoUrl) ?>" alt="logo">
+      <div class="logo-badge"><img class="logo" src="<?= esc($logoUrl) ?>" alt="logo"></div>
     <?php else: ?>
       <div class="brand"><?= esc($settings['company_name'] ?? '') ?></div>
     <?php endif; ?>
