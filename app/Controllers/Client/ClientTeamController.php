@@ -4,6 +4,8 @@ namespace App\Controllers\Client;
 use App\Controllers\BaseController;
 use App\Models\UserModel;
 use App\Models\ModulePermissionModel;
+use App\Models\ProjectModel;
+use App\Models\ClientProjectMemberModel;
 use App\Services\PmsAuthorizationService;
 
 /**
@@ -35,19 +37,25 @@ class ClientTeamController extends BaseController
         }
         $users = $this->userModel->findAllByClientId($this->cid());
         $mpm = new ModulePermissionModel();
+        $cpm = new ClientProjectMemberModel();
         $extraModules = [];
+        $assignedProjects = [];
         foreach ($users as $u) {
             $perms = $mpm->forUser((int) $u['id']);
             $extraModules[$u['id']] = [
                 'invoices' => !empty($perms['invoices']['can_view']),
                 'payments' => !empty($perms['payments']['can_view']),
             ];
+            $assignedProjects[$u['id']] = $cpm->projectIdsForUser((int) $u['id']);
         }
         return view('client/team/index', [
             'title'     => 'My Team',
             'users'     => $users,
             'canManage' => $this->auth->clientCanManageUsers($this->role()),
+            'canAssignProjects' => $this->auth->clientCanAssignProjects($this->role()),
             'extraModules' => $extraModules,
+            'projects'  => (new ProjectModel())->where('client_id', $this->cid())->where('deleted_at IS NULL')->orderBy('name')->findAll(),
+            'assignedProjects' => $assignedProjects,
         ]);
     }
 
@@ -75,6 +83,7 @@ class ClientTeamController extends BaseController
                 (string) $this->request->getPost('client_role')
             );
             $this->saveExtraModules((int) $newUserId);
+            $this->saveProjectAssignments((int) $newUserId);
         } catch (\Throwable $e) {
             return redirect()->back()->withInput()->with('error', $e->getMessage());
         }
@@ -90,6 +99,15 @@ class ClientTeamController extends BaseController
         foreach (['invoices', 'payments'] as $module) {
             $mpm->upsert($userId, $module, ['can_view' => in_array($module, $checked, true)]);
         }
+    }
+
+    /** Sets which projects a Member/Viewer can see. Owner/Manager always see all, so their selection is ignored. */
+    private function saveProjectAssignments(int $userId): void
+    {
+        $projectIds = array_map('intval', (array) $this->request->getPost('project_ids'));
+        $validIds = array_column((new ProjectModel())->where('client_id', $this->cid())->select('id')->findAll(), 'id');
+        $projectIds = array_values(array_intersect($projectIds, $validIds));
+        (new ClientProjectMemberModel())->setAssignments($userId, $projectIds);
     }
 
     public function update(int $userId)
@@ -131,6 +149,7 @@ class ClientTeamController extends BaseController
 
         $this->userModel->update($userId, $data);
         $this->saveExtraModules($userId);
+        $this->saveProjectAssignments($userId);
         return redirect()->to('portal/team')->with('success', 'Team member updated.');
     }
 

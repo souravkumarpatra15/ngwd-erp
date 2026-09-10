@@ -6,6 +6,7 @@ use App\Models\DeliverableModel;
 use App\Models\ProjectMemberModel;
 use App\Models\ProjectModel;
 use App\Models\ModulePermissionModel;
+use App\Models\ClientProjectMemberModel;
 
 /**
  * Centralized authorization rules for the PMS layer.
@@ -19,6 +20,7 @@ class PmsAuthorizationService
     private ProjectModel $projects;
     private DeliverableModel $deliverables;
     private ModulePermissionModel $modulePerms;
+    private ClientProjectMemberModel $clientProjectMembers;
 
     public function __construct()
     {
@@ -26,6 +28,7 @@ class PmsAuthorizationService
         $this->projects = new ProjectModel();
         $this->deliverables = new DeliverableModel();
         $this->modulePerms = new ModulePermissionModel();
+        $this->clientProjectMembers = new ClientProjectMemberModel();
     }
 
     public function isPrivilegedInternal(?string $role): bool
@@ -277,5 +280,40 @@ class PmsAuthorizationService
     public function clientCanViewUsers(?string $clientRole): bool
     {
         return $this->clientRoleRank($clientRole) >= self::CLIENT_ROLE_RANK['manager'];
+    }
+
+    // ── Project-wise access for client team members ───────────────
+    // Owner/Manager always see every project belonging to their org — they
+    // run the account. Member/Viewer only see projects an Owner/Manager has
+    // explicitly assigned them to, via client_project_members.
+
+    /** Owner/Manager manage which projects a Member/Viewer can see. */
+    public function clientCanAssignProjects(?string $clientRole): bool
+    {
+        return $this->clientRoleRank($clientRole) >= self::CLIENT_ROLE_RANK['manager'];
+    }
+
+    /**
+     * Returns null when the client user has org-wide project visibility
+     * (owner/manager), or an array of project ids otherwise (even empty —
+     * meaning "no projects assigned yet"). Callers treat null as "no WHERE
+     * filter needed" and an array as "filter to exactly these ids".
+     */
+    public function getClientVisibleProjectIds(int $userId, ?string $clientRole): ?array
+    {
+        if ($this->clientRoleRank($clientRole) >= self::CLIENT_ROLE_RANK['manager']) {
+            return null;
+        }
+        return $this->clientProjectMembers->projectIdsForUser($userId);
+    }
+
+    /** Combines the client tenant boundary with the per-user project assignment. */
+    public function canClientUserAccessProject(int $userId, ?string $clientRole, int $clientId, int $projectId): bool
+    {
+        if (!$this->canClientAccessProject($clientId, $projectId)) {
+            return false;
+        }
+        $visible = $this->getClientVisibleProjectIds($userId, $clientRole);
+        return $visible === null || in_array($projectId, $visible, true);
     }
 }

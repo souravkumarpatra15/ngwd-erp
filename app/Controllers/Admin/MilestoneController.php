@@ -18,8 +18,10 @@ class MilestoneController extends BaseController
 
     public function index()
     {
+        $auth = new \App\Services\PmsAuthorizationService();
         return view('admin/milestones/index', [
             'title' => 'Milestones',
+            'canViewFinancials' => $auth->canViewFinancials((string) session()->get('user_role'), (string) session()->get('department')),
             'milestones' => $this->db->table('milestones')->select('milestones.*, projects.name as project_name, clients.name as client_name')->join('projects', 'projects.id = milestones.project_id', 'left')->join('clients', 'clients.id = projects.client_id', 'left')->orderBy('milestones.due_date', 'ASC')->get()->getResultArray(),
         ]);
     }

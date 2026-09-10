@@ -30,26 +30,41 @@
             <th class="ps-4">Name</th>
             <th>Email</th>
             <th>Role</th>
+            <th>Projects</th>
             <th>Status</th>
             <?php if ($canManage): ?><th class="pe-4 text-end">Actions</th><?php endif; ?>
           </tr>
         </thead>
         <tbody>
           <?php if (empty($users)): ?>
-            <tr><td colspan="<?= $canManage ? 5 : 4 ?>" class="text-center text-muted py-5">No team members yet.</td></tr>
+            <tr><td colspan="<?= $canManage ? 6 : 5 ?>" class="text-center text-muted py-5">No team members yet.</td></tr>
           <?php else: ?>
             <?php $roleColors = ['owner' => 'primary', 'manager' => 'info', 'member' => 'secondary', 'viewer' => 'light']; ?>
+            <?php $projectNames = array_column($projects, 'name', 'id'); ?>
             <?php foreach ($users as $u): ?>
               <tr>
                 <td class="ps-4 fw-semibold small"><?= esc($u['name']) ?></td>
                 <td class="small text-muted"><?= esc($u['email']) ?></td>
                 <td><span class="badge bg-<?= $roleColors[$u['client_role']] ?? 'secondary' ?> <?= $u['client_role']==='viewer'?'text-dark border':'' ?>"><?= ucfirst($u['client_role']) ?></span></td>
+                <td class="small">
+                  <?php if (in_array($u['client_role'], ['owner','manager'], true)): ?>
+                    <span class="text-muted">All projects</span>
+                  <?php else: ?>
+                    <?php $assigned = $assignedProjects[$u['id']] ?? []; ?>
+                    <?php if (empty($assigned)): ?>
+                      <span class="text-muted fst-italic">No projects assigned</span>
+                    <?php else: ?>
+                      <?php foreach ($assigned as $pid): ?><span class="badge bg-light text-dark border me-1 mb-1"><?= esc($projectNames[$pid] ?? '—') ?></span><?php endforeach; ?>
+                    <?php endif; ?>
+                  <?php endif; ?>
+                </td>
                 <td><span class="badge bg-<?= (int) $u['is_active'] ? 'success' : 'secondary' ?>"><?= (int) $u['is_active'] ? 'Active' : 'Disabled' ?></span></td>
                 <?php if ($canManage): ?>
                 <td class="pe-4 text-end">
                   <button type="button" class="btn btn-xs btn-outline-warning btn-edit-team-member"
                     data-id="<?= $u['id'] ?>" data-name="<?= esc($u['name'], 'attr') ?>" data-email="<?= esc($u['email'], 'attr') ?>" data-role="<?= esc($u['client_role'], 'attr') ?>"
-                    data-inv="<?= !empty($extraModules[$u['id']]['invoices']) ? '1' : '0' ?>" data-pay="<?= !empty($extraModules[$u['id']]['payments']) ? '1' : '0' ?>">Edit</button>
+                    data-inv="<?= !empty($extraModules[$u['id']]['invoices']) ? '1' : '0' ?>" data-pay="<?= !empty($extraModules[$u['id']]['payments']) ? '1' : '0' ?>"
+                    data-projects="<?= esc(implode(',', $assignedProjects[$u['id']] ?? []), 'attr') ?>">Edit</button>
                   <button type="button" class="btn btn-xs btn-outline-secondary btn-toggle-team-member" data-id="<?= $u['id'] ?>">
                     <?= (int) $u['is_active'] ? 'Disable' : 'Enable' ?>
                   </button>
@@ -91,6 +106,15 @@
             <div class="form-check"><input class="form-check-input" type="checkbox" name="modules[]" value="invoices" id="addModInv"><label class="form-check-label small" for="addModInv">Can view Invoices</label></div>
             <div class="form-check"><input class="form-check-input" type="checkbox" name="modules[]" value="payments" id="addModPay"><label class="form-check-label small" for="addModPay">Can view Payments</label></div>
           </div>
+          <div class="mb-1 mt-2" id="addProjectAccessWrap">
+            <label class="form-label small fw-semibold">Project Access <span class="text-muted fw-normal">(Member/Viewer only see projects checked here)</span></label>
+            <div style="max-height:150px;overflow-y:auto" class="border rounded p-2">
+              <?php if (empty($projects)): ?><div class="text-muted small">No projects yet.</div><?php endif; ?>
+              <?php foreach ($projects as $p): ?>
+                <div class="form-check"><input class="form-check-input" type="checkbox" name="project_ids[]" value="<?= $p['id'] ?>" id="addProj<?= $p['id'] ?>"><label class="form-check-label small" for="addProj<?= $p['id'] ?>"><?= esc($p['name']) ?></label></div>
+              <?php endforeach; ?>
+            </div>
+          </div>
         </div>
         <div class="modal-footer border-0 pt-0"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary">Add Member</button></div>
       </form>
@@ -124,6 +148,15 @@
             <div class="form-check"><input class="form-check-input" type="checkbox" name="modules[]" value="invoices" id="editModInv"><label class="form-check-label small" for="editModInv">Can view Invoices</label></div>
             <div class="form-check"><input class="form-check-input" type="checkbox" name="modules[]" value="payments" id="editModPay"><label class="form-check-label small" for="editModPay">Can view Payments</label></div>
           </div>
+          <div class="mb-1 mt-2" id="editProjectAccessWrap">
+            <label class="form-label small fw-semibold">Project Access <span class="text-muted fw-normal">(Member/Viewer only see projects checked here)</span></label>
+            <div style="max-height:150px;overflow-y:auto" class="border rounded p-2">
+              <?php if (empty($projects)): ?><div class="text-muted small">No projects yet.</div><?php endif; ?>
+              <?php foreach ($projects as $p): ?>
+                <div class="form-check"><input class="form-check-input edit-proj-cb" type="checkbox" name="project_ids[]" value="<?= $p['id'] ?>" id="editProj<?= $p['id'] ?>"><label class="form-check-label small" for="editProj<?= $p['id'] ?>"><?= esc($p['name']) ?></label></div>
+              <?php endforeach; ?>
+            </div>
+          </div>
         </div>
         <div class="modal-footer border-0 pt-0"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary">Save Changes</button></div>
       </form>
@@ -137,6 +170,13 @@
 <?php if ($canManage): ?>
 <?= $this->section('scripts') ?>
 <script>
+  function toggleProjectWrap(wrapId, roleValue) {
+    const isOrgWide = roleValue === 'owner' || roleValue === 'manager';
+    $(`#${wrapId}`).toggle(!isOrgWide);
+  }
+  $('#addTeamMemberModal select[name="client_role"]').on('change', function () { toggleProjectWrap('addProjectAccessWrap', this.value); }).trigger('change');
+  $('#editTmRole').on('change', function () { toggleProjectWrap('editProjectAccessWrap', this.value); });
+
   $(document).on('click', '.btn-edit-team-member', function () {
     const id = $(this).data('id');
     $('#editTeamMemberForm').attr('action', `<?= base_url('portal/team/') ?>${id}/update`);
@@ -145,6 +185,9 @@
     $('#editTmRole').val($(this).data('role'));
     $('#editModInv').prop('checked', $(this).data('inv') === 1 || $(this).data('inv') === '1');
     $('#editModPay').prop('checked', $(this).data('pay') === 1 || $(this).data('pay') === '1');
+    const assigned = String($(this).data('projects') || '').split(',').filter(Boolean).map(String);
+    $('.edit-proj-cb').each(function () { $(this).prop('checked', assigned.includes(String(this.value))); });
+    toggleProjectWrap('editProjectAccessWrap', $(this).data('role'));
     bootstrap.Modal.getOrCreateInstance(document.getElementById('editTeamMemberModal')).show();
   });
 

@@ -14,15 +14,16 @@
           <th>Milestone</th>
           <th>Project</th>
           <th>Client</th>
-          <th>Amount</th>
+          <?php if (!empty($canViewFinancials)): ?><th>Amount</th><?php endif; ?>
           <th>Due Date</th>
+          <th>Due Time</th>
           <th>Status</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         <?php if (empty($milestones)): ?>
-        <tr><td colspan="7" class="text-center text-muted py-5"><i class="bi bi-flag fs-3 d-block mb-2 opacity-25"></i>No milestones found</td></tr>
+        <tr><td colspan="<?= !empty($canViewFinancials) ? 8 : 7 ?>" class="text-center text-muted py-5"><i class="bi bi-flag fs-3 d-block mb-2 opacity-25"></i>No milestones found</td></tr>
         <?php else: ?>
         <?php foreach ($milestones as $ms): ?>
         <?php
@@ -36,11 +37,12 @@
           </td>
           <td><a href="<?= base_url('admin/projects/'.$ms['project_id']) ?>" class="text-decoration-none small"><?= esc($ms['project_name'] ?? '—') ?></a></td>
           <td class="small text-muted"><?= esc($ms['client_name'] ?? '—') ?></td>
-          <td class="fw-semibold text-primary"><?= currencySymbol($ms['currency'] ?? 'INR') ?><?= number_format($ms['amount'] ?? 0, 0) ?></td>
+          <?php if (!empty($canViewFinancials)): ?><td class="fw-semibold text-primary"><?= currencySymbol($ms['currency'] ?? 'INR') ?><?= number_format($ms['amount'] ?? 0, 0) ?></td><?php endif; ?>
           <td class="<?= $overdue ? 'text-danger fw-semibold' : '' ?> small">
             <?= $ms['due_date'] && $ms['due_date'] !== '0000-00-00' ? date('d M Y', strtotime($ms['due_date'])) : '—' ?>
             <?php if ($overdue): ?><span class="badge bg-danger ms-1">Overdue</span><?php endif; ?>
           </td>
+          <td class="small text-muted"><?= !empty($ms['due_time']) ? date('h:i A', strtotime($ms['due_time'])) : '—' ?></td>
           <td>
             <select class="form-select form-select-sm ms-status-select" data-id="<?= $ms['id'] ?>" style="width:120px">
               <?php foreach (['pending','in_progress','completed','paid'] as $s): ?>
@@ -52,6 +54,7 @@
             <div class="d-flex gap-1">
               <a href="<?= base_url('admin/projects/'.$ms['project_id']) ?>" class="btn btn-xs btn-outline-primary" title="View Project"><i class="bi bi-folder2-open"></i></a>
               <button class="btn btn-xs btn-outline-info btn-ms-notes" data-id="<?= $ms['id'] ?>" data-title="<?= esc($ms['title']) ?>" title="Notes / Q&A"><i class="bi bi-chat-left-text"></i></button>
+              <button class="btn btn-xs btn-outline-warning btn-edit-ms" data-id="<?= $ms['id'] ?>" data-title="<?= esc($ms['title'], 'attr') ?>" data-description="<?= esc($ms['description'] ?? '', 'attr') ?>" data-amount="<?= esc($ms['amount'] ?? 0, 'attr') ?>" data-currency="<?= esc($ms['currency'] ?? 'INR', 'attr') ?>" data-due-date="<?= esc($ms['due_date'] ?? '', 'attr') ?>" data-due-time="<?= esc(substr((string)($ms['due_time'] ?? ''), 0, 5), 'attr') ?>" title="Edit Milestone"><i class="bi bi-pencil"></i></button>
               <?php if (!in_array($ms['status'], ['completed','paid'])): ?>
               <button class="btn btn-xs btn-outline-success btn-pay-link-ms" data-id="<?= $ms['id'] ?>" title="Generate Payment Link"><i class="bi bi-credit-card"></i></button>
               <?php endif; ?>
@@ -90,11 +93,56 @@
   </div>
 </div>
 
+<!-- Edit Milestone Modal -->
+<div class="modal fade" id="editMilestoneModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-0"><h5 class="modal-title fw-semibold">Edit Milestone</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form id="editMsForm">
+        <?= csrf_field() ?>
+        <input type="hidden" name="ms_id" id="editMsId" value="">
+        <div class="modal-body row g-3">
+          <div class="col-12"><label class="form-label small fw-semibold">Title *</label><input name="title" id="editMsTitle" class="form-control" required></div>
+          <div class="col-12"><label class="form-label small fw-semibold">Description</label><textarea name="description" id="editMsDescription" class="form-control" rows="2"></textarea></div>
+          <?php if (!empty($canViewFinancials)): ?>
+          <div class="col-md-7"><label class="form-label small fw-semibold">Amount</label><input type="number" step="0.01" min="0" name="amount" id="editMsAmount" class="form-control"></div>
+          <div class="col-md-5"><label class="form-label small fw-semibold">Currency</label><select name="currency" id="editMsCurrency" class="form-select"><?php foreach (['INR' => '₹ INR', 'USD' => '$ USD', 'EUR' => '€ EUR', 'GBP' => '£ GBP', 'AED' => 'د.إ AED', 'CAD' => 'C$ CAD', 'AUD' => 'A$ AUD', 'SGD' => 'S$ SGD'] as $code => $label): ?><option value="<?= $code ?>"><?= $label ?></option><?php endforeach; ?></select></div>
+          <?php endif; ?>
+          <div class="col-md-6"><label class="form-label small fw-semibold">Due Date</label><input type="date" name="due_date" id="editMsDueDate" class="form-control"></div>
+          <div class="col-md-6"><label class="form-label small fw-semibold">Due Time</label><input type="time" name="due_time" id="editMsDueTime" class="form-control"></div>
+        </div>
+        <div class="modal-footer border-0"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary">Save Changes</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <?= $this->endSection() ?>
 <?= $this->section('scripts') ?>
 <?= view('admin/milestones/partials/notes_modal') ?>
 <script>
 const BASE = '<?= base_url() ?>'; const CSRF = CSRF_TOKEN;
+
+$(document).on('click', '.btn-edit-ms', function() {
+  const d = $(this).data();
+  $('#editMsId').val(d.id);
+  $('#editMsTitle').val(d.title || '');
+  $('#editMsDescription').val(d.description || '');
+  if ($('#editMsAmount').length) $('#editMsAmount').val(d.amount || 0);
+  if ($('#editMsCurrency').length) $('#editMsCurrency').val(d.currency || 'INR');
+  $('#editMsDueDate').val(d.dueDate || '');
+  $('#editMsDueTime').val(d.dueTime || '');
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('editMilestoneModal')).show();
+});
+$('#editMsForm').on('submit', function(e) {
+  e.preventDefault();
+  const id = $('#editMsId').val();
+  showLoader('Saving...');
+  $.post(`${BASE}admin/milestones/update/${id}`, $(this).serialize(), res => {
+    hideLoader(); showToast(res.message, res.status);
+    if (res.status === 'success') { bootstrap.Modal.getInstance(document.getElementById('editMilestoneModal')).hide(); setTimeout(() => location.reload(), 500); }
+  }, 'json');
+});
 
 $('.ms-status-select').on('change', function() {
   const id = $(this).data('id'), status = $(this).val();

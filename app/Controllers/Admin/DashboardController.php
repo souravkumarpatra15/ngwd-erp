@@ -23,13 +23,16 @@ class DashboardController extends BaseController
         $invoiceModel = new InvoiceModel();
         $domainModel  = new DomainModel();
         $hostingModel = new HostingModel();
-        $revenueByCurrency = $paymentModel->getMonthlyRevenueByCurrency();
-        $pendingPaymentsByCurrency = $this->getPendingPaymentsByCurrency($invoiceModel);
-        $visible = (new PmsAuthorizationService())->getVisibleProjectIds((string) session()->get('user_role'), (int) session()->get('user_id'));
+        $auth = new PmsAuthorizationService();
+        $canViewFinancials = $auth->canViewFinancials((string) session()->get('user_role'), (string) session()->get('department'));
+        $revenueByCurrency = $canViewFinancials ? $paymentModel->getMonthlyRevenueByCurrency() : [];
+        $pendingPaymentsByCurrency = $canViewFinancials ? $this->getPendingPaymentsByCurrency($invoiceModel) : [];
+        $visible = $auth->getVisibleProjectIds((string) session()->get('user_role'), (int) session()->get('user_id'));
         $scopeProjects = fn($q) => $visible === null ? $q : $q->whereIn('id', $visible ?: [0]);
 
         return view('admin/dashboard/index', [
             'title'              => 'Dashboard',
+            'canViewFinancials'  => $canViewFinancials,
             'total_leads'        => $leadModel->countAll(),
             'total_clients'      => $clientModel->countAll(),
             'active_projects'    => $scopeProjects($projectModel->where('status','development'))->countAllResults(),
@@ -44,9 +47,9 @@ class DashboardController extends BaseController
             'hosting_renewals'   => $hostingModel->getExpiringCount(30),
             'todays_followups'   => $leadModel->getTodaysFollowUps(),
             'upcoming_renewals'  => array_merge($domainModel->getUpcomingRenewals(30), $hostingModel->getUpcomingRenewals(30)),
-            'recent_payments'    => $paymentModel->getRecent(5),
+            'recent_payments'    => $canViewFinancials ? $paymentModel->getRecent(5) : [],
             'recent_leads'       => $leadModel->getRecent(5),
-            'monthly_revenue_chart' => $paymentModel->getMonthlyRevenueChart(),
+            'monthly_revenue_chart' => $canViewFinancials ? $paymentModel->getMonthlyRevenueChart() : [],
             'lead_conversion_chart' => $leadModel->getConversionChart(),
             'project_status_chart'  => $projectModel->getStatusChart(),
             'my_work'            => (new TaskModel())->getMyWork((int) session()->get('user_id')),

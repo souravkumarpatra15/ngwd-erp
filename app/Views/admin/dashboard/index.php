@@ -9,11 +9,13 @@ $cards = [
   ['label'=>'Total Clients','value'=>$total_clients,'icon'=>'people','color'=>'success','link'=>'admin/clients'],
   ['label'=>'Active Projects','value'=>$active_projects,'icon'=>'folder2-open','color'=>'warning','link'=>'admin/projects'],
   ['label'=>'Completed Projects','value'=>$completed_projects,'icon'=>'check2-circle','color'=>'info','link'=>'admin/projects'],
-  ['label'=>'Monthly Revenue','value'=>renderCurrencyBreakdown($monthly_revenue_by_currency ?? []),'icon'=>'cash-stack','color'=>'success','link'=>'admin/reports/revenue'],
-  ['label'=>'Pending Payments','value'=>renderCurrencyBreakdown($pending_payments_by_currency ?? []),'icon'=>'exclamation-circle','color'=>'danger','link'=>'admin/invoices'],
-  ['label'=>'Domain Renewals','value'=>$domain_renewals,'icon'=>'globe','color'=>'secondary','link'=>'admin/domains'],
-  ['label'=>'Hosting Renewals','value'=>$hosting_renewals,'icon'=>'server','color'=>'dark','link'=>'admin/hostings'],
 ];
+if (!empty($canViewFinancials)) {
+  $cards[] = ['label'=>'Monthly Revenue','value'=>renderCurrencyBreakdown($monthly_revenue_by_currency ?? []),'icon'=>'cash-stack','color'=>'success','link'=>'admin/reports/revenue'];
+  $cards[] = ['label'=>'Pending Payments','value'=>renderCurrencyBreakdown($pending_payments_by_currency ?? []),'icon'=>'exclamation-circle','color'=>'danger','link'=>'admin/invoices'];
+}
+$cards[] = ['label'=>'Domain Renewals','value'=>$domain_renewals,'icon'=>'globe','color'=>'secondary','link'=>'admin/domains'];
+$cards[] = ['label'=>'Hosting Renewals','value'=>$hosting_renewals,'icon'=>'server','color'=>'dark','link'=>'admin/hostings'];
 foreach ($cards as $c): ?>
 <div class="col-6 col-md-3">
   <div class="card border-0 shadow-sm h-100 card-hover">
@@ -76,6 +78,7 @@ foreach ($cards as $c): ?>
 
 <!-- Charts Row -->
 <div class="row g-3 mb-4">
+<?php if (!empty($canViewFinancials)): ?>
   <div class="col-md-8">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-header bg-white border-0 py-3">
@@ -85,6 +88,8 @@ foreach ($cards as $c): ?>
     </div>
   </div>
   <div class="col-md-4">
+<?php else: ?>
+  <div class="col-md-12">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-header bg-white border-0 py-3">
         <h6 class="mb-0 fw-semibold"><i class="bi bi-pie-chart me-2 text-success"></i>Lead Status</h6>
@@ -92,6 +97,7 @@ foreach ($cards as $c): ?>
       <div class="card-body pt-0"><canvas id="leadChart" height="140"></canvas></div>
     </div>
   </div>
+<?php endif; ?>
 </div>
 
 <!-- Widgets Row -->
@@ -151,6 +157,7 @@ foreach ($cards as $c): ?>
   </div>
 
   <!-- Recent Payments -->
+  <?php if (!empty($canViewFinancials)): ?>
   <div class="col-md-6">
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-white border-0 py-3">
@@ -174,6 +181,7 @@ foreach ($cards as $c): ?>
       </div>
     </div>
   </div>
+  <?php endif; ?>
 
   <!-- Recent Leads -->
   <div class="col-md-6">
@@ -205,6 +213,7 @@ foreach ($cards as $c): ?>
 
 <?= $this->section('scripts') ?>
 <script>
+<?php if (!empty($canViewFinancials)): ?>
 const revenueData = <?= json_encode(array_values($monthly_revenue_chart)) ?>;
 new Chart(document.getElementById('revenueChart'), {
   type: 'bar',
@@ -213,6 +222,7 @@ new Chart(document.getElementById('revenueChart'), {
   },
   options: { responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,ticks:{callback:v=>'₹'+(v/1000).toFixed(0)+'K'}}}}
 });
+<?php endif; ?>
 
 const leadData = <?= json_encode($lead_conversion_chart) ?>;
 new Chart(document.getElementById('leadChart'), {

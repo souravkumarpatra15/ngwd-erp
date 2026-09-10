@@ -3,6 +3,7 @@ namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
 use App\Models\DeliverableModel;
+use App\Models\DeliverableApprovalModel;
 use App\Models\ProjectModel;
 use App\Models\MilestoneModel;
 use App\Models\UserModel;
@@ -44,6 +45,21 @@ class DeliverableController extends BaseController
         $data = $this->request->getPost(); unset($data['csrf_test_name']); $data['created_by'] = session()->get('user_id'); $data['status'] = in_array($data['status'] ?? 'draft', DeliverableModel::STATUSES, true) ? $data['status'] : 'draft';
         $id = $this->dm->insert($data); $this->logActivity('projects',$projectId,'deliverable_created','Deliverable: '.$data['title']);
         return redirect()->to('admin/deliverables?project_id='.$projectId)->with('success','Deliverable created.');
+    }
+
+    public function view(int $id)
+    {
+        $item = $this->dm->getWithDetails($id);
+        if (!$item) return redirect()->to('admin/deliverables')->with('error', 'Deliverable not found.');
+        if (!$this->pmsAuth->canViewProjectScoped((string) session()->get('user_role'), (int) session()->get('user_id'), (int) $item['project_id'])) {
+            return redirect()->to('admin/deliverables')->with('error', 'You are not assigned to this project.');
+        }
+        return view('admin/deliverables/detail', [
+            'title' => $item['title'],
+            'deliverable' => $item,
+            'history' => (new DeliverableApprovalModel())->history($id),
+            'canManage' => $this->canManageProject((int) $item['project_id']),
+        ]);
     }
 
     public function updateStatus(int $id)
