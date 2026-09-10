@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?= $title ?? 'Client Portal' ?> — NGWebD</title>
 <meta name="csrf-token" content="<?= csrf_hash() ?>">
+<meta name="<?= csrf_header() ?>" content="<?= csrf_hash() ?>">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 <link rel="stylesheet" href="<?= base_url('assets/css/custom.css') ?>">
@@ -278,6 +279,17 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .fw-bold, strong { font-family: 'Sora', '
     if (s < 3600) return Math.floor(s / 60) + 'm ago';
     if (s < 86400) return Math.floor(s / 3600) + 'h ago';
     return Math.floor(s / 86400) + 'd ago';
+  }
+  function getCsrfToken() {
+      const meta = document.querySelector('meta[name="<?= csrf_header() ?>"]');
+      return meta ? meta.getAttribute('content') : '';
+  }
+
+  function csrfHeaders() {
+      return {
+          'X-CSRF-TOKEN': getCsrfToken(),
+          'X-Requested-With': 'XMLHttpRequest'
+      };
   }
   function renderNotifList(items) {
     if (!items.length) return '<p class="text-center text-muted py-3 small mb-0">No notifications yet</p>';

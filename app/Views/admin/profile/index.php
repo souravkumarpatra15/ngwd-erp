@@ -211,7 +211,7 @@
 
                 <div class="d-flex align-items-center gap-3">
                     <?php if (!empty($user['avatar'])): ?>
-                        <img src="<?= base_url('writable/' . $user['avatar']) ?>"
+                        <img src="<?= base_url($user['avatar']) ?>"
                             class="profile-avatar"
                             alt="Profile Avatar">
                     <?php else: ?>
@@ -249,7 +249,7 @@
 
                         <div class="avatar-box">
                             <?php if (!empty($user['avatar'])): ?>
-                                <img src="<?= base_url('writable/' . $user['avatar']) ?>"
+                                <img src="<?= base_url($user['avatar']) ?>"
                                     class="profile-avatar mb-3"
                                     alt="Profile Avatar">
                             <?php else: ?>

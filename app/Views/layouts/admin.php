@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= $title ?? 'Dashboard' ?> — NGWebD ERP</title>
   <meta name="csrf-token" content="<?= csrf_hash() ?>">
+  <meta name="<?= csrf_header() ?>" content="<?= csrf_hash() ?>">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
@@ -147,7 +148,7 @@
 
       <!-- Topbar -->
       <nav class="navbar navbar-expand bg-white border-bottom px-3 py-2 sticky-top" style="z-index:100">
-        <button class="btn btn-sm btn-outline-secondary me-2" id="sidebarOpen"><i class="bi bi-list fs-5"></i></button>
+        <!-- <button class="btn btn-sm btn-outline-secondary me-2" id="sidebarOpen"><i class="bi bi-list fs-5"></i></button> -->
 
         <div class="me-auto">
           <input type="text" id="globalSearch" class="form-control form-control-sm" placeholder="Everything Search here..." style="width:280px; height:40px;font-family:'Bootstrap Icons',sans-serif">
@@ -399,6 +400,17 @@
       } else {
         document.getElementById('sidebar')?.classList.toggle('d-none');
       }
+    }
+    function getCsrfToken() {
+        const meta = document.querySelector('meta[name="<?= csrf_header() ?>"]');
+        return meta ? meta.getAttribute('content') : '';
+    }
+
+    function csrfHeaders() {
+        return {
+            'X-CSRF-TOKEN': getCsrfToken(),
+            'X-Requested-With': 'XMLHttpRequest'
+        };
     }
     document.getElementById('sidebarOpen')?.addEventListener('click', handleSidebarToggleClick);
     document.getElementById('sidebarToggle')?.addEventListener('click', handleSidebarToggleClick);
