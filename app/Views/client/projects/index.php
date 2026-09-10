@@ -32,12 +32,16 @@
         </div>
 
         <div class="row text-center small g-2 mb-3">
-          <div class="col-6">
+          <div class="col-4">
             <div class="text-muted">Start</div>
             <div class="fw-semibold"><?= $p['start_date'] ? date('d M Y',strtotime($p['start_date'])) : '—' ?></div>
           </div>
-          <div class="col-6">
-            <div class="text-muted">Deadline</div>
+          <div class="col-4">
+            <div class="text-muted">Delivery Date</div>
+            <div class="fw-semibold"><?= $p['delivery_date'] ? date('d M Y',strtotime($p['delivery_date'])) : '—' ?></div>
+          </div>
+          <div class="col-4">
+            <div class="text-muted">End Date</div>
             <div class="fw-semibold"><?= $p['end_date'] ? date('d M Y',strtotime($p['end_date'])) : '—' ?></div>
           </div>
         </div>

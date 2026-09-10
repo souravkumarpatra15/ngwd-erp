@@ -56,7 +56,12 @@ class ProfileController extends BaseController
                 return redirect()->back()->with('error', 'Avatar must be a JPG, PNG or WebP image.');
             }
             $name = 'avatar_' . $id . '_' . time() . '.' . $avatar->getExtension();
-            $avatar->move(WRITEPATH . 'uploads/avatars/', $name);
+            // $avatar->move(WRITEPATH . 'uploads/avatars/', $name);
+            $avatar->move(FCPATH . 'uploads/avatars/', $name);
+            $uploadPath = FCPATH . 'uploads/avatars/';
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
             $data['avatar'] = 'uploads/avatars/' . $name;
         }
 
