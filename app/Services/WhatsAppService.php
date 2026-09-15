@@ -6,7 +6,7 @@ use App\Models\SettingModel;
 
 class WhatsAppService
 {
-    protected string $apiUrl = 'https://backend.aisensy.com/campaign/t1/api/v2';
+    protected string $apiUrl = 'https://backend.aisensy.com/campaign/t1/api/v2'; 
 
     protected string $apiKey;
     protected string $defaultSource;
