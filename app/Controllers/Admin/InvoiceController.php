@@ -15,6 +15,7 @@ use App\Services\EmailService;
 use App\Services\WhatsAppService;
 use App\Services\NotificationService;
 use App\Services\PaymentService;
+use App\Services\WhatsAppNotificationService;
 
 class InvoiceController extends BaseController
 {
@@ -56,7 +57,7 @@ class InvoiceController extends BaseController
             'title'        => 'Create Invoice',
             'clients'      => (new ClientModel())->orderBy('name')->findAll(),
             'default_tax'  => $this->settings['tax_percent'] ?? 18,
-            'default_terms'=> $this->settings['invoice_terms'] ?? '',
+            'default_terms' => $this->settings['invoice_terms'] ?? '',
             // Optional prefill — lets "Create Invoice" buttons on the Domain/Hosting
             // pages jump straight here with the right client/type/item pre-selected.
             'prefill' => [
@@ -64,7 +65,7 @@ class InvoiceController extends BaseController
                 'client_id'   => $this->request->getGet('client_id') ?? '',
                 'domain_id'   => $this->request->getGet('domain_id') ?? '',
                 'hosting_id'  => $this->request->getGet('hosting_id') ?? '',
-                'milestone_id'=> $this->request->getGet('milestone_id') ?? '',
+                'milestone_id' => $this->request->getGet('milestone_id') ?? '',
             ],
         ]);
     }
@@ -131,10 +132,10 @@ class InvoiceController extends BaseController
         if (!$invoice) return redirect()->to('admin/invoices');
         $items = (new InvoiceItemModel())->where('invoice_id', $id)->orderBy('sort_order')->findAll();
         return view('admin/invoices/show', [
-            'title'   => 'Invoice '.$invoice['invoice_number'],
+            'title'   => 'Invoice ' . $invoice['invoice_number'],
             'invoice' => $invoice,
             'items'   => $items,
-            'settings'=> $this->settings,
+            'settings' => $this->settings,
         ]);
     }
 
@@ -168,10 +169,10 @@ class InvoiceController extends BaseController
         $this->im->update($id, [
             'client_id'   => $post['client_id'],
             'project_id'  => !empty($post['project_id']) ? $post['project_id'] : null,
-            'milestone_id'=> !empty($post['milestone_id']) ? $post['milestone_id'] : null,
+            'milestone_id' => !empty($post['milestone_id']) ? $post['milestone_id'] : null,
             'domain_id'   => !empty($post['domain_id'])    ? $post['domain_id']    : null,
             'hosting_id'  => !empty($post['hosting_id'])   ? $post['hosting_id']   : null,
-            'invoice_date'=> $post['invoice_date'],
+            'invoice_date' => $post['invoice_date'],
             'due_date'    => $post['due_date'],
             'subtotal'    => $subtotal,
             'tax_percent' => $tax_pct,
@@ -260,15 +261,44 @@ class InvoiceController extends BaseController
     public function sendWhatsApp($id)
     {
         $inv = $this->im->getWithDetails($id);
-        $msg = "Invoice *{$inv['invoice_number']}*\nAmount: " . currencySymbol($inv['currency'] ?? 'INR') . number_format($inv['total'], 2)
-            . "\nDue: {$inv['due_date']}\n\n" . ($this->settings['company_name'] ?? '');
-        $res = (new WhatsAppService())->sendMessage($inv['client_whatsapp'], $msg);
-        if ($res) {
-            $this->im->update($id, ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);
-            (new NotificationService())->createForClient($inv['client_id'], 'invoice_sent', 'New Invoice', "Invoice {$inv['invoice_number']} — " . currencySymbol($inv['currency'] ?? 'INR') . number_format($inv['total'], 2), (int) $id, 'invoice');
-            return $this->jsonSuccess('WhatsApp sent!');
+
+        if (!$inv || empty($inv['client_whatsapp'])) {
+            return $this->jsonError('Client WhatsApp number not available.');
         }
-        return $this->jsonError('Failed.');
+
+        $amount = currencySymbol($inv['currency'] ?? 'INR')
+            . number_format($inv['total'], 2);
+
+        $whatsapp = new WhatsAppNotificationService();
+
+        $res = $whatsapp->invoiceSent(
+            $inv['client_whatsapp'],
+            $inv['client_name'] ?? '',
+            $inv['invoice_number'],
+            $amount,
+            $inv['due_date'],
+            $this->settings['company_name'] ?? 'NGWebD'
+        );
+
+        if ($res) {
+            $this->im->update($id, [
+                'status'  => 'sent',
+                'sent_at' => date('Y-m-d H:i:s')
+            ]);
+
+            (new NotificationService())->createForClient(
+                $inv['client_id'],
+                'invoice_sent',
+                'New Invoice',
+                "Invoice {$inv['invoice_number']} — {$amount}",
+                (int) $id,
+                'invoice'
+            );
+
+            return $this->jsonSuccess('WhatsApp invoice sent!');
+        }
+
+        return $this->jsonError('Failed to send WhatsApp message.');
     }
 
     // ── PAYMENT LINK ──────────────────────────────────────────
@@ -284,7 +314,7 @@ class InvoiceController extends BaseController
         return $this->jsonSuccess('Order created.', [
             'order_id'    => $order['id'],
             'amount'      => $order['amount'],
-            'razorpay_key'=> $this->settings['razorpay_key'] ?? '',
+            'razorpay_key' => $this->settings['razorpay_key'] ?? '',
             'pay_url'     => base_url("portal/pay/$id"),
         ]);
     }
