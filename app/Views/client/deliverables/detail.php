@@ -12,6 +12,25 @@
       <?php if(!empty($deliverable['description'])):?><p class="text-muted"><?= nl2br(esc($deliverable['description'])) ?></p><?php else:?><p class="text-muted small">No description provided.</p><?php endif;?>
       <div class="row g-3 small"><div class="col-md-4"><div class="text-muted">Project</div><div class="fw-semibold"><?= esc($deliverable['project_name']) ?></div></div><div class="col-md-4"><div class="text-muted">Milestone</div><div class="fw-semibold"><?= esc($deliverable['milestone_title']??'—') ?></div></div><div class="col-md-4"><div class="text-muted">Due date</div><div class="fw-semibold"><?= !empty($deliverable['due_date'])?date('d M Y',strtotime($deliverable['due_date'])):'—' ?></div></div></div>
     </div></div>
+    <div class="card border-0 shadow-sm mb-4"><div class="card-header bg-white border-0 py-3"><h6 class="mb-0 fw-semibold"><i class="bi bi-paperclip me-2 text-success"></i>Files</h6><div class="text-muted small mt-1">Videos, images, PDFs, documents and ZIPs shared by the project team.</div></div><div class="card-body">
+      <?php $files = $files ?? []; ?>
+      <?php if (empty($files)): ?><div class="text-muted small">No files attached yet.</div>
+      <?php else: ?><div class="row g-2">
+        <?php foreach ($files as $f): ?>
+          <?php $fExt = strtolower(pathinfo($f['original_name'] ?? '', PATHINFO_EXTENSION)); $fIsVideo = !empty($f['is_video']) || in_array($fExt, ['mp4','mov','avi','webm','mkv'], true); ?>
+          <div class="col-6 col-md-4">
+            <?php if (!empty($f['is_image'])): ?>
+              <a href="<?= base_url('portal/deliverables/files/'.$f['id']) ?>" target="_blank"><img src="<?= base_url('portal/deliverables/files/'.$f['id']) ?>" class="img-fluid rounded border w-100" style="aspect-ratio:16/9;object-fit:cover" loading="lazy"></a>
+            <?php elseif ($fIsVideo): ?>
+              <video src="<?= base_url('portal/deliverables/files/'.$f['id']) ?>" class="rounded border w-100" style="aspect-ratio:16/9;object-fit:cover;background:#000" controls preload="metadata"></video>
+            <?php else: ?>
+              <a href="<?= base_url('portal/deliverables/files/'.$f['id']) ?>" class="d-flex flex-column align-items-center justify-content-center border rounded text-decoration-none text-dark p-2" style="aspect-ratio:16/9"><i class="bi bi-file-earmark-text fs-2 text-muted"></i><span class="small text-truncate w-100 text-center"><?= esc($f['original_name']) ?></span></a>
+            <?php endif; ?>
+            <div class="mt-1 d-flex justify-content-between align-items-center"><span class="small text-truncate" title="<?= esc($f['original_name']) ?>"><?= esc($f['original_name']) ?></span><a href="<?= base_url('portal/deliverables/files/'.$f['id']) ?>" class="btn btn-xs text-primary p-0 ms-1" <?= ($fIsVideo || !empty($f['is_image'])) ? 'target="_blank"' : '' ?> title="View / Download"><i class="bi bi-download"></i></a></div>
+          </div>
+        <?php endforeach; ?>
+      </div><?php endif; ?>
+    </div></div>
     <?php if(in_array($status,['submitted','under_review','changes_requested'],true)): ?>
       <?php if($canApprove): ?>
       <div class="card border-0 shadow-sm"><div class="card-header bg-white border-0 py-3"><h6 class="mb-0 fw-semibold">Client Review</h6><div class="text-muted small mt-1">Approve this deliverable or request changes from the project team.</div></div><div class="card-body">

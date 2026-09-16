@@ -32,6 +32,8 @@
 </div>
 <?php endif; ?>
 
+<?php if (session()->getFlashdata('success')): ?><div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div><?php endif; ?>
+<?php if (session()->getFlashdata('error')): ?><div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div><?php endif; ?>
 <div class="row g-4">
   <div class="col-lg-7">
     <div class="card border-0 shadow-sm mb-4">
@@ -49,6 +51,32 @@
           <tr><td class="text-muted small">Last Reviewed</td><td class="small"><?= $deliverable['reviewed_at'] ? date('d M Y, h:i A', strtotime($deliverable['reviewed_at'])) : '—' ?></td></tr>
           <tr><td class="text-muted small">Approved</td><td class="small"><?= $deliverable['approved_at'] ? date('d M Y, h:i A', strtotime($deliverable['approved_at'])).' by '.esc($deliverable['approved_by_name'] ?? '—') : '—' ?></td></tr>
         </table>
+      </div>
+    </div>
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-paperclip me-2 text-success"></i>Files <span class="text-muted fw-normal small">· Images · Videos · PDF · Word · Excel · PPT · ZIP</span></h6>
+        <?php if (!empty($canManage)): ?><label class="btn btn-sm btn-outline-primary mb-0"><i class="bi bi-upload me-1"></i>Upload<input type="file" id="deliverableFileInput" class="d-none" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.zip,.png,.jpg,.jpeg,.gif,.webp,.mp4,.mov,.avi,.webm,.mkv"></label><?php endif; ?>
+      </div>
+      <div class="card-body">
+        <div id="deliverableFilesGrid" class="row g-2">
+          <?php $files = $files ?? []; ?>
+          <?php foreach ($files as $f): ?>
+            <?php $fExt = strtolower(pathinfo($f['original_name'] ?? '', PATHINFO_EXTENSION)); $fIsVideo = !empty($f['is_video']) || in_array($fExt, ['mp4','mov','avi','webm','mkv'], true); ?>
+            <div class="col-6 col-md-4" data-deliverable-file="<?= $f['id'] ?>">
+              <?php if (!empty($f['is_image'])): ?>
+                <a href="<?= base_url('admin/deliverables/files/'.$f['id']) ?>" target="_blank"><img src="<?= base_url('admin/deliverables/files/'.$f['id']) ?>" class="img-fluid rounded border w-100" style="aspect-ratio:16/9;object-fit:cover" loading="lazy"></a>
+              <?php elseif ($fIsVideo): ?>
+                <video src="<?= base_url('admin/deliverables/files/'.$f['id']) ?>" class="rounded border w-100" style="aspect-ratio:16/9;object-fit:cover;background:#000" controls preload="metadata"></video>
+              <?php else: ?>
+                <a href="<?= base_url('admin/deliverables/files/'.$f['id']) ?>" class="d-flex flex-column align-items-center justify-content-center border rounded text-decoration-none text-dark p-2" style="aspect-ratio:16/9"><i class="bi bi-file-earmark-text fs-2 text-muted"></i><span class="small text-truncate w-100 text-center"><?= esc($f['original_name']) ?></span></a>
+              <?php endif; ?>
+              <div class="mt-1"><div class="small text-truncate" title="<?= esc($f['original_name']) ?>"><?= esc($f['original_name']) ?></div>
+              <div class="d-flex justify-content-between align-items-center"><span class="text-muted" style="font-size:10px"><?= esc($f['uploader_name'] ?? '') ?></span><span class="d-flex gap-1"><a href="<?= base_url('admin/deliverables/files/'.$f['id']) ?>" class="btn btn-xs text-primary p-0" <?= ($fIsVideo || !empty($f['is_image'])) ? 'target="_blank"' : '' ?> title="View / Download"><i class="bi bi-download"></i></a><?php if (!empty($canManage)): ?><button type="button" class="btn btn-xs text-danger p-0 btn-del-dfile" data-id="<?= $f['id'] ?>" title="Remove"><i class="bi bi-trash"></i></button><?php endif; ?></span></div></div>
+            </div>
+          <?php endforeach; ?>
+          <?php if (empty($files)): ?><div class="text-muted small px-2" id="noDeliverableFilesMsg">No files yet — upload videos, images, PDFs, Word/Excel docs, or ZIPs (max 100MB each).</div><?php endif; ?>
+        </div>
       </div>
     </div>
   </div>
@@ -99,6 +127,26 @@ $('#dStatusSelect').on('change', function () {
       showToast(res.message || 'Failed to update status', 'error');
     }
   }, 'json').fail(() => { hideLoader(); showToast('Server error. Please try again.', 'error'); });
+});
+$('#deliverableFileInput').on('change', function () {
+  if (!this.files.length) return;
+  const fd = new FormData();
+  for (const f of this.files) fd.append('files[]', f);
+  fd.append('csrf_test_name', getCsrfToken());
+  showLoader(this.files.length > 1 ? `Uploading ${this.files.length} files...` : 'Uploading...');
+  $.ajax({ url: `<?= base_url('admin/deliverables/'.$deliverable['id'].'/files') ?>`, method: 'POST', data: fd, processData: false, contentType: false, dataType: 'json' })
+    .done(r => { hideLoader(); showToast(r.message, r.status); if (r.status === 'success') location.reload(); })
+    .fail(() => { hideLoader(); showToast('Upload failed.', 'error'); });
+  this.value = '';
+});
+let delDFileId = null;
+$(document).on('click', '.btn-del-dfile', function () { delDFileId = $(this).data('id'); bootstrap.Modal.getOrCreateInstance(document.getElementById('ngConfirmModal')).show(); });
+$('#ngConfirmYes').off('click.dfile').on('click.dfile', function () {
+  if (!delDFileId) return;
+  bootstrap.Modal.getInstance(document.getElementById('ngConfirmModal'))?.hide();
+  showLoader('Removing...');
+  $.post(`<?= base_url('admin/deliverables/files/') ?>${delDFileId}/delete`, { csrf_test_name: getCsrfToken() }, r => { hideLoader(); showToast(r.message, r.status); if (r.status === 'success') $(`[data-deliverable-file="${delDFileId}"]`).fadeOut(200, function () { $(this).remove(); }); }, 'json');
+  delDFileId = null;
 });
 </script>
 <?= $this->endSection() ?>

@@ -7,7 +7,7 @@ class TaskAttachmentModel extends Model
     protected $table = 'task_attachments';
     protected $primaryKey = 'id';
     protected $useTimestamps = false; // created_at set manually below
-    protected $allowedFields = ['task_id', 'filename', 'original_name', 'mime_type', 'size', 'is_image', 'uploaded_by', 'created_at'];
+    protected $allowedFields = ['task_id', 'filename', 'original_name', 'mime_type', 'size', 'is_image', 'is_video', 'uploaded_by', 'created_at'];
 
     public function forTask(int $taskId): array
     {

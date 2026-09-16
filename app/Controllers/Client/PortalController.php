@@ -92,7 +92,24 @@ class PortalController extends BaseController
         $dm = new DeliverableModel();
         $item = $dm->getWithDetails((int)$id);
         if (!$this->isClientUser() || !$item || !$this->ownProject((int)$item['project_id'])) return redirect()->to('portal/projects');
-        return view('client/deliverables/detail', ['title' => $item['title'], 'deliverable' => $item, 'history' => (new DeliverableApprovalModel())->history((int)$id), 'canApprove' => (new \App\Services\PmsAuthorizationService())->clientCanApproveDeliverable((string)session()->get('client_role'))]);
+        return view('client/deliverables/detail', ['title' => $item['title'], 'deliverable' => $item, 'history' => (new DeliverableApprovalModel())->history((int)$id), 'files' => (new \App\Models\DeliverableFileModel())->forDeliverable((int)$id), 'canApprove' => (new \App\Services\PmsAuthorizationService())->clientCanApproveDeliverable((string)session()->get('client_role'))]);
+    }
+    public function downloadDeliverableFile($fileId)
+    {
+        if (!$this->isClientUser()) return redirect()->to('portal/projects');
+        $file = (new \App\Models\DeliverableFileModel())->find((int)$fileId);
+        if (!$file) return redirect()->back()->with('error', 'File not found.');
+        $item = (new DeliverableModel())->find((int)$file['deliverable_id']);
+        if (!$item || !$this->ownProject((int)$item['project_id'])) return redirect()->back()->with('error', 'Access denied.');
+        $path = rtrim(WRITEPATH, '/\\') . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'deliverables' . DIRECTORY_SEPARATOR . $file['filename'];
+        $root = realpath(rtrim(WRITEPATH, '/\\') . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'deliverables');
+        $real = realpath($path);
+        if (!$root || !$real || !is_file($real) || !str_starts_with($real, $root . DIRECTORY_SEPARATOR)) return redirect()->back()->with('error', 'File no longer exists on the server.');
+        $mime = $file['mime_type'] ?: mime_content_type($real);
+        $ext = strtolower(pathinfo($file['original_name'] ?? '', PATHINFO_EXTENSION));
+        $inline = !empty($file['is_image']) || !empty($file['is_video']) || str_starts_with((string)$mime, 'image/') || str_starts_with((string)$mime, 'video/') || in_array($ext, ['mp4','mov','avi','webm','mkv','png','jpg','jpeg','gif','webp','pdf'], true);
+        if ($inline) return $this->response->setContentType($mime)->setHeader('Content-Disposition', 'inline; filename="' . preg_replace('/[^\w\-. ]+/', '_', $file['original_name']) . '"')->setHeader('Accept-Ranges', 'bytes')->setBody(file_get_contents($real));
+        return $this->response->download($real, null)->setFileName($file['original_name']);
     }
     protected function ownProject(int $projectId): bool
     {

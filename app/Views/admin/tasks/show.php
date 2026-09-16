@@ -7,19 +7,22 @@
 <div class="row g-3">
  <div class="col-lg-8">
   <div class="card border-0 shadow-sm mb-3"><div class="card-body"><h6>Description</h6><div class="text-muted"><?= nl2br(esc($task['description'] ?? 'No description.')) ?></div></div></div>
-  <div class="card border-0 shadow-sm mb-3"><div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">Attachments <label class="btn btn-sm btn-outline-primary mb-0"><i class="bi bi-paperclip me-1"></i>Upload<input type="file" id="attachmentInput" class="d-none"></label></div><div class="card-body">
-   <div id="attachmentsGrid" class="row g-2">
-     <?php foreach($attachments as $a): ?>
-       <div class="col-6 col-md-4 col-lg-3" data-attachment-row="<?= $a['id'] ?>">
-         <?php if(!empty($a['is_image'])): ?>
-           <a href="<?= base_url('admin/tasks/attachments/'.$a['id']) ?>" target="_blank"><img src="<?= base_url('admin/tasks/attachments/'.$a['id']) ?>" class="img-fluid rounded border" style="aspect-ratio:1;object-fit:cover;width:100%"></a>
-         <?php else: ?>
-           <a href="<?= base_url('admin/tasks/attachments/'.$a['id']) ?>" class="d-flex flex-column align-items-center justify-content-center border rounded text-decoration-none text-dark p-2" style="aspect-ratio:1"><i class="bi bi-file-earmark-text fs-2 text-muted"></i><span class="small text-truncate w-100 text-center"><?= esc($a['original_name']) ?></span></a>
-         <?php endif; ?>
-         <div class="d-flex justify-content-between align-items-center mt-1"><span class="text-muted" style="font-size:10px"><?= esc($a['uploader_name'] ?? '') ?></span><button type="button" class="btn btn-xs text-danger p-0 btn-del-attachment" data-id="<?= $a['id'] ?>"><i class="bi bi-trash"></i></button></div>
-       </div>
-     <?php endforeach; ?>
-     <?php if(!$attachments): ?><div class="text-muted small px-2" id="noAttachmentsMsg">No files yet — click Upload to add screenshots, mockups, or documents.</div><?php endif; ?>
+   <div class="card border-0 shadow-sm mb-3"><div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">Attachments <span class="text-muted fw-normal" style="font-size:11px">Images · Videos · PDF · Word · Excel · PPT · ZIP</span><label class="btn btn-sm btn-outline-primary mb-0"><i class="bi bi-paperclip me-1"></i>Upload<input type="file" id="attachmentInput" class="d-none" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.zip,.png,.jpg,.jpeg,.gif,.webp,.mp4,.mov,.avi,.webm,.mkv"></label></div><div class="card-body">
+    <div id="attachmentsGrid" class="row g-2">
+      <?php foreach($attachments as $a): ?>
+        <?php $aExt = strtolower(pathinfo($a['original_name'] ?? '', PATHINFO_EXTENSION)); $aIsVideo = !empty($a['is_video']) || in_array($aExt, ['mp4','mov','avi','webm','mkv'], true); ?>
+        <div class="col-6 col-md-4 col-lg-3" data-attachment-row="<?= $a['id'] ?>">
+          <?php if(!empty($a['is_image'])): ?>
+            <a href="<?= base_url('admin/tasks/attachments/'.$a['id']) ?>" target="_blank"><img src="<?= base_url('admin/tasks/attachments/'.$a['id']) ?>" class="img-fluid rounded border" style="aspect-ratio:1;object-fit:cover;width:100%" loading="lazy"></a>
+          <?php elseif($aIsVideo): ?>
+            <video src="<?= base_url('admin/tasks/attachments/'.$a['id']) ?>" class="rounded border w-100" style="aspect-ratio:1;object-fit:cover;background:#000" controls preload="metadata"></video>
+          <?php else: ?>
+            <a href="<?= base_url('admin/tasks/attachments/'.$a['id']) ?>" class="d-flex flex-column align-items-center justify-content-center border rounded text-decoration-none text-dark p-2" style="aspect-ratio:1"><i class="bi bi-file-earmark-text fs-2 text-muted"></i><span class="small text-truncate w-100 text-center"><?= esc($a['original_name']) ?></span></a>
+          <?php endif; ?>
+          <div class="mt-1"><div class="small text-truncate" title="<?= esc($a['original_name']) ?>"><?= esc($a['original_name']) ?></div><div class="d-flex justify-content-between align-items-center"><span class="text-muted" style="font-size:10px"><?= esc($a['uploader_name'] ?? '') ?></span><span class="d-flex gap-1"><a href="<?= base_url('admin/tasks/attachments/'.$a['id']) ?>" class="btn btn-xs text-primary p-0" <?= $aIsVideo||!empty($a['is_image'])?'target="_blank"':'' ?> title="View / Download"><i class="bi bi-download"></i></a><button type="button" class="btn btn-xs text-danger p-0 btn-del-attachment" data-id="<?= $a['id'] ?>"><i class="bi bi-trash"></i></button></span></div></div>
+        </div>
+      <?php endforeach; ?>
+      <?php if(!$attachments): ?><div class="text-muted small px-2" id="noAttachmentsMsg">No files yet — click Upload to add videos, screenshots, mockups, PDFs, Word/Excel docs, or ZIPs (max 100MB each).</div><?php endif; ?>
    </div>
   </div></div>
   <div class="card border-0 shadow-sm mb-3"><div class="card-header bg-white fw-semibold">Subtasks</div><div class="card-body">
@@ -44,8 +47,8 @@ $('#commentForm').on('submit',function(e){e.preventDefault();$(this).find('input
 $(document).on('change','.subtask-toggle',function(){const id=$(this).data('id');$.post(`${BASE}admin/tasks/subtasks/${id}/toggle`,{csrf_test_name:getCsrfToken()},r=>{showToast(r.message,r.status);if(r.status!=='success')location.reload()},'json')});
 $('#issueToggle').on('change',function(){const c=this.checked;$.post(`${BASE}admin/tasks/update/${TASK_ID}`,{_full_form:'1',is_issue:c?1:0,csrf_test_name:getCsrfToken()},r=>{showToast(r.message,r.status);if(r.status!=='success'){this.checked=!c;}},'json')});
 $('#attachmentInput').on('change',function(){
-  if(!this.files.length)return;const fd=new FormData();fd.append('file',this.files[0]);fd.append('csrf_test_name',getCsrfToken());
-  showLoader('Uploading...');
+  if(!this.files.length)return;const fd=new FormData();for(const f of this.files)fd.append('file[]',f);fd.append('csrf_test_name',getCsrfToken());
+  showLoader(this.files.length>1?`Uploading ${this.files.length} files...`:'Uploading...');
   $.ajax({url:`${BASE}admin/tasks/${TASK_ID}/attachments`,method:'POST',data:fd,processData:false,contentType:false,dataType:'json'})
     .done(r=>{hideLoader();showToast(r.message,r.status);if(r.status==='success')location.reload();})
     .fail(()=>{hideLoader();showToast('Upload failed.','error');});

@@ -73,6 +73,9 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('deliverables/store', 'Admin\DeliverableController::store');
         $routes->get('deliverables/view/(:num)', 'Admin\\DeliverableController::view/$1');
         $routes->post('deliverables/status/(:num)', 'Admin\DeliverableController::updateStatus/$1');
+        $routes->post('deliverables/(:num)/files', 'Admin\DeliverableController::uploadFiles/$1');
+        $routes->get('deliverables/files/(:num)', 'Admin\DeliverableController::downloadFile/$1');
+        $routes->post('deliverables/files/(:num)/delete', 'Admin\DeliverableController::deleteFile/$1');
         $routes->get('proposals', 'Admin\ProposalController::index');
         $routes->get('proposals/create', 'Admin\ProposalController::create');
         $routes->post('proposals/store', 'Admin\ProposalController::store');
@@ -219,6 +222,7 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('milestones/notes/(:num)', 'Client\PortalController::addMilestoneNote/$1');
         $routes->get('agreements/pdf/(:num)', 'Admin\AgreementController::generatePDF/$1');
         $routes->get('deliverables/(:num)', 'Client\PortalController::deliverableDetail/$1');
+        $routes->get('deliverables/files/(:num)', 'Client\PortalController::downloadDeliverableFile/$1');
         $routes->post('deliverables/(:num)/review', 'Client\PortalController::reviewDeliverable/$1');
         $routes->get('team', 'Client\ClientTeamController::index');
         $routes->post('team/store', 'Client\ClientTeamController::store');
