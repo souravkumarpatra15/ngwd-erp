@@ -205,26 +205,36 @@ class WhatsAppNotificationService
         );
     }
 
+    /**
+     * Invoice "like email": client + number + amount + due date + company.
+     * Mirrors EmailService::sendInvoice(). Build with the wa_* helpers so the
+     * approved MSG91 template `erp_invoice_sent` stays in sync with code.
+     * $options (optional): ['header'=>wa_header_media(...), 'buttons'=>[wa_button_url(...),...]]
+     *   e.g. attach the invoice PDF as a document header once you have a
+     *   public HTTPS URL for it, or add a "Pay Now" URL button.
+     */
     public function invoiceSent(
         string $phone,
         string $clientName,
         string $invoiceNumber,
         string $amount,
         string $dueDate,
-        string $companyName
+        string $companyName,
+        array $options = []
     ): bool {
-        return $this->whatsapp->sendTemplate(
-            $phone,
-            'erp_invoice_sent',
+        $due = trim((string)$dueDate);
+        if ($due !== '' && $due !== '0000-00-00' && strtotime($due) !== false) {
+            $due = date('d M Y', strtotime($due));
+        }
+        $res = wa_send_template($phone, wa_template('erp_invoice_sent', wa_body(
             $clientName,
-            [
-                $clientName,
-                $invoiceNumber,
-                $amount,
-                $dueDate,
-                $companyName,
-            ]
-        );
+            $invoiceNumber,
+            $amount,
+            $due,
+            $companyName
+        ), $options));
+        if (!$res['ok']) log_message('error', 'invoiceSent WA failed: ' . ($res['error'] ?? 'unknown'));
+        return $res['ok'];
     }
 
     public function invoiceReminder(

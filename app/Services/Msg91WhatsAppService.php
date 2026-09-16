@@ -13,7 +13,9 @@ use App\Models\SettingModel;
  *    buttons, CTA (URL / call) buttons, lists.
  *  - Template messages (start a conversation): approved template + params.
  *
- * Endpoint: POST {base_url}/{single|bulk}/  (default single)
+ * Endpoint: POST {base_url}/bulk/  (one endpoint for single + bulk —
+ *   per MSG91's own SDK, only the payload shape differs: `to` for a single
+ *   recipient, `to_and_components` for bulk)
  *   base_url default: https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message
  * Auth:  header  authkey: <MSG91 auth key>
  * Numbers: country code, digits only, no plus (919876543210).
@@ -27,7 +29,6 @@ class Msg91WhatsAppService
     protected string $namespace;
     protected string $language;
     protected string $baseUrl;
-    protected string $mode; // single|bulk
 
     public function __construct(?array $settings = null)
     {
@@ -38,7 +39,6 @@ class Msg91WhatsAppService
         $this->language         = trim((string)($settings['msg91_language'] ?? 'en')) ?: 'en';
         $this->baseUrl          = rtrim(trim((string)($settings['msg91_base_url'] ?? '')), '/')
             ?: 'https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message';
-        $this->mode = 'single';
     }
 
     public function isConfigured(): bool
@@ -276,9 +276,9 @@ class Msg91WhatsAppService
                 'value'   => (string)$b['value'],
             ]);
         }
-        // to_and_components is the bulk shape → post to the bulk endpoint.
-        $this->mode = 'bulk';
-        $result = $this->send('template', [
+        // to_and_components is the bulk shape; single-recipient session
+        // calls use `to`. Both go to the same /bulk/ endpoint.
+        return $this->send('template', [
             'messaging_product' => 'whatsapp',
             'type' => 'template',
             'template' => [
@@ -288,8 +288,6 @@ class Msg91WhatsAppService
                 'to_and_components' => [['to' => [$to], 'components' => $components]],
             ],
         ]);
-        $this->mode = 'single';
-        return $result;
     }
 
     /** Fetch approved templates linked to the integrated number (best effort). */
@@ -332,7 +330,7 @@ class Msg91WhatsAppService
     protected function send(string $contentType, array $payload): array
     {
         $body = ['integrated_number' => $this->integratedNumber, 'content_type' => $contentType, 'payload' => $payload];
-        $url  = $this->baseUrl . '/' . $this->mode . '/';
+        $url  = $this->baseUrl . '/bulk/';
         try {
             $ch = curl_init($url);
             curl_setopt_array($ch, [
@@ -352,7 +350,7 @@ class Msg91WhatsAppService
                 'error' => $ok ? null : ('MSG91 error [' . $code . ']: ' . substr((string)$raw, 0, 500)),
                 'response' => $data ?? $raw,
             ];
-            if (!$ok) log_message('error', 'MSG91 WhatsApp API Error: ' . $result['error']);
+            if (!$ok) log_message('error', 'MSG91 WhatsApp API Error [' . $url . ']: ' . $result['error']);
             return $result;
         } catch (\Throwable $e) {
             return $this->fail('Exception: ' . $e->getMessage());
