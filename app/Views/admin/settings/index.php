@@ -71,7 +71,8 @@
             <div class="col-md-6"><label class="form-label small fw-semibold">Integrated Number *</label><input type="text" name="msg91_integrated_number" class="form-control" value="<?= esc($settings['msg91_integrated_number']??'') ?>" placeholder="919876543210"><div class="form-text">WhatsApp business number, digits only with country code.</div></div>
             <div class="col-md-6"><label class="form-label small fw-semibold">Template Namespace</label><input type="text" name="msg91_namespace" class="form-control" value="<?= esc($settings['msg91_namespace']??'') ?>" placeholder="338cef55_..."></div>
             <div class="col-md-6"><label class="form-label small fw-semibold">Default Template Language</label><input type="text" name="msg91_language" class="form-control" value="<?= esc($settings['msg91_language']??'en') ?>" placeholder="en"></div>
-            <div class="col-md-6"><label class="form-label small fw-semibold">API Base URL</label><input type="text" name="msg91_base_url" class="form-control" value="<?= esc($settings['msg91_base_url']??'https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message') ?>"></div>
+            <div class="col-md-6"><label class="form-label small fw-semibold">API Base URL (templates)</label><input type="text" name="msg91_base_url" class="form-control" value="<?= esc($settings['msg91_base_url']??'https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message') ?>"></div>
+            <div class="col-md-6"><label class="form-label small fw-semibold">Session API Base URL (text/media/buttons)</label><input type="text" name="msg91_session_base_url" class="form-control" value="<?= esc($settings['msg91_session_base_url']??'https://control.msg91.com/api/v5/whatsapp/whatsapp-outbound-message') ?>"></div>
             <div class="col-12"><button type="submit" class="btn btn-success">Save WhatsApp Settings</button></div>
           </div>
         </form>

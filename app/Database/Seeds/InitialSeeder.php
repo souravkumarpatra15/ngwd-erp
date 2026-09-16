@@ -35,6 +35,7 @@ class InitialSeeder extends Seeder
             ['key' => 'msg91_namespace',         'value' => '',      'group' => 'whatsapp'],
             ['key' => 'msg91_language',          'value' => 'en',    'group' => 'whatsapp'],
             ['key' => 'msg91_base_url',          'value' => 'https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message', 'group' => 'whatsapp'],
+            ['key' => 'msg91_session_base_url',  'value' => 'https://control.msg91.com/api/v5/whatsapp/whatsapp-outbound-message', 'group' => 'whatsapp'],
 
             ['key' => 'razorpay_key',    'value' => '', 'group' => 'payment'],
             ['key' => 'razorpay_secret', 'value' => '', 'group' => 'payment'],

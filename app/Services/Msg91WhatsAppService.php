@@ -13,10 +13,9 @@ use App\Models\SettingModel;
  *    buttons, CTA (URL / call) buttons, lists.
  *  - Template messages (start a conversation): approved template + params.
  *
- * Endpoint: POST {base_url}/bulk/  (one endpoint for single + bulk —
- *   per MSG91's own SDK, only the payload shape differs: `to` for a single
- *   recipient, `to_and_components` for bulk)
- *   base_url default: https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message
+ * Session messages go to a DIFFERENT endpoint + envelope:
+ *   POST {session_base_url}/  {"to","from","message":{"type","content"}}
+ *   session_base_url default: https://control.msg91.com/api/v5/whatsapp/whatsapp-outbound-message
  * Auth:  header  authkey: <MSG91 auth key>
  * Numbers: country code, digits only, no plus (919876543210).
  *
@@ -29,6 +28,7 @@ class Msg91WhatsAppService
     protected string $namespace;
     protected string $language;
     protected string $baseUrl;
+    protected string $sessionBaseUrl;
 
     public function __construct(?array $settings = null)
     {
@@ -39,6 +39,8 @@ class Msg91WhatsAppService
         $this->language         = trim((string)($settings['msg91_language'] ?? 'en')) ?: 'en';
         $this->baseUrl          = rtrim(trim((string)($settings['msg91_base_url'] ?? '')), '/')
             ?: 'https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message';
+        $this->sessionBaseUrl   = rtrim(trim((string)($settings['msg91_session_base_url'] ?? '')), '/')
+            ?: 'https://control.msg91.com/api/v5/whatsapp/whatsapp-outbound-message';
     }
 
     public function isConfigured(): bool
@@ -60,12 +62,7 @@ class Msg91WhatsAppService
         $to = $this->formatPhone($to);
         if (!$this->precheck($to, $err)) return $this->fail($err);
         if (trim($body) === '') return $this->fail('Message body is empty.');
-        return $this->send('text', [
-            'messaging_product' => 'whatsapp',
-            'to'   => $to,
-            'type' => 'text',
-            'text' => ['body' => $body, 'preview_url' => $previewUrl],
-        ]);
+        return $this->sendSession($to, 'text', ['text' => $body, 'preview_url' => $previewUrl]);
     }
 
     /** Link message = text carrying a URL (preview_url renders the card). */
@@ -93,13 +90,10 @@ class Msg91WhatsAppService
         $to = $this->formatPhone($to);
         if (!$this->precheck($to, $err)) return $this->fail($err);
         if (!filter_var($link, FILTER_VALIDATE_URL)) return $this->fail('Invalid media URL.');
-        $doc = ['link' => $link];
+        $doc = ['url' => $link];
         if (trim($filename) !== '') $doc['filename'] = trim($filename);
         if (trim($caption) !== '') $doc['caption'] = trim($caption);
-        return $this->send('document', [
-            'messaging_product' => 'whatsapp',
-            'to' => $to, 'type' => 'document', 'document' => $doc,
-        ]);
+        return $this->sendSession($to, 'document', $doc);
     }
 
     public function sendAudio(string $to, string $link): array
@@ -107,10 +101,7 @@ class Msg91WhatsAppService
         $to = $this->formatPhone($to);
         if (!$this->precheck($to, $err)) return $this->fail($err);
         if (!filter_var($link, FILTER_VALIDATE_URL)) return $this->fail('Invalid media URL.');
-        return $this->send('audio', [
-            'messaging_product' => 'whatsapp',
-            'to' => $to, 'type' => 'audio', 'audio' => ['link' => $link],
-        ]);
+        return $this->sendSession($to, 'audio', ['url' => $link]);
     }
 
     protected function sendMedia(string $to, string $type, string $link, string $caption): array
@@ -118,12 +109,9 @@ class Msg91WhatsAppService
         $to = $this->formatPhone($to);
         if (!$this->precheck($to, $err)) return $this->fail($err);
         if (!filter_var($link, FILTER_VALIDATE_URL)) return $this->fail('Invalid media URL.');
-        $media = ['link' => $link];
+        $media = ['url' => $link];
         if (trim($caption) !== '') $media['caption'] = trim($caption);
-        return $this->send($type, [
-            'messaging_product' => 'whatsapp',
-            'to' => $to, 'type' => $type, $type => $media,
-        ]);
+        return $this->sendSession($to, $type, $media);
     }
 
     // ── Session: interactive ─────────────────────────────────────
@@ -149,10 +137,7 @@ class Msg91WhatsAppService
         ];
         if ($header) $interactive['header'] = $this->normaliseHeader($header);
         if (trim($footer) !== '') $interactive['footer'] = ['text' => $footer];
-        return $this->send('interactive', [
-            'messaging_product' => 'whatsapp',
-            'to' => $to, 'type' => 'interactive', 'interactive' => $interactive,
-        ]);
+        return $this->sendSession($to, 'interactive', $interactive);
     }
 
     /**
@@ -195,10 +180,7 @@ class Msg91WhatsAppService
         }
         if ($header) $interactive['header'] = $this->normaliseHeader($header);
         if (trim($footer) !== '') $interactive['footer'] = ['text' => $footer];
-        return $this->send('interactive', [
-            'messaging_product' => 'whatsapp',
-            'to' => $to, 'type' => 'interactive', 'interactive' => $interactive,
-        ]);
+        return $this->sendSession($to, 'interactive', $interactive);
     }
 
     /**
@@ -226,10 +208,7 @@ class Msg91WhatsAppService
         ];
         if ($header) $interactive['header'] = $this->normaliseHeader($header);
         if (trim($footer) !== '') $interactive['footer'] = ['text' => $footer];
-        return $this->send('interactive', [
-            'messaging_product' => 'whatsapp',
-            'to' => $to, 'type' => 'interactive', 'interactive' => $interactive,
-        ]);
+        return $this->sendSession($to, 'interactive', $interactive);
     }
 
     protected function normaliseHeader(array $header): array
@@ -327,10 +306,28 @@ class Msg91WhatsAppService
         return ['ok' => false, 'message_id' => null, 'error' => $error, 'response' => null];
     }
 
+    /** Bulk endpoint = templates only. */
     protected function send(string $contentType, array $payload): array
     {
         $body = ['integrated_number' => $this->integratedNumber, 'content_type' => $contentType, 'payload' => $payload];
-        $url  = $this->baseUrl . '/bulk/';
+        return $this->postJson($this->baseUrl . '/bulk/', $body);
+    }
+
+    /**
+     * Session endpoint (no template, inside the 24h window).
+     * Envelope: {"to","from","message":{"type","content"}}.
+     */
+    protected function sendSession(string $to, string $type, array $content): array
+    {
+        return $this->postJson($this->sessionBaseUrl . '/', [
+            'to' => $to,
+            'from' => $this->integratedNumber,
+            'message' => ['type' => $type, 'content' => $content],
+        ]);
+    }
+
+    protected function postJson(string $url, array $body): array
+    {
         try {
             $ch = curl_init($url);
             curl_setopt_array($ch, [
