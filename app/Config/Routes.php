@@ -176,6 +176,7 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->get('reports/export/(:alpha)/(:alpha)', 'Admin\ReportController::export/$1/$2');
         $routes->get('settings', 'Admin\SettingController::index');
         $routes->post('settings/save/(:alpha)', 'Admin\SettingController::save/$1');
+        $routes->post('settings/test-whatsapp', 'Admin\SettingController::testWhatsapp');
         $routes->get('profile', 'Admin\ProfileController::index');
         $routes->post('profile/update', 'Admin\ProfileController::update');
         $routes->post('profile/change-password', 'Admin\ProfileController::changePassword');

@@ -9,7 +9,7 @@ use App\Models\ActivityModel;
 
 class BaseController extends Controller
 {
-    protected $helpers = ['url', 'form', 'text', 'number', 'erp'];
+    protected $helpers = ['url', 'form', 'text', 'number', 'erp', 'whatsapp'];
     protected $session;
     protected $settings = [];
     protected $db;

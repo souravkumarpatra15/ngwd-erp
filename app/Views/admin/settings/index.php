@@ -60,17 +60,34 @@
   </div>
 
   <div class="tab-pane fade" id="whatsapp">
-    <div class="card border-0 shadow-sm">
-      <div class="card-header bg-white border-0"><h6 class="mb-0 fw-semibold">WhatsApp Cloud API</h6></div>
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-white border-0"><h6 class="mb-0 fw-semibold">WhatsApp via MSG91</h6></div>
       <div class="card-body">
-        <div class="alert alert-info small"><i class="bi bi-info-circle me-2"></i><strong>Setup:</strong> Go to <a href="https://developers.facebook.com" target="_blank">Meta Developers</a> → Create App → WhatsApp → Get Phone Number ID & Access Token.</div>
+        <div class="alert alert-info small"><i class="bi bi-info-circle me-2"></i><strong>Setup:</strong> MSG91 panel → WhatsApp → integrate your number, copy the <strong>Auth Key</strong>, <strong>Integrated Number</strong> (country code, no +) and template <strong>Namespace</strong>. Session messages (text/image/video/link/buttons) work inside the 24-hour chat window; templates start new conversations.</div>
         <form action="<?= base_url('admin/settings/save/whatsapp') ?>" method="POST">
           <?= csrf_field() ?>
           <div class="row g-3">
-            <div class="col-12"><label class="form-label small fw-semibold">Access Token</label><input type="text" name="whatsapp_token" class="form-control" value="<?= esc($settings['whatsapp_token']??'') ?>" placeholder="EAAxxxxxx..."></div>
-            <div class="col-md-6"><label class="form-label small fw-semibold">Phone Number ID</label><input type="text" name="whatsapp_phone_id" class="form-control" value="<?= esc($settings['whatsapp_phone_id']??'') ?>"></div>
+            <div class="col-12"><label class="form-label small fw-semibold">MSG91 Auth Key *</label><input type="password" name="msg91_authkey" class="form-control" value="" placeholder="<?= !empty($settings['msg91_authkey']) ? 'Saved — leave blank to keep current' : 'Paste MSG91 auth key' ?>" autocomplete="new-password"></div>
+            <div class="col-md-6"><label class="form-label small fw-semibold">Integrated Number *</label><input type="text" name="msg91_integrated_number" class="form-control" value="<?= esc($settings['msg91_integrated_number']??'') ?>" placeholder="919876543210"><div class="form-text">WhatsApp business number, digits only with country code.</div></div>
+            <div class="col-md-6"><label class="form-label small fw-semibold">Template Namespace</label><input type="text" name="msg91_namespace" class="form-control" value="<?= esc($settings['msg91_namespace']??'') ?>" placeholder="338cef55_..."></div>
+            <div class="col-md-6"><label class="form-label small fw-semibold">Default Template Language</label><input type="text" name="msg91_language" class="form-control" value="<?= esc($settings['msg91_language']??'en') ?>" placeholder="en"></div>
+            <div class="col-md-6"><label class="form-label small fw-semibold">API Base URL</label><input type="text" name="msg91_base_url" class="form-control" value="<?= esc($settings['msg91_base_url']??'https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message') ?>"></div>
             <div class="col-12"><button type="submit" class="btn btn-success">Save WhatsApp Settings</button></div>
           </div>
+        </form>
+      </div>
+    </div>
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0"><h6 class="mb-0 fw-semibold">Send Test Message</h6></div>
+      <div class="card-body">
+        <form id="waTestForm" class="row g-3">
+          <?= csrf_field() ?>
+          <div class="col-md-4"><label class="form-label small fw-semibold">To (mobile)</label><input type="text" name="to" class="form-control" placeholder="9876543210" required></div>
+          <div class="col-md-4"><label class="form-label small fw-semibold">Type</label><select name="type" class="form-select" id="waTestType"><option value="text">Text</option><option value="image">Image</option><option value="video">Video</option><option value="link">Link</option><option value="buttons">Text + Buttons</option><option value="template">Template</option></select></div>
+          <div class="col-md-4" id="waTestTemplateWrap" style="display:none"><label class="form-label small fw-semibold">Template name</label><input type="text" name="template" class="form-control" placeholder="order_update"></div>
+          <div class="col-12"><label class="form-label small fw-semibold">Message / Caption</label><textarea name="body" class="form-control" rows="2" placeholder="Hello from NGWebD ERP (test)"></textarea></div>
+          <div class="col-12" id="waTestMediaWrap" style="display:none"><label class="form-label small fw-semibold">Media / Link URL</label><input type="url" name="link" class="form-control" placeholder="https://..."></div>
+          <div class="col-12"><button type="submit" class="btn btn-outline-success"><i class="bi bi-whatsapp me-1"></i>Send Test</button> <span class="text-muted small ms-2">Session types need an open 24h chat window with the number.</span></div>
         </form>
       </div>
     </div>
@@ -118,4 +135,23 @@
     </div>
   </div>
 </div>
+<?= $this->endSection() ?>
+<?= $this->section('scripts') ?>
+<script>
+$('#waTestType').on('change', function () {
+  const t = $(this).val();
+  $('#waTestMediaWrap').toggle(['image', 'video', 'link'].includes(t));
+  $('#waTestTemplateWrap').toggle(t === 'template');
+});
+$('#waTestForm').on('submit', function (e) {
+  e.preventDefault();
+  const form = $(this);
+  form.find('input[name="csrf_test_name"]').val(getCsrfToken());
+  showLoader('Sending test...');
+  $.post(`<?= base_url('admin/settings/test-whatsapp') ?>`, form.serialize(), r => {
+    hideLoader();
+    showToast(r.message || (r.status === 'success' ? 'Sent.' : 'Failed.'), r.status);
+  }, 'json').fail(() => { hideLoader(); showToast('Server error. Please try again.', 'error'); });
+});
+</script>
 <?= $this->endSection() ?>

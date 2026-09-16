@@ -29,8 +29,12 @@ class InitialSeeder extends Seeder
             ['key' => 'smtp_password',   'value' => '',               'group' => 'email'],
             ['key' => 'smtp_encryption', 'value' => 'tls',            'group' => 'email'],
 
-            ['key' => 'whatsapp_token',    'value' => '', 'group' => 'whatsapp'],
-            ['key' => 'whatsapp_phone_id', 'value' => '', 'group' => 'whatsapp'],
+            ['key' => 'whatsapp_provider',       'value' => 'msg91', 'group' => 'whatsapp'],
+            ['key' => 'msg91_authkey',           'value' => '',      'group' => 'whatsapp'],
+            ['key' => 'msg91_integrated_number', 'value' => '',      'group' => 'whatsapp'],
+            ['key' => 'msg91_namespace',         'value' => '',      'group' => 'whatsapp'],
+            ['key' => 'msg91_language',          'value' => 'en',    'group' => 'whatsapp'],
+            ['key' => 'msg91_base_url',          'value' => 'https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message', 'group' => 'whatsapp'],
 
             ['key' => 'razorpay_key',    'value' => '', 'group' => 'payment'],
             ['key' => 'razorpay_secret', 'value' => '', 'group' => 'payment'],
