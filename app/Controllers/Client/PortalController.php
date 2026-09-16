@@ -108,7 +108,7 @@ class PortalController extends BaseController
         $mime = $file['mime_type'] ?: mime_content_type($real);
         $ext = strtolower(pathinfo($file['original_name'] ?? '', PATHINFO_EXTENSION));
         $inline = !empty($file['is_image']) || !empty($file['is_video']) || str_starts_with((string)$mime, 'image/') || str_starts_with((string)$mime, 'video/') || in_array($ext, ['mp4','mov','avi','webm','mkv','png','jpg','jpeg','gif','webp','pdf'], true);
-        if ($inline) return $this->response->setContentType($mime)->setHeader('Content-Disposition', 'inline; filename="' . preg_replace('/[^\w\-. ]+/', '_', $file['original_name']) . '"')->setHeader('Accept-Ranges', 'bytes')->setBody(file_get_contents($real));
+        if ($inline) return $this->streamInlineFile($real, $file['original_name'], $this->mediaMime($ext, $mime));
         return $this->response->download($real, null)->setFileName($file['original_name']);
     }
     protected function ownProject(int $projectId): bool

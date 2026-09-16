@@ -17,12 +17,14 @@
       <?php if (empty($files)): ?><div class="text-muted small">No files attached yet.</div>
       <?php else: ?><div class="row g-2">
         <?php foreach ($files as $f): ?>
-          <?php $fExt = strtolower(pathinfo($f['original_name'] ?? '', PATHINFO_EXTENSION)); $fIsVideo = !empty($f['is_video']) || in_array($fExt, ['mp4','mov','avi','webm','mkv'], true); ?>
+          <?php $fExt = strtolower(pathinfo($f['original_name'] ?? '', PATHINFO_EXTENSION)); $fIsVideo = !empty($f['is_video']) || in_array($fExt, ['mp4','mov','avi','webm','mkv'], true); $fPlayable = in_array($fExt, ['mp4','webm','mov'], true); ?>
           <div class="col-6 col-md-4">
             <?php if (!empty($f['is_image'])): ?>
               <a href="<?= base_url('portal/deliverables/files/'.$f['id']) ?>" target="_blank"><img src="<?= base_url('portal/deliverables/files/'.$f['id']) ?>" class="img-fluid rounded border w-100" style="aspect-ratio:16/9;object-fit:cover" loading="lazy"></a>
+            <?php elseif ($fIsVideo && $fPlayable): ?>
+              <video src="<?= base_url('portal/deliverables/files/'.$f['id']) ?>" class="rounded border w-100" style="aspect-ratio:16/9;object-fit:cover;background:#000" controls preload="metadata" playsinline></video>
             <?php elseif ($fIsVideo): ?>
-              <video src="<?= base_url('portal/deliverables/files/'.$f['id']) ?>" class="rounded border w-100" style="aspect-ratio:16/9;object-fit:cover;background:#000" controls preload="metadata"></video>
+              <a href="<?= base_url('portal/deliverables/files/'.$f['id']) ?>" class="d-flex flex-column align-items-center justify-content-center border rounded text-decoration-none text-dark p-2" style="aspect-ratio:16/9"><i class="bi bi-film fs-2 text-muted"></i><span class="small text-truncate w-100 text-center"><?= esc($f['original_name']) ?></span><span class="badge bg-light text-dark border mt-1" style="font-size:10px">Download to play</span></a>
             <?php else: ?>
               <a href="<?= base_url('portal/deliverables/files/'.$f['id']) ?>" class="d-flex flex-column align-items-center justify-content-center border rounded text-decoration-none text-dark p-2" style="aspect-ratio:16/9"><i class="bi bi-file-earmark-text fs-2 text-muted"></i><span class="small text-truncate w-100 text-center"><?= esc($f['original_name']) ?></span></a>
             <?php endif; ?>

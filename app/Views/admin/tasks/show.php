@@ -10,12 +10,14 @@
    <div class="card border-0 shadow-sm mb-3"><div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">Attachments <span class="text-muted fw-normal" style="font-size:11px">Images · Videos · PDF · Word · Excel · PPT · ZIP</span><label class="btn btn-sm btn-outline-primary mb-0"><i class="bi bi-paperclip me-1"></i>Upload<input type="file" id="attachmentInput" class="d-none" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.zip,.png,.jpg,.jpeg,.gif,.webp,.mp4,.mov,.avi,.webm,.mkv"></label></div><div class="card-body">
     <div id="attachmentsGrid" class="row g-2">
       <?php foreach($attachments as $a): ?>
-        <?php $aExt = strtolower(pathinfo($a['original_name'] ?? '', PATHINFO_EXTENSION)); $aIsVideo = !empty($a['is_video']) || in_array($aExt, ['mp4','mov','avi','webm','mkv'], true); ?>
+        <?php $aExt = strtolower(pathinfo($a['original_name'] ?? '', PATHINFO_EXTENSION)); $aIsVideo = !empty($a['is_video']) || in_array($aExt, ['mp4','mov','avi','webm','mkv'], true); $aPlayable = in_array($aExt, ['mp4','webm','mov'], true); ?>
         <div class="col-6 col-md-4 col-lg-3" data-attachment-row="<?= $a['id'] ?>">
           <?php if(!empty($a['is_image'])): ?>
             <a href="<?= base_url('admin/tasks/attachments/'.$a['id']) ?>" target="_blank"><img src="<?= base_url('admin/tasks/attachments/'.$a['id']) ?>" class="img-fluid rounded border" style="aspect-ratio:1;object-fit:cover;width:100%" loading="lazy"></a>
+          <?php elseif($aIsVideo && $aPlayable): ?>
+            <video src="<?= base_url('admin/tasks/attachments/'.$a['id']) ?>" class="rounded border w-100" style="aspect-ratio:1;object-fit:cover;background:#000" controls preload="metadata" playsinline></video>
           <?php elseif($aIsVideo): ?>
-            <video src="<?= base_url('admin/tasks/attachments/'.$a['id']) ?>" class="rounded border w-100" style="aspect-ratio:1;object-fit:cover;background:#000" controls preload="metadata"></video>
+            <a href="<?= base_url('admin/tasks/attachments/'.$a['id']) ?>" class="d-flex flex-column align-items-center justify-content-center border rounded text-decoration-none text-dark p-2" style="aspect-ratio:1"><i class="bi bi-film fs-2 text-muted"></i><span class="small text-truncate w-100 text-center"><?= esc($a['original_name']) ?></span><span class="badge bg-light text-dark border mt-1" style="font-size:10px">Download to play</span></a>
           <?php else: ?>
             <a href="<?= base_url('admin/tasks/attachments/'.$a['id']) ?>" class="d-flex flex-column align-items-center justify-content-center border rounded text-decoration-none text-dark p-2" style="aspect-ratio:1"><i class="bi bi-file-earmark-text fs-2 text-muted"></i><span class="small text-truncate w-100 text-center"><?= esc($a['original_name']) ?></span></a>
           <?php endif; ?>
