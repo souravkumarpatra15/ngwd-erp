@@ -1,6 +1,23 @@
-const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+let CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+function freshCsrfToken() { return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || CSRF_TOKEN; }
 
 $.ajaxSetup({ headers: { 'X-CSRF-Token': CSRF_TOKEN } });
+
+// Always send a fresh CSRF token (read from meta at send-time, not the
+// frozen page-load value). This survives token rotation: without it, the
+// second POST after any regenerated token fails with SecurityException
+// "The action you requested is not allowed."
+$.ajaxPrefilter(function (options, originalOptions, jqXHR) {
+  const fresh = freshCsrfToken();
+  if (!fresh) return;
+  jqXHR.setRequestHeader('X-CSRF-TOKEN', fresh);
+  const data = options.data;
+  if (typeof data === 'string' && data.indexOf('csrf_test_name') !== -1) {
+    options.data = data.replace(/csrf_test_name=[^&]*/, 'csrf_test_name=' + encodeURIComponent(fresh));
+  } else if (data && typeof data === 'object' && !(data instanceof FormData)) {
+    data.csrf_test_name = fresh;
+  }
+});
 
 // Multi-currency: symbol lookup shared by all DataTables render callbacks.
 // Display-only — the stored amount is already in the record's currency.
