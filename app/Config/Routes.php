@@ -16,6 +16,8 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
     $routes->group('admin', ['filter' => 'adminauth'], function ($routes) {
         $routes->get('/', 'Admin\DashboardController::index');
         $routes->get('dashboard', 'Admin\DashboardController::index');
+        $routes->get('cron/run', 'Admin\CronController::run');
+        $routes->get('cron/status', 'Admin\CronController::status');
         $routes->get('notifications', 'Admin\DashboardController::notifications');
         $routes->get('notifications/recent', 'Admin\DashboardController::notificationsRecent');
         $routes->post('notifications/read/(:num)', 'Admin\DashboardController::markRead/$1');

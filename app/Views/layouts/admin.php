@@ -474,6 +474,10 @@
     });
     loadNotifications();
     setInterval(loadNotifications, 25000);
+    // Code-driven cron: fire once per page load, a few seconds after render,
+    // in the background. Server side runs each job at most once per day
+    // (after its scheduled IST time), so this is a cheap no-op otherwise.
+    setTimeout(() => { fetch('<?= base_url('admin/cron/run') ?>', { credentials: 'same-origin' }).catch(() => {}); }, 8000);
   </script>
   <?= $this->renderSection('scripts') ?>
 </body>
