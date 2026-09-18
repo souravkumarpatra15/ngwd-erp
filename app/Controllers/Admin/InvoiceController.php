@@ -273,10 +273,10 @@ class InvoiceController extends BaseController
 
         $res = $whatsapp->invoiceSent(
             $inv['client_whatsapp'],
-            $inv['client_name'] ?? '',
-            $inv['invoice_number'],
-            $amount,
-            $inv['due_date'],
+            (string)($inv['client_name'] ?? ''),
+            (string)$inv['invoice_number'],
+            (string)$amount,
+            (string)($inv['due_date'] ?? ''),
             $this->settings['company_name'] ?? 'NGWebD'
         );
 

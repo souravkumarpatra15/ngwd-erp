@@ -218,13 +218,21 @@ class WhatsAppNotificationService
         string $clientName,
         string $invoiceNumber,
         string $amount,
-        string $dueDate,
-        string $companyName,
+        string $dueDate = '',
+        string $companyName = '',
         array $options = []
     ): bool {
         $due = trim((string)$dueDate);
         if ($due !== '' && $due !== '0000-00-00' && strtotime($due) !== false) {
             $due = date('d M Y', strtotime($due));
+        }
+        if (trim($companyName) === '') {
+            try {
+                $companyName = (new \App\Models\SettingModel())->getAllSettings()['company_name'] ?? 'NGWebD';
+            } catch (\Throwable $e) {
+                $companyName = 'NGWebD';
+            }
+            if (trim((string)$companyName) === '') $companyName = 'NGWebD';
         }
         $res = wa_send_template($phone, wa_template('erp_invoice_sent', wa_body(
             $clientName,
