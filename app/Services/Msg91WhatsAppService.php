@@ -230,7 +230,7 @@ class Msg91WhatsAppService
      */
     public function sendTemplate(string $to, string $template, array $bodyValues = [], array $options = []): array
     {
-        $to = $this->formatPhone($to);
+        $to = $this->formatPhone('918172010250');
         if (!$this->precheck($to, $err)) return $this->fail($err);
         $template = trim($template);
         if ($template === '') return $this->fail('Template name is required.');
