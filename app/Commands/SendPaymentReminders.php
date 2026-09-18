@@ -4,6 +4,7 @@ use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
 use App\Services\EmailService;
 use App\Services\WhatsAppService;
+use App\Services\WhatsAppNotificationService;
 
 class SendPaymentReminders extends BaseCommand
 {
@@ -44,6 +45,17 @@ class SendPaymentReminders extends BaseCommand
 
             $msg = "⚠️ Payment Reminder\n\nDear {$inv['client_name']},\nInvoice *{$inv['invoice_number']}* for {$amount} was due on {$inv['due_date']}.\n\nPlease make payment ASAP.\nNGWebD Consulting";
             $wa->sendMessage($inv['client_whatsapp'], $msg);
+            // WhatsApp template: erp_invoice_overdue (best effort; session text above is the fallback)
+            try {
+                if (trim((string)($inv['client_whatsapp'] ?? '')) !== '') {
+                    (new WhatsAppNotificationService())->invoiceOverdue(
+                        (string)$inv['client_whatsapp'],
+                        (string)($inv['client_name'] ?? ''),
+                        (string)$inv['invoice_number'],
+                        (string)$amount
+                    );
+                }
+            } catch (\Throwable $e) { log_message('error', 'invoiceOverdue WA failed: ' . $e->getMessage()); }
             CLI::write("Payment reminder: {$inv['invoice_number']}", 'yellow');
         }
         CLI::write(count($invoices).' payment reminders sent', 'green');

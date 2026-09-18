@@ -8,6 +8,7 @@ use App\Models\ClientModel;
 use App\Services\PDFService;
 use App\Services\EmailService;
 use App\Services\WhatsAppService;
+use App\Services\WhatsAppNotificationService;
 use App\Services\NotificationService;
 
 class ProposalController extends BaseController
@@ -72,8 +73,15 @@ class ProposalController extends BaseController
     public function sendWhatsApp($id)
     {
         $p = $this->pm->getWithDetails($id);
-        $msg = "Dear {$p['client_name']},\n\nProposal: *{$p['title']}*\nAmount: " . currencySymbol($p['currency'] ?? 'INR') . number_format($p['total_amount'], 2) . "\nValid: {$p['valid_until']}\n\nDownload: " . base_url("admin/proposals/pdf/$id") . "\n\nRegards,\n" . ($this->settings['company_name'] ?? '');
-        $res = (new WhatsAppService())->sendMessage($p['client_whatsapp'], $msg);
+        if (!$p || empty($p['client_whatsapp'])) return $this->jsonError('Client WhatsApp number not available.');
+        // WhatsApp template: erp_proposal_sent
+        $amount = currencySymbol($p['currency'] ?? 'INR') . number_format((float)($p['total_amount'] ?? 0), 2);
+        $res = (new WhatsAppNotificationService())->proposalSent(
+            (string)$p['client_whatsapp'],
+            (string)($p['client_name'] ?? ''),
+            (string)($p['proposal_number'] ?? $p['title'] ?? ''),
+            (string)$amount
+        );
         if ($res) {
             $this->pm->update($id, ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);
             (new NotificationService())->createForClient($p['client_id'], 'proposal_sent', 'New Proposal', "\"{$p['title']}\" is ready for your review", (int) $id, 'proposal');

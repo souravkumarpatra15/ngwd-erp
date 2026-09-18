@@ -10,6 +10,7 @@ use App\Models\PaymentModel;
 use App\Models\DomainModel;
 use App\Models\HostingModel;
 use App\Models\UserModel;
+use App\Services\WhatsAppNotificationService;
 
 class ClientController extends BaseController
 {
@@ -68,6 +69,11 @@ class ClientController extends BaseController
             }
         }
         $this->logActivity('clients', $clientId, 'created', 'Client: ' . $data['name']);
+        // WhatsApp template: erp_client_welcome (best effort — never blocks creation)
+        try {
+            $waPhone = trim((string)($data['whatsapp'] ?? '')) !== '' ? (string)$data['whatsapp'] : (string)($data['phone'] ?? '');
+            if ($waPhone !== '') (new WhatsAppNotificationService())->clientWelcome($waPhone, (string)$data['name']);
+        } catch (\Throwable $e) { log_message('error', 'clientWelcome WA failed: ' . $e->getMessage()); }
         return redirect()->to("admin/clients/$clientId")->with('success', 'Client created!');
     }
 

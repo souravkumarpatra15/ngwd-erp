@@ -6,6 +6,7 @@ use App\Models\PaymentModel;
 use App\Models\InvoiceModel;
 use App\Models\ProjectModel;
 use App\Models\ClientModel;
+use App\Services\WhatsAppNotificationService;
 
 class PaymentController extends BaseController
 {
@@ -60,6 +61,18 @@ class PaymentController extends BaseController
             if($projectId&&!(new ProjectModel())->update($projectId,['total_paid'=>(float)$project['total_paid']+$amount]))throw new \RuntimeException('Unable to update linked project.');
             if($milestoneId&&!$this->db->table('milestones')->where('id',$milestoneId)->update(['status'=>'paid']))throw new \RuntimeException('Unable to update linked milestone.');
             if(!$this->db->transStatus())throw new \RuntimeException('Payment transaction failed.'); $this->db->transCommit();
+            // WhatsApp template: erp_payment_received (best effort, post-commit only)
+            try {
+                $pclient = (new ClientModel())->find($clientId);
+                if ($pclient && trim((string)($pclient['whatsapp'] ?? '')) !== '') {
+                    (new WhatsAppNotificationService())->paymentReceived(
+                        (string)$pclient['whatsapp'],
+                        (string)$pclient['name'],
+                        (string)($invoice['invoice_number'] ?? $payNo),
+                        (string)(currencySymbol($currency) . number_format($amount, 2))
+                    );
+                }
+            } catch(\Throwable $e){ log_message('error','paymentReceived WA failed: '.$e->getMessage()); }
         }catch(\InvalidArgumentException $e){$this->db->transRollback();return redirect()->back()->withInput()->with('error',$e->getMessage());}
         catch(\Throwable $e){$this->db->transRollback();log_message('error','Payment transaction failed: {message}',['message'=>$e->getMessage()]);return redirect()->back()->withInput()->with('error','Payment could not be recorded. No financial changes were saved.');}
         return redirect()->to('/admin/payments')->with('success','Payment recorded successfully.');

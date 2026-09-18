@@ -6,6 +6,7 @@ use App\Controllers\BaseController;
 use App\Models\MilestoneModel;
 use App\Models\MilestoneNoteModel;
 use App\Services\NotificationService;
+use App\Services\WhatsAppNotificationService;
 use App\Services\PaymentService;
 
 class MilestoneController extends BaseController
@@ -54,7 +55,50 @@ class MilestoneController extends BaseController
         $u = ['status' => $s];
         if ($s === 'completed') $u['completed_date'] = date('Y-m-d');
         $this->ms->update($id, $u);
+        // WhatsApp template: erp_milestone_updated (best effort)
+        try { $this->sendMilestoneTemplate((int)$id, 'updated'); } catch (\Throwable $e) { log_message('error', 'milestoneUpdated WA failed: ' . $e->getMessage()); }
         return $this->jsonSuccess('Status updated');
+    }
+
+    // Manual due reminder → WhatsApp template erp_milestone_due.
+    // Route: POST admin/milestones/remind/(:num)
+    public function remind($id)
+    {
+        $row = $this->milestoneClientRow((int)$id);
+        if (!$row) return $this->jsonError('Milestone not found.');
+        if (empty($row['client_whatsapp'])) return $this->jsonError('Client WhatsApp number not available.');
+        $ok = (new WhatsAppNotificationService())->milestoneDue(
+            (string)$row['client_whatsapp'],
+            (string)($row['client_name'] ?? ''),
+            (string)($row['title'] ?? ''),
+            (string)($row['due_date'] ?? '')
+        );
+        return $ok ? $this->jsonSuccess('WhatsApp reminder sent!') : $this->jsonError('Failed to send WhatsApp message.');
+    }
+
+    private function milestoneClientRow(int $id): ?array
+    {
+        return $this->db->table('milestones')
+            ->select('milestones.*, projects.name as project_name, clients.name as client_name, clients.whatsapp as client_whatsapp')
+            ->join('projects', 'projects.id = milestones.project_id', 'left')
+            ->join('clients', 'clients.id = projects.client_id', 'left')
+            ->where('milestones.id', $id)->get()->getRowArray() ?: null;
+    }
+
+    private function sendMilestoneTemplate(int $id, string $kind): void
+    {
+        $row = $this->milestoneClientRow($id);
+        if (!$row || empty($row['client_whatsapp'])) return;
+        $wa = new WhatsAppNotificationService();
+        if ($kind === 'updated') {
+            $wa->milestoneUpdated(
+                (string)$row['client_whatsapp'],
+                (string)($row['client_name'] ?? ''),
+                (string)($row['project_name'] ?? ''),
+                (string)($row['title'] ?? ''),
+                (string)($row['status'] ?? '')
+            );
+        }
     }
 
     public function generatePaymentLink($id)

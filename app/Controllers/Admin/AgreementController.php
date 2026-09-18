@@ -7,6 +7,7 @@ use App\Models\ClientModel;
 use App\Services\PDFService;
 use App\Services\EmailService;
 use App\Services\WhatsAppService;
+use App\Services\WhatsAppNotificationService;
 use App\Services\NotificationService;
 
 class AgreementController extends BaseController
@@ -161,11 +162,13 @@ class AgreementController extends BaseController
     public function sendWhatsApp($id)
     {
         $a   = $this->am->getWithDetails($id);
-        $msg = "Dear {$a['client_name']},\n\n"
-             . "Agreement *{$a['title']}* is ready for your signature.\n"
-             . "Sign here: " . base_url("portal/agreements/sign/$id") . "\n\n"
-             . "Regards,\n" . ($this->settings['company_name'] ?? '');
-        $res = (new WhatsAppService())->sendMessage($a['client_whatsapp'], $msg);
+        if (!$a || empty($a['client_whatsapp'])) return $this->jsonError('Client WhatsApp number not available.');
+        // WhatsApp template: erp_agreement_sent
+        $res = (new WhatsAppNotificationService())->agreementSent(
+            (string)$a['client_whatsapp'],
+            (string)($a['client_name'] ?? ''),
+            (string)($a['agreement_number'] ?? $a['title'] ?? '')
+        );
         if ($res) {
             $this->am->update($id, ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);
             (new NotificationService())->createForClient($a['client_id'], 'agreement_sent', 'Agreement Ready to Sign', "\"{$a['title']}\" needs your signature", (int) $id, 'agreement');

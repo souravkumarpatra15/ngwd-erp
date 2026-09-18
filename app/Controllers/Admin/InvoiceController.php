@@ -122,6 +122,18 @@ class InvoiceController extends BaseController
         }
 
         $this->logActivity('invoices', $id, 'create', "Created {$invoiceData['invoice_number']}");
+        // WhatsApp template: erp_invoice_created (best effort — never blocks creation)
+        try {
+            $client = (new ClientModel())->find((int)$post['client_id']);
+            if ($client && trim((string)($client['whatsapp'] ?? '')) !== '') {
+                (new WhatsAppNotificationService())->invoiceCreated(
+                    (string)$client['whatsapp'],
+                    (string)$client['name'],
+                    (string)$invoiceData['invoice_number'],
+                    (string)(currencySymbol($invoiceData['currency'] ?? 'INR') . number_format((float)$total, 2))
+                );
+            }
+        } catch (\Throwable $e) { log_message('error', 'invoiceCreated WA failed: ' . $e->getMessage()); }
         return redirect()->to("admin/invoices/$id")->with('success', 'Invoice created!');
     }
 
@@ -299,6 +311,25 @@ class InvoiceController extends BaseController
         }
 
         return $this->jsonError('Failed to send WhatsApp message.');
+    }
+
+    // ── MANUAL REMINDER ─────────────────────────────────────
+    // Route: POST admin/invoices/remind/(:num) → template erp_invoice_reminder
+    public function remind($id)
+    {
+        $inv = $this->im->getWithDetails($id);
+        if (!$inv || empty($inv['client_whatsapp'])) return $this->jsonError('Client WhatsApp number not available.');
+        $balance = (float)($inv['balance_due'] ?? $inv['total'] ?? 0);
+        if ($balance <= 0) return $this->jsonError('No balance due on this invoice.');
+        $amount = currencySymbol($inv['currency'] ?? 'INR') . number_format($balance, 2);
+        $ok = (new WhatsAppNotificationService())->invoiceReminder(
+            (string)$inv['client_whatsapp'],
+            (string)($inv['client_name'] ?? ''),
+            (string)$inv['invoice_number'],
+            (string)$amount,
+            (string)($inv['due_date'] ?? '')
+        );
+        return $ok ? $this->jsonSuccess('WhatsApp reminder sent!') : $this->jsonError('Failed to send WhatsApp message.');
     }
 
     // ── PAYMENT LINK ──────────────────────────────────────────

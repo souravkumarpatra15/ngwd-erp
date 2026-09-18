@@ -8,6 +8,7 @@ use App\Models\ClientModel;
 use App\Models\LeadActivityModel;
 use App\Services\EmailService;
 use App\Services\WhatsAppService;
+use App\Services\WhatsAppNotificationService;
 use App\Models\UserModel;
 
 class LeadController extends BaseController
@@ -50,6 +51,11 @@ class LeadController extends BaseController
         unset($data['csrf_test_name']);
         $id = $this->leadModel->insert($data);
         $this->logActivity('leads', $id, 'created', 'Lead added: ' . $data['name']);
+        // WhatsApp template: erp_lead_created (best effort — never blocks creation)
+        try {
+            $waPhone = trim((string)($data['whatsapp'] ?? '')) !== '' ? (string)$data['whatsapp'] : (string)($data['mobile'] ?? '');
+            if ($waPhone !== '') (new WhatsAppNotificationService())->leadCreated($waPhone, (string)$data['name'], (string)($data['company_name'] ?? '') !== '' ? (string)$data['company_name'] : 'your enquiry');
+        } catch (\Throwable $e) { log_message('error', 'leadCreated WA failed: ' . $e->getMessage()); }
         return redirect()->to('admin/leads')->with('success', 'Lead added successfully!');
     }
 

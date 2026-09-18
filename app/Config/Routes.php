@@ -103,6 +103,7 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('milestones/update/(:num)', 'Admin\MilestoneController::update/$1');
         $routes->post('milestones/delete/(:num)', 'Admin\MilestoneController::delete/$1');
         $routes->post('milestones/status/(:num)', 'Admin\MilestoneController::updateStatus/$1');
+        $routes->post('milestones/remind/(:num)', 'Admin\MilestoneController::remind/$1');
         $routes->post('milestones/payment-link/(:num)', 'Admin\MilestoneController::generatePaymentLink/$1');
         $routes->get('milestones/by-project/(:num)', 'Admin\MilestoneController::byProject/$1');
         $routes->get('milestones/notes/(:num)', 'Admin\MilestoneController::notes/$1');
@@ -124,6 +125,7 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->get('invoices/pdf/(:num)', 'Admin\InvoiceController::generatePDF/$1');
         $routes->post('invoices/send-email/(:num)', 'Admin\InvoiceController::sendEmail/$1');
         $routes->post('invoices/send-whatsapp/(:num)', 'Admin\InvoiceController::sendWhatsApp/$1');
+        $routes->post('invoices/remind/(:num)', 'Admin\InvoiceController::remind/$1');
         $routes->post('invoices/payment-link/(:num)', 'Admin\InvoiceController::generatePaymentLink/$1');
         $routes->post('invoices/delete/(:num)', 'Admin\InvoiceController::delete/$1');
         $routes->post('invoices/void/(:num)', 'Admin\InvoiceController::void/$1');
