@@ -24,11 +24,11 @@
             <?php elseif ($fIsVideo && $fPlayable): ?>
               <video src="<?= base_url('portal/deliverables/files/'.$f['id']) ?>" class="rounded border w-100" style="aspect-ratio:16/9;object-fit:cover;background:#000" controls preload="metadata" playsinline></video>
             <?php elseif ($fIsVideo): ?>
-              <a href="<?= base_url('portal/deliverables/files/'.$f['id']) ?>" class="d-flex flex-column align-items-center justify-content-center border rounded text-decoration-none text-dark p-2" style="aspect-ratio:16/9"><i class="bi bi-film fs-2 text-muted"></i><span class="small text-truncate w-100 text-center"><?= esc($f['original_name']) ?></span><span class="badge bg-light text-dark border mt-1" style="font-size:10px">Download to play</span></a>
+              <a href="<?= base_url('portal/deliverables/files/'.$f['id'].'?download=1') ?>" class="d-flex flex-column align-items-center justify-content-center border rounded text-decoration-none text-dark p-2" style="aspect-ratio:16/9"><i class="bi bi-film fs-2 text-muted"></i><span class="small text-truncate w-100 text-center"><?= esc($f['original_name']) ?></span><span class="badge bg-light text-dark border mt-1" style="font-size:10px">Download to play</span></a>
             <?php else: ?>
               <a href="<?= base_url('portal/deliverables/files/'.$f['id']) ?>" class="d-flex flex-column align-items-center justify-content-center border rounded text-decoration-none text-dark p-2" style="aspect-ratio:16/9"><i class="bi bi-file-earmark-text fs-2 text-muted"></i><span class="small text-truncate w-100 text-center"><?= esc($f['original_name']) ?></span></a>
             <?php endif; ?>
-            <div class="mt-1 d-flex justify-content-between align-items-center"><span class="small text-truncate" title="<?= esc($f['original_name']) ?>"><?= esc($f['original_name']) ?></span><a href="<?= base_url('portal/deliverables/files/'.$f['id']) ?>" class="btn btn-xs text-primary p-0 ms-1" <?= ($fIsVideo || !empty($f['is_image'])) ? 'target="_blank"' : '' ?> title="View / Download"><i class="bi bi-download"></i></a></div>
+            <div class="mt-1 d-flex justify-content-between align-items-center"><span class="small text-truncate" title="<?= esc($f['original_name']) ?>"><?= esc($f['original_name']) ?></span><a href="<?= base_url('portal/deliverables/files/'.$f['id'].'?download=1') ?>" class="btn btn-xs text-primary p-0 ms-1" title="Download" download><i class="bi bi-download"></i></a></div>
           </div>
         <?php endforeach; ?>
       </div><?php endif; ?>

@@ -105,19 +105,35 @@ class BaseController extends Controller
             }
             $status = 206;
         }
+        // Force download when ?download=1 is present — same URL is used for
+        // both preview (<video>/<img> src) and the download button.
+        $forceDownload = (string)($this->request->getGet('download') ?? '') === '1';
         $length = $end - $start + 1;
         $safeName = preg_replace('/[^\w\-. ]+/', '_', $downloadName);
+        $safeName = trim($safeName) !== '' ? trim($safeName) : 'file';
+        // Clean any output buffers so binary output is not corrupted.
+        while (ob_get_level() > 0) { @ob_end_clean(); }
+        http_response_code($status);
+        header('Content-Type: ' . $mime);
+        header('Accept-Ranges: bytes');
+        header('Content-Length: ' . $length);
+        header('Content-Disposition: ' . ($forceDownload ? 'attachment' : 'inline') . '; filename="' . addslashes($safeName) . '"');
+        header('Cache-Control: private, max-age=86400');
+        if ($status === 206) header("Content-Range: bytes {$start}-{$end}/{$size}");
         $fh = fopen($realPath, 'rb');
+        if ($fh === false) { exit; }
         fseek($fh, $start);
-        $body = stream_get_contents($fh, $length);
+        $remaining = $length;
+        $chunk = 8192 * 128; // ~1MB chunks — keeps memory flat for 100MB videos
+        set_time_limit(0);
+        while ($remaining > 0 && !feof($fh)) {
+            $read = $remaining > $chunk ? $chunk : $remaining;
+            echo fread($fh, $read);
+            $remaining -= $read;
+            flush();
+        }
         fclose($fh);
-        $res = $this->response->setStatusCode($status)
-            ->setContentType($mime)
-            ->setHeader('Accept-Ranges', 'bytes')
-            ->setHeader('Content-Length', (string)$length)
-            ->setHeader('Content-Disposition', 'inline; filename="' . $safeName . '"');
-        if ($status === 206) $res->setHeader('Content-Range', "bytes {$start}-{$end}/{$size}");
-        return $res->setBody($body);
+        exit;
     }
     protected function logActivity($module, $moduleId, $action, $description = '')
     {
