@@ -50,5 +50,21 @@ class WebhookController extends BaseController
         $amountStr = currencySymbol($currency) . number_format($order['amount'], 2);
         (new NotificationService())->create(0,'payment_received','Payment Received',$amountStr.' via Razorpay',$pid,'payment');
         (new NotificationService())->createForClient((int) $order['client_id'],'payment_confirmed','Payment Received',"We've received your payment of {$amountStr}. Thank you!",$pid,'payment');
+
+        // ── Send WhatsApp after payment record ────────────────────────
+        if (trim((string)($order['client_whatsapp'] ?? '')) !== '') {
+            $wa = new WhatsAppNotificationService();
+            $invNumber = '';
+            if ($order['entity_type'] === 'invoice') {
+                $inv = $im->find($order['entity_id']);
+                $invNumber = $inv['invoice_number'] ?? '';
+            }
+            $wa->paymentReceived(
+                (string)($order['client_whatsapp'] ?? ''),
+                (string)($order['client_name'] ?? ''),
+                $invNumber,
+                $amountStr
+            );
+        }
     }
 }

@@ -4,6 +4,7 @@ namespace App\Controllers\Client;
 
 use App\Controllers\BaseController;
 use App\Services\PaymentService;
+use App\Services\WhatsAppNotificationService;
 
 class PaymentController extends BaseController
 {
@@ -96,7 +97,22 @@ class PaymentController extends BaseController
             if (!$this->db->transStatus()) throw new \RuntimeException('Payment transaction failed.');
             $this->db->transCommit();
             log_message('info', "Razorpay payment verified: {$paymentId} for invoice {$invoiceId}");
-            return $this->jsonSuccess('Payment successful! Thank you.');
+
+        $amountStr = currencySymbol($inv['currency'] ?? 'INR') . number_format($orderAmount, 2);
+
+        // ── Send WhatsApp after payment record ────────────────────────
+        $wa = new WhatsAppNotificationService();
+        $inv = $this->db->table('invoices')->where('id', $invoiceId)->where('client_id', $cid)->first();
+        $invNumber = $inv ? $inv['invoice_number'] : '';
+        $wa->paymentReceived(
+            (string)($inv['whatsapp'] ?? ''),
+            (string)($inv['client_name'] ?? ''),
+            $invNumber,
+            $amountStr
+        );
+        // ------------------------------------------------------------
+
+        return $this->jsonSuccess('Payment successful! Thank you.');
         } catch (\Throwable $e) {
             $this->db->transRollback();
             log_message('error', 'Invoice payment verification failed: {message}', ['message' => $e->getMessage()]);
@@ -174,7 +190,25 @@ class PaymentController extends BaseController
 
             $this->db->transCommit();
             log_message('info', "Razorpay payment verified: {$paymentId} for milestone {$milestoneId}");
-            return $this->jsonSuccess('Payment successful! Thank you.');
+
+        // Get client WhatsApp from project
+        $project = $this->db->table('projects')->where('id', $ms['project_id'])->select('clients.whatsapp as client_whatsapp, clients.name as client_name')->join('clients', 'clients.id = projects.client_id', 'left')->first();
+        $clientWhatsApp = $project ? ($project['client_whatsapp'] ?? '') : '';
+        $clientName = $project ? ($project['client_name'] ?? '') : '';
+
+        $amountStr = currencySymbol($ms['currency'] ?? 'INR') . number_format($orderAmount, 2);
+
+        // ── Send WhatsApp after payment record ────────────────────────
+        $wa = new WhatsAppNotificationService();
+        $wa->paymentReceived(
+            (string)$clientWhatsApp,
+            (string)$clientName,
+            '',
+            $amountStr
+        );
+        // ------------------------------------------------------------
+
+        return $this->jsonSuccess('Payment successful! Thank you.');
         } catch (\Throwable $e) {
             $this->db->transRollback();
             log_message('error', 'Milestone payment verification failed: {message}', ['message' => $e->getMessage()]);
