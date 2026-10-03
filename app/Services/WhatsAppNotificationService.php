@@ -44,7 +44,7 @@ class WhatsAppNotificationService
     ): bool {
         return $this->whatsapp->sendTemplate(
             $phone,
-            'erp_lead_created',
+            'erp_lead_created2',
             $name,
             [
                 $name,
@@ -208,7 +208,7 @@ class WhatsAppNotificationService
     /**
      * Invoice "like email": client + number + amount + due date + company.
      * Mirrors EmailService::sendInvoice(). Build with the wa_* helpers so the
-     * approved MSG91 template `erp_invoice_sent` stays in sync with code.
+     * approved MSG91 template `erp_invoice_sent2` stays in sync with code.
      * $options (optional): ['header'=>wa_header_media(...), 'buttons'=>[wa_button_url(...),...]]
      *   e.g. attach the invoice PDF as a document header once you have a
      *   public HTTPS URL for it, or add a "Pay Now" URL button.
@@ -234,7 +234,7 @@ class WhatsAppNotificationService
             }
             if (trim((string)$companyName) === '') $companyName = 'NGWebD';
         }
-        $res = wa_send_template($phone, wa_template('erp_invoice_sent', wa_body(
+        $res = wa_send_template($phone, wa_template('erp_invoice_sent2', wa_body(
             $clientName,
             $invoiceNumber,
             $amount,
