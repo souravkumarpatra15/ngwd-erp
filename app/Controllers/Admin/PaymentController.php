@@ -61,7 +61,11 @@ class PaymentController extends BaseController
             if($projectId&&!(new ProjectModel())->update($projectId,['total_paid'=>(float)$project['total_paid']+$amount]))throw new \RuntimeException('Unable to update linked project.');
             if($milestoneId&&!$this->db->table('milestones')->where('id',$milestoneId)->update(['status'=>'paid']))throw new \RuntimeException('Unable to update linked milestone.');
             if(!$this->db->transStatus())throw new \RuntimeException('Payment transaction failed.'); $this->db->transCommit();
-            // WhatsApp template: erp_payment_received (best effort, post-commit only)
+            // WhatsApp template: erp_payment_received (best effort, post-commit only).
+            // Opt-out via the "Send WhatsApp" checkbox on the create form.
+            $sendWaRaw = $this->request->getPost('send_whatsapp');
+            $sendWa = $sendWaRaw === null ? true : (bool)$sendWaRaw;
+            if ($sendWa) {
             try {
                 $pclient = (new ClientModel())->find($clientId);
                 if ($pclient && trim((string)($pclient['whatsapp'] ?? '')) !== '') {
@@ -73,8 +77,24 @@ class PaymentController extends BaseController
                     );
                 }
             } catch(\Throwable $e){ log_message('error','paymentReceived WA failed: '.$e->getMessage()); }
+            }
         }catch(\InvalidArgumentException $e){$this->db->transRollback();return redirect()->back()->withInput()->with('error',$e->getMessage());}
         catch(\Throwable $e){$this->db->transRollback();log_message('error','Payment transaction failed: {message}',['message'=>$e->getMessage()]);return redirect()->back()->withInput()->with('error','Payment could not be recorded. No financial changes were saved.');}
         return redirect()->to('/admin/payments')->with('success','Payment recorded successfully.');
+    }
+    /** Resend the payment-received WhatsApp template (erp_payment_received). */
+    public function sendWhatsApp($id){
+        $payment=$this->getPaymentDetail((int)$id);
+        if(!$payment) return $this->jsonError('Payment not found.');
+        $client=(new ClientModel())->find((int)($payment['client_id'] ?? 0));
+        $phone=trim((string)($client['whatsapp'] ?? ''));
+        if($phone==='') return $this->jsonError('Client WhatsApp number not available.');
+        $res=(new WhatsAppNotificationService())->paymentReceivedResult(
+            $phone,
+            (string)($payment['client_name'] ?? $client['name'] ?? ''),
+            (string)($payment['invoice_number'] ?? $payment['payment_number'] ?? ''),
+            (string)(currencySymbol($payment['currency'] ?? 'INR') . number_format((float)($payment['amount'] ?? 0), 2))
+        );
+        return $res['ok'] ? $this->jsonSuccess('WhatsApp receipt sent!') : $this->jsonError($res['error'] ?? 'Failed to send WhatsApp message.');
     }
 }

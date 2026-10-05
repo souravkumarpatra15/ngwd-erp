@@ -222,6 +222,22 @@ class WhatsAppNotificationService
         string $companyName = '',
         array $options = []
     ): bool {
+        return $this->invoiceSentResult($phone, $clientName, $invoiceNumber, $amount, $dueDate, $companyName, $options)['ok'];
+    }
+
+    /**
+     * Same as invoiceSent() but returns the full MSG91 result so
+     * controllers can surface the real error (e.g. blocked prefix "1").
+     */
+    public function invoiceSentResult(
+        string $phone,
+        string $clientName,
+        string $invoiceNumber,
+        string $amount,
+        string $dueDate = '',
+        string $companyName = '',
+        array $options = []
+    ): array {
         $due = trim((string)$dueDate);
         if ($due !== '' && $due !== '0000-00-00' && strtotime($due) !== false) {
             $due = date('d M Y', strtotime($due));
@@ -242,7 +258,7 @@ class WhatsAppNotificationService
             $companyName
         ), $options));
         if (!$res['ok']) log_message('error', 'invoiceSent WA failed: ' . ($res['error'] ?? 'unknown'));
-        return $res['ok'];
+        return $res;
     }
 
     public function invoiceReminder(
@@ -295,16 +311,32 @@ class WhatsAppNotificationService
         string $invoiceNumber,
         string $amount
     ): bool {
-        return $this->whatsapp->sendTemplate(
-            $phone,
-            'erp_payment_received',
-            $clientName,
-            [
+        return $this->paymentReceivedResult($phone, $clientName, $invoiceNumber, $amount)['ok'];
+    }
+
+    /** Full MSG91 result for payment receipts (lets controllers show real errors). */
+    public function paymentReceivedResult(
+        string $phone,
+        string $clientName,
+        string $invoiceNumber,
+        string $amount
+    ): array {
+        if (!function_exists('wa_send_template')) {
+            $ok = $this->whatsapp->sendTemplate(
+                $phone,
+                'erp_payment_received',
                 $clientName,
-                $invoiceNumber,
-                $amount,
-            ]
-        );
+                [$clientName, $invoiceNumber, $amount]
+            );
+            return ['ok' => $ok, 'message_id' => null, 'error' => $ok ? null : 'Failed to send WhatsApp message.', 'response' => null];
+        }
+        $res = wa_send_template($phone, wa_template('erp_payment_received', wa_body(
+            $clientName,
+            $invoiceNumber,
+            $amount
+        )));
+        if (!$res['ok']) log_message('error', 'paymentReceived WA failed: ' . ($res['error'] ?? 'unknown'));
+        return $res;
     }
 
     /*

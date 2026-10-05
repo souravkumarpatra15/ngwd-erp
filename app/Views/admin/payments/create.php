@@ -42,6 +42,7 @@
                 <option value="">None — select project first</option>
               </select></div>
             <div class="col-12"><label class="form-label small fw-semibold">Notes</label><textarea name="notes" class="form-control" rows="2" placeholder="Payment notes…"><?= esc(old('notes')) ?></textarea></div>
+            <div class="col-12"><div class="form-check"><input class="form-check-input" type="checkbox" name="send_whatsapp" value="1" id="sendWaCheck" checked><label class="form-check-label small fw-semibold" for="sendWaCheck"><i class="bi bi-whatsapp me-1 text-success"></i>Send WhatsApp receipt to client (erp_payment_received)</label></div></div>
           </div>
           <div class="d-flex gap-2 mt-4"><button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-2"></i>Record Payment</button><a href="<?= base_url('admin/payments') ?>" class="btn btn-outline-secondary">Cancel</a></div>
         </form>

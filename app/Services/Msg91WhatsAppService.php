@@ -48,10 +48,30 @@ class Msg91WhatsAppService
         return $this->authKey !== '' && $this->integratedNumber !== '';
     }
 
-    /** Digits + country code, no plus. 10-digit Indian numbers get 91. */
+    /**
+     * Digits + country code, no plus (919876543210 / 12065551212).
+     * - Strips international call prefixes (00.., 011..) and single trunk 0.
+     * - Bare 10-digit numbers default to India (91) for BC — store USA/
+     *   other countries WITH their country code (e.g. +1 206...).
+     * - 11-digit numbers starting with 1 (NANP: USA/CA) are kept as-is.
+     * - NEVER prepends a bogus "0"/"01": MSG91 + WhatsApp want pure E.164.
+     */
     public function formatPhone(string $phone): string
     {
         $digits = preg_replace('/\D/', '', trim($phone));
+        if ($digits === '') return '';
+        // 00<cc>... (INTL prefix used in IN/EU) -> <cc>...
+        if (strlen($digits) > 12 && str_starts_with($digits, '00')) {
+            $digits = substr($digits, 2);
+        } elseif (strlen($digits) > 11 && str_starts_with($digits, '011')) {
+            // 011<cc>... (NANP exit code, e.g. 01191... dialled from USA) -> <cc>...
+            $candidate = substr($digits, 3);
+            if (strlen($candidate) >= 10 && strlen($candidate) <= 15) $digits = $candidate;
+        }
+        // Single trunk zero: 09876543210 -> 9876543210
+        if (strlen($digits) === 11 && $digits[0] === '0') {
+            $digits = substr($digits, 1);
+        }
         if (strlen($digits) === 10) $digits = '91' . $digits;
         return $digits;
     }
@@ -296,7 +316,13 @@ class Msg91WhatsAppService
     protected function precheck(string $to, ?string &$err): bool
     {
         if (!$this->isConfigured()) { $err = 'MSG91 is not configured (Settings → WhatsApp → Auth Key + Integrated Number).'; return false; }
-        if (strlen($to) < 10) { $err = 'Invalid WhatsApp number.'; return false; }
+        if (strlen($to) < 10 || strlen($to) > 15) { $err = 'Invalid WhatsApp number "' . $to . '" (need 10–15 digits with country code).'; return false; }
+        if ($to[0] === '0') { $err = 'Invalid WhatsApp number "' . $to . '" (strip trunk 0 / 00 prefix, keep country code only).'; return false; }
+        // NANP (USA/CA: 1 + 10 digits) sanity — bad area codes are rejected by carriers/MSG91.
+        if (strlen($to) === 11 && $to[0] === '1' && ($to[1] < '2' || $to[1] > '9')) {
+            $err = 'Invalid USA/CA number "' . $to . '" (area code after +1 must be 2–9).';
+            return false;
+        }
         $err = null; return true;
     }
 
@@ -341,10 +367,24 @@ class Msg91WhatsAppService
             if ($curlErr) return $this->fail('CURL error: ' . $curlErr);
             $data = json_decode((string)$raw, true);
             $ok = $code >= 200 && $code < 300 && (!isset($data['status']) || strtolower((string)$data['status']) !== 'error');
+            // MSG91 sometimes returns HTTP 200 with an error payload — catch it.
+            if ($ok && is_array($data)) {
+                $blob = strtolower(json_encode($data));
+                if (str_contains($blob, 'blocked') || str_contains($blob, 'restricted') || str_contains($blob, 'not allowed') || str_contains($blob, 'prefix')) $ok = false;
+            }
+            $error = null;
+            if (!$ok) {
+                $error = 'MSG91 error [' . $code . ']: ' . substr((string)$raw, 0, 500);
+                // Account-side outbound restriction (e.g. USA prefix "1" blocked):
+                // make it actionable instead of a raw dump.
+                if (preg_match('/blocked|restrict/i', (string)$raw)) {
+                    $error .= ' — Outbound to this country/prefix is blocked on your MSG91 account. Enable international/WhatsApp outbound for it in the MSG91 panel (or check allowed prefixes), then retry.';
+                }
+            }
             $result = [
                 'ok' => $ok,
                 'message_id' => $data['message_id'] ?? $data['request_id'] ?? null,
-                'error' => $ok ? null : ('MSG91 error [' . $code . ']: ' . substr((string)$raw, 0, 500)),
+                'error' => $error,
                 'response' => $data ?? $raw,
             ];
             if (!$ok) log_message('error', 'MSG91 WhatsApp API Error [' . $url . ']: ' . $result['error']);

@@ -10,6 +10,7 @@
           <span class="text-muted small"><?= esc($payment['payment_number']) ?></span>
         </div>
         <a href="<?= base_url('admin/payments/receipt/'.$payment['id']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-receipt me-1"></i>Receipt</a>
+        <button class="btn btn-sm btn-outline-success btn-wa-pay" data-id="<?= $payment['id'] ?>" style="color:#25D366;border-color:#25D366"><i class="bi bi-whatsapp me-1"></i>WhatsApp</button>
       </div>
       <div class="card-body">
         <div class="row">
@@ -56,4 +57,15 @@
   </div>
 </div>
 
+<?= $this->endSection() ?>
+<?= $this->section('scripts') ?>
+<script>
+const BASE = '<?= base_url() ?>';
+$('.btn-wa-pay').on('click', function() {
+  showLoader('Sending WhatsApp...');
+  $.post(`${BASE}admin/payments/send-whatsapp/${$(this).data('id')}`, {csrf_test_name: CSRF_TOKEN}, res => {
+    hideLoader(); showToast(res.message, res.status);
+  }, 'json').fail(() => { hideLoader(); showToast('Server error. Please try again.', 'error'); });
+});
+</script>
 <?= $this->endSection() ?>

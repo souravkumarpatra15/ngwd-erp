@@ -278,12 +278,18 @@ class InvoiceController extends BaseController
             return $this->jsonError('Client WhatsApp number not available.');
         }
 
+        // Send BALANCE due (not total) — partial invoices must show what's left to pay.
+        $balance = (float)($inv['balance_due'] ?? (($inv['total'] ?? 0) - ($inv['paid_amount'] ?? 0)));
+        if ($balance <= 0 && (float)($inv['total'] ?? 0) > 0) {
+            return $this->jsonError('No balance due on this invoice.');
+        }
+        if ($balance <= 0) $balance = (float)($inv['total'] ?? 0);
         $amount = currencySymbol($inv['currency'] ?? 'INR')
-            . number_format($inv['total'], 2);
+            . number_format($balance, 2);
 
         $whatsapp = new WhatsAppNotificationService();
 
-        $res = $whatsapp->invoiceSent(
+        $res = $whatsapp->invoiceSentResult(
             $inv['client_whatsapp'],
             (string)($inv['client_name'] ?? ''),
             (string)$inv['invoice_number'],
@@ -292,7 +298,7 @@ class InvoiceController extends BaseController
             $this->settings['company_name'] ?? 'NGWebD'
         );
 
-        if ($res) {
+        if ($res['ok']) {
             $this->im->update($id, [
                 'status'  => 'sent',
                 'sent_at' => date('Y-m-d H:i:s')
@@ -310,7 +316,7 @@ class InvoiceController extends BaseController
             return $this->jsonSuccess('WhatsApp invoice sent!');
         }
 
-        return $this->jsonError('Failed to send WhatsApp message.');
+        return $this->jsonError($res['error'] ?? 'Failed to send WhatsApp message.');
     }
 
     // ── MANUAL REMINDER ─────────────────────────────────────

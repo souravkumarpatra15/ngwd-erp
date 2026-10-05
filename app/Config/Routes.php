@@ -116,6 +116,7 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('payments/store', 'Admin\PaymentController::store');
         $routes->get('payments/(:num)', 'Admin\PaymentController::show/$1');
         $routes->get('payments/receipt/(:num)', 'Admin\PaymentController::receipt/$1');
+        $routes->post('payments/send-whatsapp/(:num)', 'Admin\PaymentController::sendWhatsApp/$1');
         $routes->get('payments/milestones-by-project/(:num)', 'Admin\PaymentController::milestonesByProject/$1');
         $routes->get('invoices', 'Admin\InvoiceController::index');
         $routes->get('invoices/datatable', 'Admin\InvoiceController::datatable');

@@ -89,10 +89,21 @@ if (!function_exists('wa_buttons_cta')) {
 }
 
 if (!function_exists('wa_to')) {
-    /** Normalise to digits + country code (no plus), defaulting 10-digit to 91. */
+    /**
+     * Normalise to digits + country code (no plus).
+     * Bare 10-digit numbers default to India (91) — store USA/others
+     * WITH country code (e.g. +1...). Strips 00/011/0 prefixes.
+     */
     function wa_to(string $phone): string
     {
         $digits = preg_replace('/\D/', '', trim($phone));
+        if ($digits === '') return '';
+        if (strlen($digits) > 12 && str_starts_with($digits, '00')) $digits = substr($digits, 2);
+        elseif (strlen($digits) > 11 && str_starts_with($digits, '011')) {
+            $c = substr($digits, 3);
+            if (strlen($c) >= 10 && strlen($c) <= 15) $digits = $c;
+        }
+        if (strlen($digits) === 11 && $digits[0] === '0') $digits = substr($digits, 1);
         if (strlen($digits) === 10) $digits = '91' . $digits;
         return $digits;
     }

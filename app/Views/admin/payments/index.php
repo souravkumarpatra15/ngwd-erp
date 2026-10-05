@@ -43,10 +43,17 @@ $('#paymentsTable').DataTable({
       <div class="d-flex gap-1">
         <a href="${BASE}admin/payments/${r.id}" class="btn btn-xs btn-outline-primary" title="View"><i class="bi bi-eye"></i></a>
         <a href="${BASE}admin/payments/receipt/${r.id}" class="btn btn-xs btn-outline-secondary" target="_blank" title="Receipt"><i class="bi bi-receipt"></i></a>
+        <button class="btn btn-xs btn-outline-success btn-wa-pay" data-id="${r.id}" title="Resend WhatsApp"><i class="bi bi-whatsapp"></i></button>
       </div>` },
   ],
   order: [[5,'desc']], pageLength: 25,
   language: { processing: '<div class="spinner-border spinner-border-sm text-primary"></div>' },
+});
+$(document).on('click', '.btn-wa-pay', function() {
+  showLoader('Sending WhatsApp...');
+  $.post(`${BASE}admin/payments/send-whatsapp/${$(this).data('id')}`, {csrf_test_name: CSRF_TOKEN}, res => {
+    hideLoader(); showToast(res.message, res.status);
+  }, 'json').fail(() => { hideLoader(); showToast('Server error. Please try again.', 'error'); });
 });
 </script>
 <?= $this->endSection() ?>
