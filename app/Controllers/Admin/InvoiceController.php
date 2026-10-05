@@ -313,7 +313,15 @@ class InvoiceController extends BaseController
                 'invoice'
             );
 
-            return $this->jsonSuccess('WhatsApp invoice sent!');
+            // MSG91 queues synchronously but delivers asynchronously: a later
+            // OUTBOUND → failed in the MSG91 panel (e.g. blocked prefix "1"
+            // for USA) is an account-side route restriction, not a payload bug.
+            $toNorm = function_exists('wa_to') ? wa_to((string)($inv['client_whatsapp'] ?? '')) : preg_replace('/\D/', '', (string)($inv['client_whatsapp'] ?? ''));
+            $msg = 'WhatsApp invoice queued!';
+            if ($toNorm !== '' && !str_starts_with($toNorm, '91')) {
+                $msg .= ' International number — if the MSG91 panel shows it failed, enable international/WhatsApp outbound for that prefix in your MSG91 account.';
+            }
+            return $this->jsonSuccess($msg);
         }
 
         return $this->jsonError($res['error'] ?? 'Failed to send WhatsApp message.');

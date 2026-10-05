@@ -275,8 +275,13 @@ class Msg91WhatsAppService
                 'value'   => (string)$b['value'],
             ]);
         }
-        // to_and_components is the bulk shape; single-recipient session
-        // calls use `to`. Both go to the same /bulk/ endpoint.
+        // to_and_components is the bulk shape (official MSG91 SDK uses a
+        // plain string for `to`; a single-element array is accepted too and
+        // is proven delivering to 91-numbers — keep it untouched).
+        // NOTE: MSG91 validates synchronously but delivers asynchronously.
+        // A queued (HTTP 200) request can still FAIL later in the MSG91
+        // panel (OUTBOUND → failed, e.g. "blocked prefixes (1)"). That is an
+        // account-side route restriction, not a payload bug.
         return $this->send('template', [
             'messaging_product' => 'whatsapp',
             'type' => 'template',
@@ -387,7 +392,7 @@ class Msg91WhatsAppService
                 'error' => $error,
                 'response' => $data ?? $raw,
             ];
-            if (!$ok) log_message('error', 'MSG91 WhatsApp API Error [' . $url . ']: ' . $result['error']);
+            if (!$ok) log_message('error', 'MSG91 WhatsApp API Error [' . $url . ']: ' . $result['error'] . ' | to=' . ($body['payload']['template']['to_and_components'][0]['to'][0] ?? ($body['to'] ?? '?')));
             return $result;
         } catch (\Throwable $e) {
             return $this->fail('Exception: ' . $e->getMessage());
