@@ -164,10 +164,19 @@ class AgreementController extends BaseController
         $a   = $this->am->getWithDetails($id);
         if (!$a || empty($a['client_whatsapp'])) return $this->jsonError('Client WhatsApp number not available.');
         // WhatsApp template: erp_agreement_sent
+        // Updated to support PDF document in header - pass pdfUrl & pdfFilename optionally:
+        $pdfUrl = '';
+        $pdfFilename = '';
+        if (!empty($a['agreement_pdf_url'])) {
+            $pdfUrl = (string)($a['agreement_pdf_url']);
+            $pdfFilename = basename($pdfUrl); // e.g., 'Agreement-001.pdf'
+        }
         $res = (new WhatsAppNotificationService())->agreementSent(
             (string)$a['client_whatsapp'],
             (string)($a['client_name'] ?? ''),
-            (string)($a['agreement_number'] ?? $a['title'] ?? '')
+            (string)($a['agreement_number'] ?? $a['title'] ?? ''),
+            $pdfUrl,
+            $pdfFilename
         );
         if ($res) {
             $this->am->update($id, ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);

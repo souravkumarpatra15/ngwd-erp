@@ -15,20 +15,28 @@ class WhatsAppNotificationService
     |--------------------------------------------------------------------------
     | Client
     |--------------------------------------------------------------------------
-    */
+    *   Updated to include username, password, and login link (4 body params).
+    *   Uses wa_send_template() helper so header/options are properly passed
+    *   to MSG91 (same pattern as invoiceSentResult()).
+    *   Original 1-param template can now send credentials for auto-login.
+*/
 
     public function clientWelcome(
         string $phone,
-        string $clientName
+        string $clientName,
+        string $userName = '',
+        string $password = '',
+        string $loginLink = ''
     ): bool {
-        return $this->whatsapp->sendTemplate(
-            $phone,
-            'erp_client_welcome',
+        // Build body values: {{1}}=name, {{2}}=username, {{3}}=password, {{4}}=login link
+        $bodyValues = [
             $clientName,
-            [
-                $clientName,
-            ]
-        );
+            $userName ?: $clientName, // fallback to client name if username not provided
+            $password ?: '',
+            $loginLink ?: '',
+        ];
+        // Use wa_send_template() helper so header/options are forwarded to MSG91
+        return wa_send_template($phone, wa_template('erp_client_welcome', $bodyValues));
     }
 
     /*
@@ -97,22 +105,31 @@ class WhatsAppNotificationService
     |--------------------------------------------------------------------------
     | Agreements
     |--------------------------------------------------------------------------
+    *   Updated to support PDF document in header via $options['header'].
+    *   Body params: {{1}}=client name, {{2}}=agreement status/note.
+    *   Example call with PDF:
+    *   $wa->agreementSent($phone, $clientName, 'AGR-001', 'https://crm.com/agreements/AGR-001.pdf', 'Agreement-001.pdf');
     */
 
     public function agreementSent(
         string $phone,
         string $clientName,
-        string $agreementNumber
+        string $agreementNumber,
+        string $pdfUrl = '',
+        string $pdfFilename = ''
     ): bool {
-        return $this->whatsapp->sendTemplate(
-            $phone,
-            'erp_agreement_sent',
+        // Build body values: {{1}}=client name, {{2}}=agreement note
+        $bodyValues = [
             $clientName,
-            [
-                $clientName,
-                $agreementNumber,
-            ]
-        );
+            'Agreement ' . $agreementNumber . ' sent for signing',
+        ];
+        // Build options: attach PDF as document header if URL and filename provided
+        $options = [];
+        if (trim($pdfUrl) !== '' && trim($pdfFilename) !== '') {
+            $options['header'] = wa_header_media('document', $pdfUrl, $pdfFilename);
+        }
+        // Use wa_send_template() helper so header/options are forwarded to MSG91
+        return wa_send_template($phone, wa_template('erp_agreement_sent', $bodyValues, $options));
     }
 
     /*
