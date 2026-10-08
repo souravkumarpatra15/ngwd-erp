@@ -14,7 +14,7 @@ use App\Models\SettingModel;
  *  - Template messages (start a conversation): approved template + params.
  *
  * Session messages go to a DIFFERENT endpoint + envelope:
- *   POST {session_base_url}/  {"to","from","integrated_number","message":{"type","content"}}
+ *   POST {session_base_url}/  {"integrated_number","content_type","to","from","message","payload"}
  *   session_base_url default: https://control.msg91.com/api/v5/whatsapp/whatsapp-outbound-message
  * Auth:  header  authkey: <MSG91 auth key>
  * Numbers: country code, digits only, no plus (919876543210).
@@ -346,18 +346,27 @@ class Msg91WhatsAppService
 
     /**
      * Session endpoint (no template, inside the 24h window).
-     * Envelope: {"to","from","integrated_number","message":{"type","content"}}.
-     * MSG91 requires top-level `integrated_number` (it 400s with
-     * "integrated number not found in request" without it); `from`
-     * is kept for backward compatibility.
+     * MSG91 validates the unified envelope field-by-field
+     * ("integrated number not found", then "content_type not found"),
+     * so we send the full shape: top-level integrated_number +
+     * content_type plus the to/from/message fields, with a payload
+     * wrapper mirroring the bulk endpoint. Unknown extra keys are
+     * ignored by the parser; missing ones 400.
      */
     protected function sendSession(string $to, string $type, array $content): array
     {
+        $message = ['type' => $type, 'content' => $content];
         return $this->postJson($this->sessionBaseUrl . '/', [
+            'integrated_number' => $this->integratedNumber,
+            'content_type' => $type,
             'to' => $to,
             'from' => $this->integratedNumber,
-            'integrated_number' => $this->integratedNumber,
-            'message' => ['type' => $type, 'content' => $content],
+            'message' => $message,
+            'payload' => [
+                'to' => $to,
+                'from' => $this->integratedNumber,
+                'message' => $message,
+            ],
         ]);
     }
 
@@ -394,6 +403,11 @@ class Msg91WhatsAppService
                 // on the MSG91 account yet).
                 if (stripos((string)$raw, 'integrated number not found') !== false) {
                     $error .= ' — MSG91 did not recognize integrated number ' . $this->integratedNumber . '. Check Settings → WhatsApp → Integrated Number matches the number integrated in your MSG91 panel (digits only, with country code).';
+                }
+                // Generic catch for the endpoint's field-by-field validation
+                // ("<field> not found in request") — surfaces the fix directly.
+                if (preg_match('/"errors"\s*:\s*"([^"]*not found in request[^"]*)"/i', (string)$raw, $m)) {
+                    $error .= ' — Missing field per MSG91: ' . $m[1] . '. If this persists after updating, the session endpoint schema has changed; check MSG91 docs for whatsapp-outbound-message.';
                 }
             }
             $result = [
