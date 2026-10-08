@@ -360,10 +360,12 @@ class Msg91WhatsAppService
             'integrated_number' => $this->integratedNumber,
             'content_type' => $type,
             'to' => $to,
+            'recipient_number' => $to,
             'from' => $this->integratedNumber,
             'message' => $message,
             'payload' => [
                 'to' => $to,
+                'recipient_number' => $to,
                 'from' => $this->integratedNumber,
                 'message' => $message,
             ],
