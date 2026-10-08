@@ -75,6 +75,10 @@
         <?php endif; if ($__canSee('marketing_leads')): ?>
         <a href="<?= base_url('admin/marketing-leads') ?>" class="sidebar-link <?= isActive('admin/marketing-leads') ?>">
           <i class="bi bi-megaphone"></i> Marketing Leads</a>
+        <?php endif; ?>
+        <?php if ($__canSee('chat')): ?>
+        <a href="<?= base_url('admin/chat') ?>" class="sidebar-link <?= isActive('admin/chat') ?>">
+          <i class="bi bi-whatsapp"></i> Chat</a>
         <?php endif; endif; ?>
 
         <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Projects</div>

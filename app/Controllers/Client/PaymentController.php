@@ -100,16 +100,20 @@ class PaymentController extends BaseController
 
         $amountStr = currencySymbol($inv['currency'] ?? 'INR') . number_format($orderAmount, 2);
 
-        // ── Send WhatsApp after payment record ────────────────────────
-        $wa = new WhatsAppNotificationService();
-        $inv = $this->db->table('invoices')->where('id', $invoiceId)->where('client_id', $cid)->first();
-        $invNumber = $inv ? $inv['invoice_number'] : '';
-        $wa->paymentReceived(
-            (string)($inv['whatsapp'] ?? ''),
-            (string)($inv['client_name'] ?? ''),
-            $invNumber,
-            $amountStr
-        );
+        // ── Send WhatsApp after payment record (best effort, post-commit only) ──
+        try {
+            $client = $this->db->table('clients')->select('name, whatsapp')->where('id', $cid)->get()->getRowArray();
+            if (! empty($client['whatsapp'])) {
+                (new WhatsAppNotificationService())->paymentReceived(
+                    (string) $client['whatsapp'],
+                    (string) ($client['name'] ?? ''),
+                    (string) ($inv['invoice_number'] ?? ''),
+                    $amountStr
+                );
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'paymentReceived WA failed: ' . $e->getMessage());
+        }
         // ------------------------------------------------------------
 
         return $this->jsonSuccess('Payment successful! Thank you.');
@@ -191,21 +195,24 @@ class PaymentController extends BaseController
             $this->db->transCommit();
             log_message('info', "Razorpay payment verified: {$paymentId} for milestone {$milestoneId}");
 
-        // Get client WhatsApp from project
-        $project = $this->db->table('projects')->where('id', $ms['project_id'])->select('clients.whatsapp as client_whatsapp, clients.name as client_name')->join('clients', 'clients.id = projects.client_id', 'left')->first();
-        $clientWhatsApp = $project ? ($project['client_whatsapp'] ?? '') : '';
-        $clientName = $project ? ($project['client_name'] ?? '') : '';
-
+        // ── Send WhatsApp after payment record (best effort, post-commit only) ──
         $amountStr = currencySymbol($ms['currency'] ?? 'INR') . number_format($orderAmount, 2);
-
-        // ── Send WhatsApp after payment record ────────────────────────
-        $wa = new WhatsAppNotificationService();
-        $wa->paymentReceived(
-            (string)$clientWhatsApp,
-            (string)$clientName,
-            '',
-            $amountStr
-        );
+        try {
+            $project = $this->db->table('projects')
+                ->select('clients.whatsapp as client_whatsapp, clients.name as client_name')
+                ->join('clients', 'clients.id = projects.client_id', 'left')
+                ->where('projects.id', $ms['project_id'])->get()->getRowArray();
+            if (! empty($project['client_whatsapp'])) {
+                (new WhatsAppNotificationService())->paymentReceived(
+                    (string) $project['client_whatsapp'],
+                    (string) ($project['client_name'] ?? ''),
+                    (string) ($ms['title'] ?? ('Milestone #' . $milestoneId)),
+                    $amountStr
+                );
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'paymentReceived WA failed: ' . $e->getMessage());
+        }
         // ------------------------------------------------------------
 
         return $this->jsonSuccess('Payment successful! Thank you.');

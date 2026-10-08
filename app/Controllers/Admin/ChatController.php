@@ -6,220 +6,168 @@ use App\Models\ChatMessageModel;
 
 class ChatController extends BaseController
 {
-    protected $cm;
+    protected ChatMessageModel $cm;
 
     public function __construct()
     {
         $this->cm = new ChatMessageModel();
     }
 
+    private function storageRoot(): string
+    {
+        return rtrim(WRITEPATH, '/\\') . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'chat' . DIRECTORY_SEPARATOR;
+    }
+
     /**
-     * Chat home - list of recent conversations
+     * Chat home — WhatsApp-style two-pane view.
+     * ?user_id=NN preselects a conversation.
      */
     public function index()
     {
         if ($r = $this->requireModule('chat', 'view')) return $r;
 
-        // Get recent conversations (distinct user IDs with latest messages)
-        $db = \Config\Database::connect();
-        $userId = session()->get('user_id');
+        $adminId = (int) session()->get('user_id');
+        $selectedUserId = max(0, (int) ($this->request->getGet('user_id') ?? 0));
 
-        $conversations = $db->table('chat_messages')
-            ->select('chat_messages.*, users.name as user_name, users.image as user_image')
-            ->join('users', 'users.id = chat_messages.user_id', 'left')
-            ->where('chat_messages.admin_id', $userId)
-            ->groupBy('chat_messages.user_id')
-            ->orderBy('chat_messages.created_at', 'DESC')
-            ->limit(50)
-            ->get()->getResultArray();
+        $conversations = $this->cm->conversationsForAdmin($adminId, 50);
 
-        // Format last message for each conversation
-        foreach ($conversations as &$conv) {
-            $lastMsg = $db->table('chat_messages')
-                ->where('user_id', $conv['user_id'])
-                ->where('admin_id', $userId)
-                ->orderBy('created_at', 'DESC')
-                ->limit(1)
-                ->getRowArray();
-
-            $conv['last_message'] = $lastMsg ? [
-                'message' => $lastMsg['message'],
-                'created_at' => $lastMsg['created_at'],
-                'is_admin' => $lastMsg['admin_id'] > 0
-            ] : null;
-
-            // Get unread count for this user
-            $conv['unread_count'] = $db->table('chat_messages')
-                ->where('user_id', $conv['user_id'])
-                ->where('admin_id', $userId)
-                ->where('is_admin', 0)
-                ->countAllResults();
+        $selectedUser = null;
+        $messages = [];
+        if ($selectedUserId > 0) {
+            $selectedUser = $this->db->table('users')->select('id, name')->where('id', $selectedUserId)->get()->getRowArray();
+            if ($selectedUser) {
+                $messages = $this->cm->conversation($adminId, $selectedUserId);
+                $this->cm->markRead($adminId, $selectedUserId);
+            } else {
+                $selectedUserId = 0;
+            }
         }
 
-        unset($conv);
-
-        return $this->response->setJSON([
-            'status' => 'success',
-            'view' => 'admin/chat/index',
-            'data' => [
-                'title' => 'WhatsApp Chat',
-                'conversations' => $conversations,
-                'current_user' => [
-                    'name' => session()->get('user_name') ?? 'Admin',
-                    'role' => session()->get('user_role') ?? 'admin'
-                ]
-            ]
+        return view('admin/chat/index', [
+            'title' => 'Chat',
+            'conversations' => $conversations,
+            'selectedUserId' => $selectedUserId,
+            'selectedUser' => $selectedUser,
+            'messages' => $messages,
         ]);
     }
 
     /**
-     * Load chat messages for a specific user (AJAX)
+     * GET admin/chat/messages?user_id=NN (AJAX) — message history.
      */
-    public function messages($userId = null)
+    public function messages()
     {
-        if ($this->request->isAJAX()) {
-            $adminId = session()->get('user_id');
-            $userId = $this->request->getGet('user_id') ? (int)$this->request->getGet('user_id') : $userId;
-
-            if (!$userId) {
-                return $this->jsonError('User ID required');
-            }
-
-            // Get messages between admin and user, ordered by time
-            $db = \Config\Database::connect();
-            $messages = $db->table('chat_messages')
-                ->select('chat_messages.*, users.name as sender_name')
-                ->join('users', 'users.id = chat_messages.user_id', 'left')
-                ->where('(chat_messages.admin_id = ? AND chat_messages.user_id = ?)', [$adminId, $userId])
-                ->orWhere('(chat_messages.admin_id = ? AND chat_messages.user_id = ?)', [$adminId, $userId])
-                ->orderBy('chat_messages.created_at', 'ASC')
-                ->get()->getResultArray();
-
-            // Mark messages as read
-            $db->table('chat_messages')
-                ->where('user_id', $userId)
-                ->where('admin_id', $adminId)
-                ->where('is_admin', 0)
-                ->update(['is_read' => 1]);
-
-            // Format messages for WhatsApp-like display
-            foreach ($messages as &$msg) {
-                $msg['is_me'] = $msg['admin_id'] > 0; // admin sent = me, user sent = other
-                $msg['time'] = relativeTime(strtotime($msg['created_at']));
-            }
-
-            unset($msg);
-
-            return $this->jsonSuccess('Messages loaded', $messages);
-        }
-
-        return $this->jsonError('AJAX request required');
+        if ($r = $this->requireModule('chat', 'view')) return $r;
+        $adminId = (int) session()->get('user_id');
+        $userId = max(0, (int) ($this->request->getGet('user_id') ?? 0));
+        if ($userId <= 0) return $this->jsonError('User ID required.');
+        $messages = $this->cm->conversation($adminId, $userId);
+        $this->cm->markRead($adminId, $userId);
+        return $this->jsonSuccess('Messages loaded.', $messages);
     }
 
     /**
-     * Send a message (AJAX)
+     * POST admin/chat/send (AJAX, JSON or form) — send a text message.
      */
     public function send()
     {
-        if ($this->request->isAJAX()) {
-            $msg = trim($this->request->getPost('message'));
-            $userId = (int)$this->request->getPost('user_id');
-
-            if (empty($msg) || !$userId) {
-                return $this->jsonError('Message and user ID required');
-            }
-
-            $adminId = session()->get('user_id');
-
-            $db = \Config\Database::connect();
-            $db->table('chat_messages')->insert([
-                'admin_id' => $adminId,
-                'user_id' => $userId,
-                'message' => $msg,
-                'is_admin' => 1,
-                'created_at' => date('Y-m-d H:i:s')
-            ]);
-
-            // Get the user's name for response
-            $user = $db->table('users')->where('id', $userId)->getRowArray();
-
-            return $this->jsonSuccess('Message sent', [
-                'message' => $msg,
-                'sender_name' => session()->get('user_name') ?? 'You',
-                'receiver_name' => $user['name'] ?? 'Client',
-                'created_at' => relativeTime(date('Y-m-d H:i:s')),
-                'is_me' => true
-            ]);
+        if ($r = $this->requireModule('chat', 'view')) return $r;
+        $json = $this->request->getJSON(true);
+        $msg = trim((string) ($json['message'] ?? $this->request->getPost('message') ?? ''));
+        $userId = (int) ($json['user_id'] ?? $this->request->getPost('user_id') ?? 0);
+        if ($msg === '' || $userId <= 0) return $this->jsonError('Message and user ID required.');
+        if (mb_strlen($msg) > 2000) return $this->jsonError('Message too long (max 2000 chars).');
+        if (! $this->db->table('users')->where('id', $userId)->countAllResults()) {
+            return $this->jsonError('Recipient not found.');
         }
-
-        return $this->jsonError('AJAX request required');
+        $adminId = (int) session()->get('user_id');
+        $id = $this->cm->insert([
+            'admin_id' => $adminId,
+            'user_id' => $userId,
+            'message' => $msg,
+            'message_type' => 'text',
+            'is_admin' => 1,
+            'is_read' => 0,
+        ], true);
+        if (! $id) return $this->jsonError('Unable to send message.');
+        $row = $this->cm->find($id);
+        return $this->jsonSuccess('Message sent.', $this->cm->formatRow($row));
     }
 
     /**
-     * Upload image for chat (AJAX)
+     * POST admin/chat/upload-image (AJAX FormData: image + user_id + caption?).
      */
     public function uploadImage()
     {
-        if ($this->request->isAJAX()) {
-            $upload = $this->request->getFile('image');
-
-            if ($upload && $upload->isValid() && !$upload->hasMoved()) {
-                // Store image in public/uploads/chat/
-                $uploadPath = 'uploads/chat/';
-                $ext = $upload->getExtension();
-                $newName = 'chat_' . date('YmdHis') . '.' . $ext;
-                $upload->move($uploadPath, $newName);
-
-                $imageUrl = base_url('.' . $uploadPath . $newName);
-
-                // Save message to database
-                $msg = trim($this->request->getPost('caption', ''));
-                $adminId = session()->get('user_id');
-
-                $db = \Config\Database::connect();
-                $db->table('chat_messages')->insert([
-                    'admin_id' => $adminId,
-                    'user_id' => (int)$this->request->getPost('user_id'),
-                    'message' => $msg,
-                    'image_url' => $imageUrl,
-                    'message_type' => 'image',
-                    'is_admin' => 1,
-                    'created_at' => date('Y-m-d H:i:s')
-                ]);
-
-                return $this->jsonSuccess('Image uploaded', [
-                    'image_url' => $imageUrl,
-                    'message' => $msg,
-                    'is_me' => true,
-                    'message_type' => 'image'
-                ]);
-            }
-
-            return $this->jsonError('Invalid image file');
+        if ($r = $this->requireModule('chat', 'view')) return $r;
+        $userId = max(0, (int) $this->request->getPost('user_id'));
+        if ($userId <= 0) return $this->jsonError('User ID required.');
+        if (! $this->db->table('users')->where('id', $userId)->countAllResults()) {
+            return $this->jsonError('Recipient not found.');
         }
-
-        return $this->jsonError('AJAX request required');
+        $file = $this->request->getFile('image');
+        if (! $file || ! $file->isValid() || $file->hasMoved()) return $this->jsonError('Invalid image file.');
+        if (! $this->validate([
+            'image' => 'uploaded[image]|max_size[image,5120]|ext_in[image,png,jpg,jpeg,gif,webp]',
+        ])) return $this->jsonError($this->validator->getError('image') ?: 'Image must be png/jpg/gif/webp up to 5MB.');
+        $folder = $this->storageRoot();
+        if (! is_dir($folder) && ! mkdir($folder, 0755, true) && ! is_dir($folder)) {
+            return $this->jsonError('Unable to create chat storage directory.');
+        }
+        $newName = 'chat_' . date('YmdHis') . '_' . bin2hex(random_bytes(4)) . '.' . $file->getExtension();
+        try {
+            $file->move($folder, $newName);
+        } catch (\Throwable $e) {
+            log_message('error', 'Chat image upload failed: {message}', ['message' => $e->getMessage()]);
+            return $this->jsonError('Unable to store the uploaded image.');
+        }
+        $caption = trim((string) $this->request->getPost('caption'));
+        $adminId = (int) session()->get('user_id');
+        $id = $this->cm->insert([
+            'admin_id' => $adminId,
+            'user_id' => $userId,
+            'message' => $caption,
+            'image_url' => 'chat/' . $newName,
+            'message_type' => 'image',
+            'is_admin' => 1,
+            'is_read' => 0,
+        ], true);
+        if (! $id) {
+            @unlink($folder . $newName);
+            return $this->jsonError('Unable to save message.');
+        }
+        return $this->jsonSuccess('Image sent.', $this->cm->formatRow($this->cm->find($id)));
     }
 
     /**
-     * Delete a message (AJAX)
+     * GET admin/chat/serve/NN — stream a chat image inline (auth-gated).
      */
-    public function delete($msgId = null)
+    public function serve($id)
     {
-        if ($this->request->isAJAX() && $msgId) {
-            $adminId = session()->get('user_id');
+        if ($r = $this->requireModule('chat', 'view')) return $r;
+        $msg = $this->cm->find((int) $id);
+        if (! $msg || empty($msg['image_url'])) return redirect()->back()->with('error', 'Image not found.');
+        $rel = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim((string) $msg['image_url'], '/\\'));
+        if (str_contains($rel, '..')) return redirect()->back()->with('error', 'Image not found.');
+        $real = realpath($this->storageRoot() . basename($rel)) ?: $this->storageRoot() . basename($rel);
+        if (! is_file($real)) return redirect()->back()->with('error', 'Image no longer exists on the server.');
+        return $this->streamInlineFile($real, basename($real), $this->mediaMime(pathinfo($real, PATHINFO_EXTENSION)));
+    }
 
-            $db = \Config\Database::connect();
-            $result = $db->table('chat_messages')
-                ->where('id', $msgId)
-                ->where('admin_id', $adminId)
-                ->delete();
-
-            if ($result) {
-                return $this->jsonSuccess('Message deleted');
-            }
+    /**
+     * POST admin/chat/delete/NN (AJAX) — delete own admin message.
+     */
+    public function delete($id)
+    {
+        if ($r = $this->requireModule('chat', 'view')) return $r;
+        $adminId = (int) session()->get('user_id');
+        $msg = $this->cm->find((int) $id);
+        if (! $msg || (int) $msg['admin_id'] !== $adminId) return $this->jsonError('Message not found.');
+        if (! empty($msg['image_url'])) {
+            $p = $this->storageRoot() . basename((string) $msg['image_url']);
+            if (is_file($p)) @unlink($p);
         }
-
-        return $this->jsonError('Failed to delete message');
+        $this->cm->delete((int) $id);
+        return $this->jsonSuccess('Message deleted.');
     }
 }

@@ -42,7 +42,7 @@ class PmsAuthorizationService
     public const DEPARTMENTS = ['developer', 'designer', 'qa', 'hr', 'support', 'sales_finance'];
 
     /** Modules a 'staff' user sees by default with no explicit grant needed — the PMS core. */
-    public const PMS_MODULES = ['dashboard', 'projects', 'tasks', 'kanban', 'milestones', 'deliverables'];
+    public const PMS_MODULES = ['dashboard', 'projects', 'tasks', 'kanban', 'milestones', 'deliverables', 'chat'];
 
     /** Modules a client-portal Owner always has, regardless of any explicit grants for their team. */
     public const CLIENT_OWNER_MODULES = ['milestones', 'deliverables', 'tasks', 'documents', 'invoices', 'payments', 'marketing_leads', 'client_team', 'tickets'];

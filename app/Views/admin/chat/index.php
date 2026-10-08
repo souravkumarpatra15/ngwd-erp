@@ -1,380 +1,127 @@
-<?php
-// WhatsApp-like Chat Section - Admin Dashboard
-// This provides a full-screen WhatsApp-style messaging interface
+<?= $this->extend('layouts/admin') ?>
+<?= $this->section('content') ?>
 
-// Active conversation user data
-$userId = $currentUser['id'] ?? session()->get('user_id');
-$selectedUser = null;
-$messages = [];
+<style>
+.chat-wrap { height: calc(100vh - 170px); min-height: 480px; }
+.chat-list { max-height: 100%; overflow-y: auto; }
+.chat-msgs { max-height: 100%; overflow-y: auto; background: #efeae2; }
+.bubble { max-width: 75%; padding: 8px 12px; border-radius: 12px; word-break: break-word; }
+.bubble.me { background: #d9fdd3; margin-left: auto; border-top-right-radius: 2px; }
+.bubble.them { background: #fff; margin-right: auto; border-top-left-radius: 2px; box-shadow: 0 1px 1px rgba(0,0,0,.08); }
+.conv-item.active { background: #f0f2f5; }
+</style>
 
-// If we have a selected user via AJAX or direct access
-if (isset($conversationUserId)) {
-    $userId = $conversationUserId;
-}
-
-// Load messages for selected user
-if (isset($loadedMessages)) {
-    $messages = $loadedMessages;
-}
-
-// Get user name for selected conversation
-if (isset($selectedUserName)) {
-    $selectedUser = [
-        'id' => $userId,
-        'name' => $selectedUserName,
-        'avatar' => ''
-    ];
-}
-?>
-<!-- Chat Container -->
-<div class="min-h-screen bg-gray-100">
-    <!-- Header -->
-    <div class="bg-white border-b border-gray-200 shadow-sm">
-        <div class="flex items-center px-4 h-16">
-            <!-- Back button -->
-            <button id="backToConversations" class="flex items-center gap-2 text-sm text-gray-500 hover:text-primary flex-1">
-                <i class="bi bi-arrow-left"></i> Back to Conversations
-            </button>
-            
-            <!-- User avatar and name -->
-            <div class="relative w-10 h-10 shrink-0">
-                <?php if($selectedUser && !empty($selectedUser['avatar'])): ?>
-                    <img src="<?= esc(base_url('uploads/avatars/' . $selectedUser['avatar'])) ?>" 
-                         alt="<?= esc($selectedUser['name']) ?>" 
-                         class="w-full h-full rounded-full object-cover border-2 border-white">
-                <?php else: ?>
-                    <div class="w-full h-full rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium">
-                        <?= esc(substr($selectedUser['name'] ?? 'User', 0, 1)) ?>
-                    </div>
-                <?php endif; ?>
-            </div>
-            
-            <div class="ml-3 flex-1">
-                <div class="font-medium truncate"><?= esc($selectedUser['name'] ?? 'Loading...') ?></div>
-                <div class="text-xs text-gray-400"><?= esc($selectedUser['name'] ?? 'Client') ?></div>
-            </div>
-            
-            <!-- Online indicator -->
-            <div class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-green-500">
-                <i class="bi bi-dot"></i> Online
-            </div>
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="row g-0 chat-wrap">
+      <!-- Conversations -->
+      <div class="col-md-4 border-end d-flex flex-column">
+        <div class="p-3 border-bottom fw-semibold"><i class="bi bi-whatsapp me-2 text-success"></i>Chat</div>
+        <div class="chat-list flex-grow-1 p-2" id="convList">
+          <?php if (empty($conversations)): ?>
+            <div class="text-center text-muted py-5 small"><i class="bi bi-chat-text fs-3 d-block mb-2 opacity-25"></i>No conversations yet.</div>
+          <?php else: foreach ($conversations as $c): $uid = (int) $c['user_id']; ?>
+            <a href="<?= base_url('admin/chat?user_id=' . $uid) ?>" data-uid="<?= $uid ?>"
+               class="conv-item d-flex align-items-center gap-2 text-decoration-none text-dark p-2 rounded <?= $uid === (int) $selectedUserId ? 'active' : '' ?>">
+              <span class="rounded-circle bg-success text-white d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width:38px;height:38px"><?= esc(strtoupper(substr($c['user_name'] ?? 'U', 0, 1))) ?></span>
+              <span class="flex-grow-1 overflow-hidden">
+                <span class="d-block fw-semibold small text-truncate"><?= esc($c['user_name'] ?? ('User #' . $uid)) ?></span>
+                <span class="d-block text-muted text-truncate" style="font-size:12px"><?= esc($c['last_message']['message'] ?? 'No messages yet') ?></span>
+              </span>
+              <?php if (! empty($c['unread_count'])): ?><span class="badge bg-success rounded-pill"><?= (int) $c['unread_count'] ?></span><?php endif; ?>
+            </a>
+          <?php endforeach; endif; ?>
         </div>
+      </div>
+      <!-- Messages -->
+      <div class="col-md-8 d-flex flex-column">
+        <?php if (empty($selectedUser)): ?>
+          <div class="d-flex align-items-center justify-content-center h-100 text-muted small py-5"><i class="bi bi-chat-dots me-2"></i>Select a conversation to start messaging.</div>
+        <?php else: ?>
+          <div class="p-3 border-bottom d-flex align-items-center gap-2">
+            <span class="rounded-circle bg-success text-white d-inline-flex align-items-center justify-content-center" style="width:38px;height:38px"><?= esc(strtoupper(substr($selectedUser['name'] ?? 'U', 0, 1))) ?></span>
+            <div><div class="fw-semibold small"><?= esc($selectedUser['name']) ?></div><div class="text-muted" style="font-size:11px">User #<?= (int) $selectedUser['id'] ?></div></div>
+          </div>
+          <div class="chat-msgs flex-grow-1 p-3 d-flex flex-column gap-2" id="msgList">
+            <?php foreach ($messages as $m): ?>
+              <div class="bubble <?= ! empty($m['is_me']) ? 'me' : 'them' ?>" data-mid="<?= (int) $m['id'] ?>">
+                <?php if (! empty($m['image_src'])): ?><a href="<?= esc($m['image_src']) ?>" target="_blank"><img src="<?= esc($m['image_src']) ?>" class="img-fluid rounded mb-1" style="max-height:220px" alt=""></a><?php endif; ?>
+                <?php if (trim((string) ($m['message'] ?? '')) !== ''): ?><div class="small"><?= esc($m['message']) ?></div><?php endif; ?>
+                <div class="text-end text-muted" style="font-size:10px"><?= esc($m['time'] ?? '') ?></div>
+              </div>
+            <?php endforeach; ?>
+          </div>
+          <div class="p-3 border-top">
+            <div class="d-flex gap-2">
+              <label class="btn btn-outline-secondary mb-0" title="Send image"><i class="bi bi-image"></i><input type="file" id="imgFile" accept="image/png,image/jpeg,image/gif,image/webp" class="d-none"></label>
+              <input type="text" id="msgInput" class="form-control" placeholder="Type a message..." maxlength="2000" autocomplete="off">
+              <button class="btn btn-success" id="sendBtn"><i class="bi bi-send"></i></button>
+            </div>
+          </div>
+        <?php endif; ?>
+      </div>
     </div>
-    
-    <!-- Chat Area -->
-    <div class="flex flex-col flex-1 h-[calc(100vh-200px)]">
-        <!-- Messages List -->
-        <div class="flex-1 overflow-y-auto px-4 py-2" id="messagesList">
-            <!-- Messages will be loaded here via AJAX -->
-            <div id="noMessages" class="hidden h-64 flex items-center justify-center text-center text-gray-400">
-                <i class="bi bi-chat-text-bottom fs-4 mb-3 opacity-25"></i>
-                <span>Select a conversation to start messaging</span>
-            </div>
-        </div>
-        
-        <!-- Input Area -->
-        <div class="bg-white border-t border-gray-200 p-4">
-            <div class="flex gap-2">
-                <!-- Image upload button -->
-                <button id="uploadBtn" class="flex-1 px-3 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded flex items-center gap-2">
-                    <i class="bi bi-image"></i> Image
-                </button>
-                
-                <!-- Message input -->
-                <textarea 
-                    id="messageInput" 
-                    rows="1" 
-                    class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="Type a message..."
-                    onkeydown="if(event.key=== 'Enter' && !event.shiftKey) { sendMessage(); return false; }"
-                ></textarea>
-                
-                <!-- Send button -->
-                <button id="sendBtn" class="px-4 py-2 text-sm bg-primary text-white rounded hover:bg-primary-dark transition-colors">
-                    <i class="bi bi-send me-1"></i> Send
-                </button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Conversations Sidebar (collapsible on mobile) -->
-    <div class="hidden md:block bg-white border-l border-gray-200 h-screen">
-        <div class="p-4 border-b border-gray-200">
-            <h4 class="font-medium text-sm">Conversations</h4>
-            <button class="text-xs text-gray-400 float-right" onclick="toggleSidebar()">
-                <i class="bi bi-x"></i>
-            </button>
-        </div>
-        <div class="h-[calc(100vh-80px)] overflow-y-auto">
-            <div class="space-y-1">
-                <?php foreach($conversations as $conv): ?>
-                <div class="p-3 rounded cursor-pointer hover:bg-gray-50 select-item" 
-                     data-user-id="<?= esc($conv['user_id']) ?>"
-                     data-user-name="<?= esc($conv['user_name']) ?>">
-                    <div class="d-flex w-100 align-items-center">
-                        <div class="flex-shrink-0">
-                            <div class="rounded-full bg-gray-200 w-6 h-6 text-center text-xs font-medium gray-text"><?= esc(substr($conv['user_name'] ?? 'U', 0, 1)) ?></div>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <small class="font-medium truncate text-gray-800"><?= esc($conv['user_name'] ?? 'Unknown') ?></small>
-                            <div class="text-xs text-gray-400">
-                                <?= esc($conv['last_message']['message'] ?? 'No messages yet') ?>
-                            </div>
-                        </div>
-                        <div class="flex-shrink-0">
-                            <?php if($conv['unread_count'] > 0): ?>
-                                <span class="badge bg-primary rounded-pill text-white ms-1"><?= esc($conv['unread_count']) ?></span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-                <div id="emptyConversations" class="p-4 text-center text-gray-400 hidden">
-                    <i class="bi bi-chat-text-bottom fs-4 mb-2 opacity-25"></i>
-                    <p>No conversations yet</p>
-                </div>
-            </div>
-        </div>
-    </div>
+  </div>
 </div>
 
+<?php if (! empty($selectedUser)): ?>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize variables
-    let selectedUserId = null;
-    
-    // Load conversations on sidebar
-    loadConversations();
-    
-    // Load messages when a conversation is selected
-    function loadConversations() {
-        fetch('<?= base_url('admin/chat') ?>')
-            .then(response => response.json())
-            .then(data => {
-                const sidebar = document.querySelector('.md\\:block');
-                if (!sidebar) return;
-                
-                let html = '';
-                const conversations = data.data.conversations || [];
-                
-                if (conversations.length === 0) {
-                    document.getElementById('emptyConversations').classList.remove('hidden');
-                } else {
-                    document.getElementById('emptyConversations').classList.add('hidden');
-                    conversations.forEach(conv => {
-                        html += `
-                            <div class="p-3 rounded cursor-pointer select-item" 
-                                data-user-id="${conv.user_id}"
-                                data-user-name="${conv.user_name}">
-                                <div class="d-flex w-100 align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <div class="rounded-full bg-gray-200 w-6 h-6 text-center text-xs font-medium gray-text">${conv.user_name ? conv.user_name.charAt(0) : 'U'}</div>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <small class="font-medium truncate text-gray-800">${conv.user_name}</small>
-                                        <div class="text-xs text-gray-400">${conv.last_message ? conv.last_message.message : 'No messages yet'}</div>
-                                    </div>
-                                    <div class="flex-shrink-0">
-                                        ${conv.unread_count > 0 ? `<span class="badge bg-primary rounded-pill text-white ms-1">${conv.unread_count}</span>` : ''}
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    sidebar.innerHTML = html;
-                }
-            });
-    }
-    
-    // Select a conversation
-    function selectConversation(userId, userName) {
-        selectedUserId = userId;
-        
-        // Update sidebar selection
-        document.querySelectorAll('.select-item').forEach(el => el.classList.remove('selected'));
-        event.target?.classList.add('selected');
-        
-        // Load messages
-        loadMessages(userId, userName);
-        
-        // Update header
-        updateHeader(userId, userName);
-        
-        // Scroll to bottom
-        scrollToBottom();
-    }
-    
-    // Load messages for a user
-    function loadMessages(userId, userName) {
-        selectedUserId = userId;
-        
-        fetch('<?= base_url('admin/chat/messages') }?user_id=' + userId)
-            .then(response => response.json())
-            .then(data => {
-                const messagesList = document.getElementById('messagesList');
-                const noMessages = document.getElementById('noMessages');
-                
-                if (data.data && data.data.length > 0) {
-                    noMessages.classList.add('hidden');
-                    messagesList.innerHTML = data.data.map(msg => `
-                        <div class="mb-3 ${msg.is_me ? 'ms-auto' : 'mr-auto'} max-w-fit">
-                            <div class="p-3 rounded ${msg.is_me ? 'bg-primary text-white' : 'bg-gray-200 text-gray-800'}">
-                                <div class="small text-muted">${msg.time || msg.created_at || ''}</div>
-                                <p class="mb-1 break-word">${msg.message || ''}</p>
-                                ${msg.image_url ? `<img src="${msg.image_url}" class="mt-2 rounded w-full max-w-80" style="max-height: 200px;">` : ''}
-                            </div>
-                        </div>
-                    `).join('');
-                    scrollToBottom();
-                } else {
-                    noMessages.classList.remove('hidden');
-                    messagesList.innerHTML = '';
-                }
-            })
-            .catch(error => console.error('Error loading messages:', error));
-    }
-    
-    // Update chat header
-    function updateHeader(userId, userName) {
-        // Update the header user info
-        const userAvatar = document.querySelector('.relative.w-10.h-10');
-        const userNameEl = document.querySelector('.font-medium.truncate');
-        
-        if (userAvatar && userNameEl) {
-            userAvatar.innerHTML = `<div class="w-full h-full rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium">${userName ? userName.charAt(0) : 'U'}</div>`;
-            userNameEl.textContent = userName || 'Loading...';
-        }
-        
-        // Send button should be enabled
-        document.getElementById('sendBtn').disabled = false;
-    }
-    
-    // Send message
-    function sendMessage() {
-        const input = document.getElementById('messageInput');
-        const message = input.value.trim();
-        
-        if (!message || !selectedUserId) return;
-        
-        // Show sending state
-        const sendBtn = document.getElementById('sendBtn');
-        sendBtn.disabled = true;
-        sendBtn.innerHTML = '<i class="bi bi-loader bi-spin me-1"></i> Sending';
-        
-        fetch('<?= base_url('admin/chat/send') }', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                message: message,
-                user_id: selectedUserId
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Clear input
-            input.value = '';
-            
-            // Add message to UI
-            addMessageToUI(data.data, true);
-            
-            // Load latest messages
-            loadMessages(selectedUserId, <?= json_encode($selectedUser['name'] ?? 'User') ?>);
-            
-            // Reset button
-            sendBtn.disabled = false;
-            sendBtn.innerHTML = '<i class="bi bi-send me-1"></i> Send';
-        })
-        .catch(error => {
-            console.error('Error sending message:', error);
-            alert('Failed to send message');
-            sendBtn.disabled = false;
-            sendBtn.innerHTML = '<i class="bi bi-send me-1"></i> Send';
-        });
-    }
-    
-    // Add message to UI
-    function addMessageToUI(messageData, isMe) {
-        const messagesList = document.getElementById('messagesList');
-        
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `mb-3 ${isMe ? 'ms-auto' : 'mr-auto'} max-w-fit`;
-        
-        const isImage = messageData.message_type === 'image';
-        
-        msgDiv.innerHTML = `
-            <div class="p-3 rounded ${isMe ? 'bg-primary text-white' : 'bg-gray-200 text-gray-800'}">
-                ${isImage ? `<img src="${messageData.image_url}" class="mt-2 rounded w-full max-w-80" style="max-height: 200px;">` : ''}
-                <p class="mb-1 break-word">${messageData.message || ''}</p>
-                <div class="small text-muted">${messageData.time || ''}</div>
-            </div>
-        `;
-        
-        messagesList.appendChild(msgDiv);
-        messagesList.scrollTop = messagesList.scrollHeight;
-    }
-    
-    // Scroll to bottom
-    function scrollToBottom() {
-        const messagesList = document.getElementById('messagesList');
-        if (messagesList) {
-            messagesList.scrollTop = messagesList.scrollHeight;
-        }
-    }
-    
-    // Image upload
-    document.getElementById('uploadBtn').addEventListener('click', function() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        
-        input.onchange = function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            const formData = new FormData();
-            formData.append('image', file);
-            formData.append('user_id', selectedUserId);
-            formData.append('caption', document.getElementById('messageInput').value);
-            
-            fetch('<?= base_url('admin/chat/uploadImage') }', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                addMessageToUI(data.data, true);
-                document.getElementById('messageInput').value = '';
-            })
-            .catch(error => console.error('Error uploading image:', error));
-        };
-        
-        input.click();
-    });
-    
-    // Handle conversation selection from sidebar
-    document.querySelectorAll('.select-item').forEach(el => {
-        el.addEventListener('click', function() {
-            const userId = parseInt(this.getAttribute('data-user-id'));
-            const userName = this.getAttribute('data-user-name');
-            selectConversation(userId, userName);
-        });
-    });
-    
-    // Toggle sidebar on mobile
-    function toggleSidebar() {
-        const sidebar = document.querySelector('.md\\:block');
-        if (sidebar) {
-            sidebar.classList.toggle('hidden');
-        }
-    }
-    
-    // Close sidebar on link click
-    document.querySelectorAll('.sidebar-link').forEach(link => {
-        link.addEventListener('click', () => {
-            document.querySelector('.md\\:block')?.classList.add('hidden');
-        });
-    });
-});
+(function () {
+  const UID = <?= (int) $selectedUserId ?>;
+  const BASE = '<?= base_url('admin/chat') ?>';
+  const list = document.getElementById('msgList');
+  const input = document.getElementById('msgInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const imgFile = document.getElementById('imgFile');
+  list.scrollTop = list.scrollHeight;
+
+  function bubble(m) {
+    const d = document.createElement('div');
+    d.className = 'bubble ' + (m.is_me ? 'me' : 'them');
+    d.dataset.mid = m.id;
+    let h = '';
+    if (m.image_src) h += '<a href="' + m.image_src + '" target="_blank"><img src="' + m.image_src + '" class="img-fluid rounded mb-1" style="max-height:220px" alt=""></a>';
+    if (m.message) { const p = document.createElement('div'); p.className = 'small'; p.textContent = m.message; h += p.outerHTML; }
+    h += '<div class="text-end text-muted" style="font-size:10px">' + (m.time || '') + '</div>';
+    d.innerHTML = h;
+    return d;
+  }
+  function refresh() {
+    fetch(BASE + '/messages?user_id=' + UID, { headers: csrfHeaders() })
+      .then(r => r.json()).then(res => {
+        if (res.status !== 'success') return;
+        list.innerHTML = '';
+        (res.data || []).forEach(m => list.appendChild(bubble(m)));
+        list.scrollTop = list.scrollHeight;
+      }).catch(e => console.error(e));
+  }
+  function send() {
+    const v = input.value.trim();
+    if (! v) return;
+    sendBtn.disabled = true;
+    fetch(BASE + '/send', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, csrfHeaders()), body: JSON.stringify({ message: v, user_id: UID }) })
+      .then(r => r.json()).then(res => {
+        if (res.status === 'success' && res.data) { input.value = ''; list.appendChild(bubble(res.data)); list.scrollTop = list.scrollHeight; }
+        else alert(res.message || 'Send failed.');
+      }).catch(() => alert('Send failed.')).finally(() => { sendBtn.disabled = false; });
+  }
+  sendBtn.addEventListener('click', send);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); send(); } });
+  imgFile.addEventListener('change', () => {
+    if (! imgFile.files.length) return;
+    const fd = new FormData();
+    fd.append('image', imgFile.files[0]);
+    fd.append('user_id', UID);
+    fd.append('caption', input.value.trim());
+    fd.append('csrf_test_name', getCsrfToken());
+    fetch(BASE + '/upload-image', { method: 'POST', headers: csrfHeaders(), body: fd })
+      .then(r => r.json()).then(res => {
+        if (res.status === 'success' && res.data) { input.value = ''; imgFile.value = ''; list.appendChild(bubble(res.data)); list.scrollTop = list.scrollHeight; }
+        else alert(res.message || 'Upload failed.');
+      }).catch(() => alert('Upload failed.'));
+  });
+  setInterval(refresh, 15000);
+})();
 </script>
+<?php endif; ?>
+<?= $this->endSection() ?>

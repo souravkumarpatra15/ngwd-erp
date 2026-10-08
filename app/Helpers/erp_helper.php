@@ -69,6 +69,20 @@ if (!function_exists('daysUntil')) {
         return (int) ceil((strtotime($date) - time()) / 86400);
     }
 }
+if (!function_exists('relativeTime')) {
+    /** Human "x mins ago" label for chat / feeds. Accepts timestamp or datetime string. */
+    function relativeTime(int|string $when): string {
+        $ts = is_int($when) ? $when : strtotime((string) $when);
+        if ($ts === false) return '';
+        $diff = time() - $ts;
+        if ($diff < 0) $diff = 0;
+        if ($diff < 60) return 'just now';
+        if ($diff < 3600) { $m = (int) floor($diff / 60); return $m . ($m === 1 ? ' min ago' : ' mins ago'); }
+        if ($diff < 86400) { $h = (int) floor($diff / 3600); return $h . ($h === 1 ? ' hour ago' : ' hours ago'); }
+        if ($diff < 86400 * 7) { $d = (int) floor($diff / 86400); return $d . ($d === 1 ? ' day ago' : ' days ago'); }
+        return date('d M Y h:i A', $ts);
+    }
+}
 if (!function_exists('priorityColor')) {
     function priorityColor(string $priority): string {
         return match($priority) {
