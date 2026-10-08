@@ -111,7 +111,16 @@ INSERT INTO `migrations` (`version`, `class`, `group`, `namespace`, `time`, `bat
 SELECT '2026-10-08-000003', 'App\\Database\\Migrations\\AddWhatsappWebhookColumns', 'default', 'App', UNIX_TIMESTAMP(), 5
 WHERE NOT EXISTS (SELECT 1 FROM `migrations` WHERE `version` = '2026-10-08-000003');
 
--- 7) Verify --------------------------------------------------------------
+-- 7) Per-number conversations (migration 2026-10-08-000004) ---------------
+-- Same customer on two business numbers stays two conversations:
+-- DROP INDEX `uq_phone` ON `whatsapp_conversations`;
+-- (Run only if the index exists; the composite unique from step 6 stays.)
+
+INSERT INTO `migrations` (`version`, `class`, `group`, `namespace`, `time`, `batch`)
+SELECT '2026-10-08-000004', 'App\\Database\\Migrations\\RelaxWhatsappPhoneUnique', 'default', 'App', UNIX_TIMESTAMP(), 6
+WHERE NOT EXISTS (SELECT 1 FROM `migrations` WHERE `version` = '2026-10-08-000004');
+
+-- 8) Verify --------------------------------------------------------------
 -- SELECT * FROM `chat_messages` LIMIT 1;
 -- SELECT * FROM `whatsapp_conversations` LIMIT 5;
 -- SELECT `key`, LEFT(`value`, 12) FROM `settings` WHERE `group` = 'whatsapp';

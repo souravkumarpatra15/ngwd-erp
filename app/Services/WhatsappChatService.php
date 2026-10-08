@@ -195,28 +195,46 @@ class WhatsappChatService
     /** Store an inbound message. Returns conversation id or null (reports/empty). */
     public function inbound(array $payload): ?int
     {
-        if (! function_exists('normalizeInboundWhatsAppMessage')) return null;
+        if (! function_exists('normalizeInboundWhatsAppMessage')) {
+            log_message('error', 'WhatsApp inbound: normalizer unavailable.');
+            return null;
+        }
         $n = normalizeInboundWhatsAppMessage($payload);
         // Status callbacks resolve against previously sent messages.
         if ($n['is_report']) {
             $this->applyStatusCallback($payload);
             return null;
         }
-        if ($n['phone_number'] === '') return null;
+        if ($n['phone_number'] === '') {
+            log_message('warning', 'WhatsApp inbound ignored: no sender phone in payload.');
+            return null;
+        }
         // Idempotency: provider may redeliver the same event.
-        if ($n['provider_message_id'] !== '' && $this->msgs->findByProviderId($n['provider_message_id'])) return null;
+        if ($n['provider_message_id'] !== '' && $this->msgs->findByProviderId($n['provider_message_id'])) {
+            log_message('info', 'WhatsApp inbound duplicate ignored: {mid}', ['mid' => $n['provider_message_id']]);
+            return null;
+        }
         $conv = $this->getOrCreateConversation($n['phone_number'], $n['contact_name'], $n['integrated_number']);
-        if (! $conv) return null;
+        if (! $conv) {
+            log_message('error', 'WhatsApp inbound: conversation create failed for {phone}', ['phone' => $n['phone_number']]);
+            return null;
+        }
         $mediaKind = in_array($n['message_type'], ['image', 'document', 'audio', 'video'], true) ? $n['message_type'] : null;
         $isImage = $mediaKind === 'image' && $n['media_url'] !== '';
         $text = $n['message_text'] !== '' ? $n['message_text'] : ($n['media_url'] !== '' ? '[' . ($mediaKind ?? $n['message_type']) . ']' : '');
-        $this->msgs->insert([
+        $newId = $this->msgs->insert([
             'conversation_id' => (int) $conv['id'], 'provider_message_id' => $n['provider_message_id'] !== '' ? $n['provider_message_id'] : null,
             'phone_number' => $n['phone_number'], 'direction' => 'inbound',
             'message_type' => $isImage ? 'image' : ($mediaKind ?? $n['message_type']), 'message_text' => mb_substr($text, 0, 2000),
             'media_url' => $n['media_url'] !== '' ? $n['media_url'] : null, 'media_type' => $mediaKind,
             'raw_payload' => json_encode($n['raw_payload']),
             'status' => 'received',
+        ]);
+        $msgId = (int) $newId;
+        if ($msgId <= 0) throw new \RuntimeException('Message insert failed.');
+        log_message('info', 'WhatsApp inbound stored: conv={conv} msg={msg} phone={phone}', [
+            'conv' => (int) $conv['id'], 'msg' => $msgId,
+            'phone' => function_exists('maskPhone') ? maskPhone($n['phone_number']) : $n['phone_number'],
         ]);
         $this->convs->touch((int) $conv['id'], $text !== '' ? $text : '[message]', 'inbound', true);
         return (int) $conv['id'];
