@@ -39,17 +39,17 @@ class Msg91WhatsAppWebhook extends BaseController
             }
         }
 
-        $raw = file_get_contents('php://input');
-        $in = json_decode((string) $raw, true);
-        if (! is_array($in) || $in === []) $in = $this->request->getPost() ?: [];
-        if ($in === []) {
-            log_message('warning', 'MSG91 WhatsApp webhook: empty payload.');
-            return $this->response->setStatusCode(200)->setJSON(['success' => false, 'error' => 'Empty payload.']);
-        }
-
         $db = \Config\Database::connect();
         $db->transBegin();
         try {
+            $raw = file_get_contents('php://input');
+            $in = json_decode((string) $raw, true);
+            if (! is_array($in) || $in === []) $in = $this->request->getPost() ?: [];
+            if ($in === []) {
+                log_message('warning', 'MSG91 WhatsApp webhook: empty payload.');
+                $db->transCommit();
+                return $this->response->setStatusCode(200)->setJSON(['success' => false, 'error' => 'Empty payload.']);
+            }
             $svc = new WhatsappChatService();
             $n = function_exists('normalizeInboundWhatsAppMessage') ? normalizeInboundWhatsAppMessage($in) : null;
             if ($n === null) throw new \RuntimeException('Normalizer unavailable.');
