@@ -14,7 +14,7 @@ use App\Models\SettingModel;
  *  - Template messages (start a conversation): approved template + params.
  *
  * Session messages go to a DIFFERENT endpoint + envelope:
- *   POST {session_base_url}/  {"to","from","message":{"type","content"}}
+ *   POST {session_base_url}/  {"to","from","integrated_number","message":{"type","content"}}
  *   session_base_url default: https://control.msg91.com/api/v5/whatsapp/whatsapp-outbound-message
  * Auth:  header  authkey: <MSG91 auth key>
  * Numbers: country code, digits only, no plus (919876543210).
@@ -346,13 +346,17 @@ class Msg91WhatsAppService
 
     /**
      * Session endpoint (no template, inside the 24h window).
-     * Envelope: {"to","from","message":{"type","content"}}.
+     * Envelope: {"to","from","integrated_number","message":{"type","content"}}.
+     * MSG91 requires top-level `integrated_number` (it 400s with
+     * "integrated number not found in request" without it); `from`
+     * is kept for backward compatibility.
      */
     protected function sendSession(string $to, string $type, array $content): array
     {
         return $this->postJson($this->sessionBaseUrl . '/', [
             'to' => $to,
             'from' => $this->integratedNumber,
+            'integrated_number' => $this->integratedNumber,
             'message' => ['type' => $type, 'content' => $content],
         ]);
     }
@@ -384,6 +388,12 @@ class Msg91WhatsAppService
                 // make it actionable instead of a raw dump.
                 if (preg_match('/blocked|restrict/i', (string)$raw)) {
                     $error .= ' — Outbound to this country/prefix is blocked on your MSG91 account. Enable international/WhatsApp outbound for it in the MSG91 panel (or check allowed prefixes), then retry.';
+                }
+                // Server did not recognize our integrated number: almost always
+                // a settings mismatch (or the number isn't WhatsApp-integrated
+                // on the MSG91 account yet).
+                if (stripos((string)$raw, 'integrated number not found') !== false) {
+                    $error .= ' — MSG91 did not recognize integrated number ' . $this->integratedNumber . '. Check Settings → WhatsApp → Integrated Number matches the number integrated in your MSG91 panel (digits only, with country code).';
                 }
             }
             $result = [
