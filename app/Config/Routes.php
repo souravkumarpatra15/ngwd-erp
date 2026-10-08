@@ -192,6 +192,12 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('users/update/(:num)', 'Admin\UserManagementController::update/$1');
         $routes->post('users/delete/(:num)', 'Admin\UserManagementController::delete/$1');
         $routes->post('users/toggle-active/(:num)', 'Admin\UserManagementController::toggleActive/$1');
+        $routes->get('chat', 'Admin\ChatController::index');
+        $routes->get('chat/messages', 'Admin\ChatController::messages');
+        $routes->post('chat/send', 'Admin\ChatController::send');
+        $routes->post('chat/upload-image', 'Admin\ChatController::uploadImage');
+        $routes->post('chat/delete/(:num)', 'Admin\ChatController::delete/$1');
+    });
         $routes->get('users/(:num)/permissions', 'Admin\ModulePermissionController::edit/$1');
         $routes->post('users/(:num)/permissions/update', 'Admin\ModulePermissionController::update/$1');
     });
