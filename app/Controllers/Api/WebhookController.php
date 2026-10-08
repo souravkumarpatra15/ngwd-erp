@@ -88,17 +88,24 @@ class WebhookController extends BaseController
         $raw = file_get_contents('php://input');
         $in = json_decode((string) $raw, true);
         if (! is_array($in)) $in = $this->request->getPost() ?: [];
-        // Accept a few common shapes: {from,to,message}, {data:{...}}, MSG91 {to,from,message:{type,content}}
+        // Shapes: generic {from,message} / {data:{...}} / MSG91 custom
+        // webhook {customerNumber,customerName,text,messageType,url,caption}.
         $data = $in['data'] ?? $in;
-        $from = (string) ($data['from'] ?? $data['sender'] ?? $data['phone'] ?? $data['mobile'] ?? '');
+        $from = (string) ($data['from'] ?? $data['sender'] ?? $data['phone'] ?? $data['mobile']
+            ?? $data['customerNumber'] ?? $data['customer_number'] ?? '');
         $text = '';
         if (isset($data['message'])) {
             $text = is_array($data['message'])
                 ? (string) ($data['message']['content']['text'] ?? $data['message']['text'] ?? $data['message']['body'] ?? '')
                 : (string) $data['message'];
         }
-        $text = trim($text !== '' ? $text : (string) ($data['text'] ?? $data['body'] ?? ''));
-        if ($from === '' || $text === '') return $this->response->setStatusCode(200)->setBody('OK');
+        $text = trim($text !== '' ? $text : (string) ($data['text'] ?? $data['body'] ?? $data['caption'] ?? ''));
+        $mediaUrl = trim((string) ($data['url'] ?? ''));
+        $msgType = strtolower((string) ($data['messageType'] ?? $data['contentType'] ?? 'text'));
+        // Delivery/status reports carry no text — acknowledge and ignore.
+        if ($from === '' || ($text === '' && $mediaUrl === '')) {
+            return $this->response->setStatusCode(200)->setBody('OK');
+        }
         $digits = preg_replace('/\D/', '', $from);
         if (strlen($digits) === 10) $digits = '91' . $digits;
         // Users table has no phone column — match via clients.whatsapp,
@@ -113,15 +120,19 @@ class WebhookController extends BaseController
             $userId = (int) ($user['id'] ?? 0);
         }
         if ($userId <= 0) {
-            log_message('info', 'WhatsApp inbound from unknown number: {n}', ['n' => $digits]);
+            $cname = trim((string) ($data['customerName'] ?? $data['customer_name'] ?? ''));
+            log_message('info', 'WhatsApp inbound from unknown number: {n} {name}', ['n' => $digits, 'name' => $cname]);
             return $this->response->setStatusCode(200)->setBody('OK');
         }
         $adminId = (int) ($this->db->table('users')->selectMin('id')->whereIn('role', ['superadmin', 'admin'])->get()->getRowArray()['id'] ?? 1);
+        $isImage = $mediaUrl !== '' && str_contains($msgType, 'image');
+        if ($text === '' && $mediaUrl !== '') $text = trim((string) ($data['caption'] ?? '')) !== '' ? (string) $data['caption'] : '[media]';
         (new \App\Models\ChatMessageModel())->insert([
             'admin_id' => $adminId,
             'user_id' => $userId,
             'message' => mb_substr($text, 0, 2000),
-            'message_type' => 'text',
+            'image_url' => $isImage ? $mediaUrl : null,
+            'message_type' => $isImage ? 'image' : 'text',
             'is_admin' => 0,
             'is_read' => 0,
         ]);

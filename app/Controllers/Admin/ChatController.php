@@ -147,6 +147,8 @@ class ChatController extends BaseController
         if ($r = $this->requireModule('chat', 'view')) return $r;
         $msg = $this->cm->find((int) $id);
         if (! $msg || empty($msg['image_url'])) return redirect()->back()->with('error', 'Image not found.');
+        // Inbound WhatsApp media is stored as an external URL — redirect to it.
+        if (str_starts_with((string) $msg['image_url'], 'http')) return redirect()->to((string) $msg['image_url']);
         $rel = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim((string) $msg['image_url'], '/\\'));
         if (str_contains($rel, '..')) return redirect()->back()->with('error', 'Image not found.');
         $real = realpath($this->storageRoot() . basename($rel)) ?: $this->storageRoot() . basename($rel);
