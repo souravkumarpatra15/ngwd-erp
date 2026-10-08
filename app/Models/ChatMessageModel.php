@@ -59,8 +59,9 @@ class ChatMessageModel extends Model
      * Full history between one admin and one user, oldest first.
      * Both directions — grouped so the OR can't leak other users.
      */
-    public function conversation(int $adminId, int $userId): array
+    public function conversation(int $adminId, int $userId, bool $forAdmin = true): array
     {
+        $serve = $forAdmin ? 'admin/chat/serve' : 'portal/chat/serve';
         $rows = $this->db->table($this->table)
             ->groupStart()
                 ->where('admin_id', $adminId)->where('user_id', $userId)
@@ -68,7 +69,7 @@ class ChatMessageModel extends Model
             ->orderBy('created_at', 'ASC')
             ->orderBy('id', 'ASC')
             ->get()->getResultArray();
-        return array_map([$this, 'formatRow'], $rows);
+        return array_map(fn($r) => $this->formatRow($r, $forAdmin, $serve), $rows);
     }
 
     public function markRead(int $adminId, int $userId): void
@@ -79,19 +80,31 @@ class ChatMessageModel extends Model
             ->update(['is_read' => 1]);
     }
 
+    /** Admin this portal user has been chatting with (latest), or null. */
+    public function adminForUser(int $userId): ?int
+    {
+        $row = $this->db->table($this->table)
+            ->select('admin_id')->where('user_id', $userId)
+            ->orderBy('created_at', 'DESC')->orderBy('id', 'DESC')
+            ->limit(1)->get()->getRowArray();
+        return $row ? (int) $row['admin_id'] : null;
+    }
+
     /**
      * WhatsApp-bubble shape for the view/JSON.
-     * is_me = sent by the viewing admin. image_src = stream URL or null.
+     * is_me = sent by the viewing side ($forAdmin=true: admin viewer).
+     * image_src = stream URL or null.
      */
-    public function formatRow(?array $row): ?array
+    public function formatRow(?array $row, bool $forAdmin = true, string $serveBase = 'admin/chat/serve'): ?array
     {
         if (! $row) return null;
-        $row['is_me'] = ((int) ($row['is_admin'] ?? 0)) === 1;
+        $isAdminMsg = ((int) ($row['is_admin'] ?? 0)) === 1;
+        $row['is_me'] = $forAdmin ? $isAdminMsg : ! $isAdminMsg;
         $row['time'] = function_exists('relativeTime')
             ? relativeTime((string) ($row['created_at'] ?? ''))
             : (string) ($row['created_at'] ?? '');
         $row['image_src'] = ! empty($row['image_url'])
-            ? base_url('admin/chat/serve/' . (int) $row['id']) : null;
+            ? base_url($serveBase . '/' . (int) $row['id']) : null;
         return $row;
     }
 }

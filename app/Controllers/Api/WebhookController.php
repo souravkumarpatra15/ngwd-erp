@@ -101,16 +101,17 @@ class WebhookController extends BaseController
         if ($from === '' || $text === '') return $this->response->setStatusCode(200)->setBody('OK');
         $digits = preg_replace('/\D/', '', $from);
         if (strlen($digits) === 10) $digits = '91' . $digits;
-        // Match a CRM user by whatsapp/phone digits (stored formats vary).
-        $user = $this->db->table('users')
-            ->where("REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(whatsapp,''),'+',''),' ',''),'-',''),'(', '') LIKE", '%' . substr($digits, -10) . '%')
+        // Users table has no phone column — match via clients.whatsapp,
+        // then resolve the portal login (users.client_id).
+        $last10 = substr($digits, -10);
+        $client = $this->db->table('clients')
+            ->where("REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(whatsapp,''),'+',''),' ',''),'-',''),'(', '') LIKE", '%' . $last10 . '%')
             ->get()->getRowArray();
-        if (! $user) {
-            $user = $this->db->table('users')
-                ->where("REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(phone,''),'+',''),' ',''),'-',''),'(', '') LIKE", '%' . substr($digits, -10) . '%')
-                ->get()->getRowArray();
+        $userId = 0;
+        if ($client) {
+            $user = $this->db->table('users')->where('client_id', $client['id'])->where('is_active', 1)->orderBy('id', 'ASC')->get()->getRowArray();
+            $userId = (int) ($user['id'] ?? 0);
         }
-        $userId = (int) ($user['id'] ?? 0);
         if ($userId <= 0) {
             log_message('info', 'WhatsApp inbound from unknown number: {n}', ['n' => $digits]);
             return $this->response->setStatusCode(200)->setBody('OK');

@@ -45,7 +45,7 @@ class PmsAuthorizationService
     public const PMS_MODULES = ['dashboard', 'projects', 'tasks', 'kanban', 'milestones', 'deliverables', 'chat'];
 
     /** Modules a client-portal Owner always has, regardless of any explicit grants for their team. */
-    public const CLIENT_OWNER_MODULES = ['milestones', 'deliverables', 'tasks', 'documents', 'invoices', 'payments', 'marketing_leads', 'client_team', 'tickets'];
+    public const CLIENT_OWNER_MODULES = ['milestones', 'deliverables', 'tasks', 'documents', 'invoices', 'payments', 'marketing_leads', 'client_team', 'tickets', 'chat'];
 
     /** Modules a client team member (non-owner, no explicit grant on file) sees by default. */
     public const CLIENT_DEFAULT_MODULES = ['milestones', 'deliverables', 'tasks', 'documents'];

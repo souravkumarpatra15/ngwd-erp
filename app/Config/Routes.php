@@ -222,6 +222,10 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->get('marketing-leads', 'Client\PortalController::marketingLeads');
         $routes->post('marketing-leads/status/(:num)', 'Client\PortalController::updateMarketingLeadStatus/$1');
         $routes->get('tickets', 'Client\TicketController::index');
+        $routes->get('chat', 'Client\ChatController::index');
+        $routes->get('chat/messages', 'Client\ChatController::messages');
+        $routes->post('chat/send', 'Client\ChatController::send');
+        $routes->get('chat/serve/(:num)', 'Client\ChatController::serve/$1');
         $routes->get('tickets/create', 'Client\TicketController::create');
         $routes->post('tickets/store', 'Client\TicketController::store');
         $routes->get('tickets/(:num)', 'Client\TicketController::show/$1');

@@ -123,6 +123,9 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .fw-bold, strong { font-family: 'Sora', '
         <a href="<?= base_url('portal/team') ?>" class="portal-link <?= isActive('portal/team') ?>"><i class="bi bi-people"></i> Team</a>
       <?php endif; ?>
       <a href="<?= base_url('portal/tickets') ?>" class="portal-link <?= isActive('portal/tickets') ?>"><i class="bi bi-headset"></i> Support</a>
+      <?php if ($__cSee('chat')): ?>
+      <a href="<?= base_url('portal/chat') ?>" class="portal-link <?= isActive('portal/chat') ?>"><i class="bi bi-whatsapp"></i> Chat</a>
+      <?php endif; ?>
     </div>
     <div class="p-3 border-top border-white border-opacity-25">
       <a href="<?= base_url('logout') ?>" class="portal-link" style="color:rgba(255,255,255,.6)"><i class="bi bi-box-arrow-right"></i> Logout</a>
