@@ -16,8 +16,10 @@ class Msg91WhatsAppWebhook extends BaseController
 {
     public function index()
     {
+        // Alive-check: open the URL in a browser → 200 means the route is
+        // deployed; 404 means live hasn't pulled the webhook code yet.
         if (strtolower($this->request->getMethod()) !== 'post') {
-            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'error' => 'POST only.']);
+            return $this->response->setStatusCode(200)->setJSON(['success' => true, 'alive' => true, 'endpoint' => 'webhooks/msg91/whatsapp']);
         }
 
         // Secret: .env first (never in source), settings row as fallback,
