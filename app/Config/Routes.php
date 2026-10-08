@@ -195,9 +195,14 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->get('users/(:num)/permissions', 'Admin\ModulePermissionController::edit/$1');
         $routes->post('users/(:num)/permissions/update', 'Admin\ModulePermissionController::update/$1');
         $routes->get('chat', 'Admin\ChatController::index');
+        $routes->get('chat/conversations', 'Admin\ChatController::conversations');
         $routes->get('chat/messages', 'Admin\ChatController::messages');
+        $routes->get('chat/templates', 'Admin\ChatController::templates');
         $routes->get('chat/serve/(:num)', 'Admin\ChatController::serve/$1');
         $routes->post('chat/send', 'Admin\ChatController::send');
+        $routes->post('chat/send-template', 'Admin\ChatController::sendTemplate');
+        $routes->post('chat/read/(:num)', 'Admin\ChatController::read/$1');
+        $routes->post('chat/retry/(:num)', 'Admin\ChatController::retry/$1');
         $routes->post('chat/upload-image', 'Admin\ChatController::uploadImage');
         $routes->post('chat/delete/(:num)', 'Admin\ChatController::delete/$1');
     });

@@ -93,6 +93,8 @@ if (!function_exists('wa_to')) {
      * Normalise to digits + country code (no plus).
      * Bare 10-digit numbers default to India (91) — store USA/others
      * WITH country code (e.g. +1...). Strips 00/011/0 prefixes.
+     * +919593026451, 919593026451, 09593026451, 9593026451 all resolve
+     * to the same conversation key.
      */
     function wa_to(string $phone): string
     {
@@ -106,6 +108,24 @@ if (!function_exists('wa_to')) {
         if (strlen($digits) === 11 && $digits[0] === '0') $digits = substr($digits, 1);
         if (strlen($digits) === 10) $digits = '91' . $digits;
         return $digits;
+    }
+}
+
+if (!function_exists('normalizeWhatsAppPhone')) {
+    /** Canonical phone key used by clients, leads, inbound, outbound and lookup. */
+    function normalizeWhatsAppPhone(?string $phone): string
+    {
+        return wa_to((string) $phone);
+    }
+}
+
+if (!function_exists('maskPhone')) {
+    /** Privacy-safe display: 919593026451 → 91******6451. */
+    function maskPhone(?string $phone): string
+    {
+        $d = preg_replace('/\D/', '', (string) $phone);
+        if (strlen($d) < 7) return $d;
+        return substr($d, 0, 2) . str_repeat('*', strlen($d) - 6) . substr($d, -4);
     }
 }
 

@@ -60,6 +60,21 @@
   </div>
 
   <div class="tab-pane fade" id="whatsapp">
+    <?php
+      $waNumber = preg_replace('/\D/', '', (string) ($settings['msg91_integrated_number'] ?? ''));
+      $waReady = trim((string) ($settings['msg91_authkey'] ?? '')) !== '' && $waNumber !== '';
+    ?>
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-white border-0"><h6 class="mb-0 fw-semibold">WhatsApp Configuration</h6></div>
+      <div class="card-body">
+        <div class="row g-3 align-items-center">
+          <div class="col-md-4"><div class="text-muted small">Provider</div><div class="fw-semibold">MSG91</div></div>
+          <div class="col-md-4"><div class="text-muted small">Integrated WhatsApp Number</div><div class="fw-semibold"><?= $waNumber !== '' ? '+' . esc($waNumber) : '<span class="text-danger">Not configured</span>' ?></div></div>
+          <div class="col-md-4"><div class="text-muted small">Status</div><div><?= $waReady ? '<span class="badge bg-success">Connected</span>' : '<span class="badge bg-danger">Configuration Error</span>' ?></div></div>
+        </div>
+        <div class="form-text mt-2">Credentials are never displayed here. The auth key field below only accepts a replacement value.</div>
+      </div>
+    </div>
     <div class="card border-0 shadow-sm mb-3">
       <div class="card-header bg-white border-0"><h6 class="mb-0 fw-semibold">WhatsApp via MSG91</h6></div>
       <div class="card-body">
@@ -81,6 +96,8 @@
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-white border-0"><h6 class="mb-0 fw-semibold">Send Test Message</h6></div>
       <div class="card-body">
+        <div class="alert alert-secondary small">Configuration check only — test messages verify MSG91 delivery and are <strong>not</strong> stored as CRM chat history. Real customer conversations live under <a href="<?= base_url('admin/chat') ?>">WhatsApp Inbox</a>.</div>
+        <div id="waTestResult"></div>
         <form id="waTestForm" class="row g-3">
           <?= csrf_field() ?>
           <div class="col-md-4"><label class="form-label small fw-semibold">To (mobile)</label><input type="text" name="to" class="form-control" placeholder="9876543210" required></div>
@@ -151,8 +168,12 @@ $('#waTestForm').on('submit', function (e) {
   showLoader('Sending test...');
   $.post(`<?= base_url('admin/settings/test-whatsapp') ?>`, form.serialize(), r => {
     hideLoader();
-    showToast(r.message || (r.status === 'success' ? 'Sent.' : 'Failed.'), r.status);
-  }, 'json').fail(() => { hideLoader(); showToast('Server error. Please try again.', 'error'); });
+    const ok = r.status === 'success';
+    const mid = r.data && r.data.message_id ? `<div class="small mt-1">Provider Message ID: <code>${$('<div>').text(r.data.message_id).html()}</code></div>` : '';
+    const reason = !ok && r.data && r.data.error ? `<div class="small mt-1">Reason: ${$('<div>').text(r.data.error).html()}</div>` : '';
+    $('#waTestResult').html(`<div class="alert ${ok ? 'alert-success' : 'alert-danger'}">${ok ? '✓' : '✕'} ${$('<div>').text(r.message || (ok ? 'Test message sent successfully.' : 'Message failed.')).html()}${mid}${reason}</div>`);
+    showToast(r.message || (ok ? 'Sent.' : 'Failed.'), r.status);
+  }, 'json').fail(() => { hideLoader(); $('#waTestResult').html('<div class="alert alert-danger">✕ Server error. Please try again.</div>'); showToast('Server error. Please try again.', 'error'); });
 });
 </script>
 <?= $this->endSection() ?>

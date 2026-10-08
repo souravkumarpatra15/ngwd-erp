@@ -54,7 +54,7 @@ class SettingController extends BaseController
             default   => $svc->sendText($to, $body !== '' ? $body : 'Hello from NGWebD ERP (test message).'),
         };
         return $res['ok']
-            ? $this->jsonSuccess('Test message sent.' . (!empty($res['message_id']) ? ' ID: ' . $res['message_id'] : ''))
-            : $this->jsonError($res['error'] ?? 'Send failed.');
+            ? $this->jsonSuccess('Test message sent successfully.', ['message_id' => $res['message_id'] ?? null])
+            : $this->jsonError('Message failed.', ['error' => $res['error'] ?? 'Send failed.']);
     }
 }
