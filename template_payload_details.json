@@ -1,0 +1,513 @@
+{
+  "generated_at": "2026-10-08",
+  "total_templates": 15,
+  "templates": [
+    {
+      "name": "erp_client_welcome",
+      "category": "Client",
+      "msg91_template_type": "standard",
+      "body_parameters": 1,
+      "parameters": [
+        {
+          "position": 1,
+          "type": "text",
+          "variable_name": "{{1}}",
+          "description": "Client name",
+          "example_value": "John Doe",
+          "source_method": "WhatsAppNotificationService::clientWelcome()"
+        }
+      ],
+      "usage": "Sent when a new client is registered in the system.",
+      "namespace_required": true,
+      "language_overridable": true
+    },
+    {
+      "name": "erp_lead_created2",
+      "category": "Leads",
+      "msg91_template_type": "standard",
+      "body_parameters": 2,
+      "parameters": [
+        {
+          "position": 1,
+          "type": "text",
+          "variable_name": "{{1}}",
+          "description": "User/agent name (sender)",
+          "example_value": "Agent Smith",
+          "source_method": "WhatsAppNotificationService::leadCreated()"
+        },
+        {
+          "position": 2,
+          "type": "text",
+          "variable_name": "{{2}}",
+          "description": "Lead name",
+          "example_value": "Acme Corporation",
+          "source_method": "WhatsAppNotificationService::leadCreated()"
+        }
+      ],
+      "usage": "Sent when a new lead is created in the system.",
+      "namespace_required": true,
+      "language_overridable": true
+    },
+    {
+      "name": "erp_lead_followup",
+      "category": "Leads",
+      "msg91_template_type": "standard",
+      "body_parameters": 2,
+      "parameters": [
+        {
+          "position": 1,
+          "type": "text",
+          "variable_name": "{{1}}",
+          "description": "User/agent name (sender)",
+          "example_value": "Agent Smith",
+          "source_method": "WhatsAppNotificationService::leadFollowup()"
+        },
+        {
+          "position": 2,
+          "type": "text",
+          "variable_name": "{{2}}",
+          "description": "Follow-up date",
+          "example_value": "2026-10-15",
+          "source_method": "WhatsAppNotificationService::leadFollowup()"
+        }
+      ],
+      "usage": "Sent for lead follow-up reminders.",
+      "namespace_required": true,
+      "language_overridable": true
+    },
+    {
+      "name": "erp_proposal_sent",
+      "category": "Proposals",
+      "msg91_template_type": "standard",
+      "body_parameters": 3,
+      "parameters": [
+        {
+          "position": 1,
+          "type": "text",
+          "variable_name": "{{1}}",
+          "description": "Client name",
+          "example_value": "John Doe",
+          "source_method": "WhatsAppNotificationService::proposalSent()"
+        },
+        {
+          "position": 2,
+          "type": "text",
+          "variable_name": "{{2}}",
+          "description": "Proposal number",
+          "example_value": "PROP-2026-001",
+          "source_method": "WhatsAppNotificationService::proposalSent()"
+        },
+        {
+          "position": 3,
+          "type": "text",
+          "variable_name": "{{3}}",
+          "description": "Amount with currency",
+          "example_value": "₹ 50,000.00",
+          "source_method": "WhatsAppNotificationService::proposalSent()"
+        }
+      ],
+      "usage": "Sent when a proposal is sent to a client.",
+      "namespace_required": true,
+      "language_overridable": true
+    },
+    {
+      "name": "erp_agreement_sent",
+      "category": "Agreements",
+      "msg91_template_type": "standard",
+      "body_parameters": 1,
+      "parameters": [
+        {
+          "position": 1,
+          "type": "text",
+          "variable_name": "{{1}}",
+          "description": "Client name",
+          "example_value": "John Doe",
+          "source_method": "WhatsAppNotificationService::agreementSent()"
+        }
+      ],
+      "usage": "Sent when an agreement is sent to a client.",
+      "namespace_required": true,
+      "language_overridable": true
+    },
+    {
+      "name": "erp_project_created",
+      "category": "Projects",
+      "msg91_template_type": "standard",
+      "body_parameters": 2,
+      "parameters": [
+        {
+          "position": 1,
+          "type": "text",
+          "variable_name": "{{1}}",
+          "description": "Client name",
+          "example_value": "John Doe",
+          "source_method": "WhatsAppNotificationService::projectCreated()"
+        },
+        {
+          "position": 2,
+          "type": "text",
+          "variable_name": "{{2}}",
+          "description": "Project name",
+          "example_value": "Website Redesign",
+          "source_method": "WhatsAppNotificationService::projectCreated()"
+        }
+      ],
+      "usage": "Sent when a new project is created.",
+      "namespace_required": true,
+      "language_overridable": true
+    },
+    {
+      "name": "erp_milestone_updated",
+      "category": "Milestones",
+      "msg91_template_type": "standard",
+      "body_parameters": 4,
+      "parameters": [
+        {
+          "position": 1,
+          "type": "text",
+          "variable_name": "{{1}}",
+          "description": "Client name",
+          "example_value": "John Doe",
+          "source_method": "WhatsAppNotificationService::milestoneUpdated()"
+        },
+        {
+          "position": 2,
+          "type": "text",
+          "variable_name": "{{2}}",
+          "description": "Project name",
+          "example_value": "Website Redesign",
+          "example_value2": "Web Development"
+        },
+        {
+          "position": 3,
+          "type": "text",
+          "variable_name": "{{3}}",
+          "description": "Milestone name",
+          "example_value": "Design Phase",
+          "source_method": "WhatsAppNotificationService::milestoneUpdated()"
+        },
+        {
+          "position": 4,
+          "type": "text",
+          "variable_name": "{{4}}",
+          "description": "Status (e.g., updated, completed)",
+          "example_value": "Updated",
+          "source_method": "WhatsAppNotificationService::milestoneUpdated()"
+        }
+      ],
+      "usage": "Sent when a milestone status is updated.",
+      "namespace_required": true,
+      "language_overridable": true
+    },
+    {
+      "name": "erp_milestone_due",
+      "category": "Milestones",
+      "msg91_template_type": "standard",
+      "body_parameters": 3,
+      "parameters": [
+        {
+          "position": 1,
+          "type": "text",
+          "variable_name": "{{1}}",
+          "description": "Client name",
+          "example_value": "John Doe",
+          "source_method": "WhatsAppNotificationService::milestoneDue()"
+        },
+        {
+          "position": 2,
+          "type": "text",
+          "variable_name": "{{2}}",
+          "description": "Milestone name",
+          "example_value": "Design Phase",
+          "source_method": "WhatsAppNotificationService::milestoneDue()"
+        },
+        {
+          "position": 3,
+          "type": "text",
+          "variable_name": "{{3}}",
+          "description": "Due date",
+          "example_value": "2026-12-31",
+          "source_method": "WhatsAppNotificationService::milestoneDue()"
+        }
+      ],
+      "usage": "Sent when a milestone is due.",
+      "namespace_required": true,
+      "language_overridable": true
+    },
+    {
+      "name": "erp_invoice_created",
+      "category": "Invoices",
+      "msg91_template_type": "standard",
+      "body_parameters": 3,
+      "parameters": [
+        {
+          "position": 1,
+          "type": "text",
+          "variable_name": "{{1}}",
+          "description": "Client name",
+          "example_value": "John Doe",
+          "source_method": "WhatsAppNotificationService::invoiceCreated()"
+        },
+        {
+          "position": 2,
+          "type": "text",
+          "variable_name": "{{2}}",
+          "description": "Invoice number",
+          "example_value": "INV-2026-001",
+          "source_method": "WhatsAppNotificationService::invoiceCreated()"
+        },
+        {
+          "position": 3,
+          "type": "text",
+          "variable_name": "{{3}}",
+          "description": "Amount with currency",
+          "example_value": "₹ 50,000.00",
+          "source_method": "WhatsAppNotificationService::invoiceCreated()"
+        }
+      ],
+      "usage": "Sent when a new invoice is created.",
+      "namespace_required": true,
+      "language_overridable": true
+    },
+    {
+      "name": "erp_invoice_sent2",
+      "category": "Invoices",
+      "msg91_template_type": "special",
+      "body_parameters": 5,
+      "parameters": [
+        {
+          "position": 1,
+          "type": "text",
+          "variable_name": "{{1}}",
+          "description": "Client name",
+          "example_value": "John Doe",
+          "source_method": "WhatsAppNotificationService::invoiceSent()"
+        },
+        {
+          "position": 2,
+          "type": "text",
+          "variable_name": "{{2}}",
+          "description": "Invoice number",
+          "example_value": "INV-2026-001",
+          "source_method": "WhatsAppNotificationService::invoiceSent()"
+        },
+        {
+          "position": 3,
+          "type": "text",
+          "variable_name": "{{3}}",
+          "description": "Amount with currency",
+          "example_value": "₹ 50,000.00",
+          "source_method": "WhatsAppNotificationService::invoiceSent()"
+        },
+        {
+          "position": 4,
+          "type": "text",
+          "variable_name": "{{4}}",
+          "description": "Due date (d M Y format) or empty",
+          "example_value": "15 Oct 2026",
+          "source_method": "WhatsAppNotificationService::invoiceSent()"
+        },
+        {
+          "position": 5,
+          "type": "text",
+          "variable_name": "{{5}}",
+          "description": "Company name (defaults to NGWebD)",
+          "example_value": "NGWebD",
+          "source_method": "WhatsAppNotificationService::invoiceSent()"
+        }
+      ],
+      "usage": "Sent when an invoice is sent to client. Special template that supports header media and buttons.",
+      "namespace_required": true,
+      "language_overridable": true,
+      "special_notes": "Uses wa_send_template() helper with wa_body(5 values) and optional wa_header_media(). This is the most complex template - supports attaching invoice PDF as document header and adding Pay Now button."
+    },
+    {
+      "name": "erp_invoice_reminder",
+      "category": "Invoices",
+      "msg91_template_type": "standard",
+      "body_parameters": 4,
+      "parameters": [
+        {
+          "position": 1,
+          "type": "text",
+          "variable_name": "{{1}}",
+          "description": "Client name",
+          "example_value": "John Doe",
+          "source_method": "WhatsAppNotificationService::invoiceReminder()"
+        },
+        {
+          "position": 2,
+          "type": "text",
+          "variable_name": "{{2}}",
+          "description": "Invoice number",
+          "example_value": "INV-2026-001",
+          "source_method": "WhatsAppNotificationService::invoiceReminder()"
+        },
+        {
+          "position": 3,
+          "type": "text",
+          "variable_name": "{{3}}",
+          "description": "Amount with currency",
+          "example_value": "₹ 50,000.00",
+          "source_method": "WhatsAppNotificationService::invoiceReminder()"
+        },
+        {
+          "position": 4,
+          "type": "text",
+          "variable_name": "{{4}}",
+          "description": "Due date (d M Y format)",
+          "example_value": "15 Oct 2026",
+          "source_method": "WhatsAppNotificationService::invoiceReminder()"
+        }
+      ],
+      "usage": "Sent as invoice reminder before due date.",
+      "namespace_required": true,
+      "language_overridable": true
+    },
+    {
+      "name": "erp_invoice_overdue",
+      "category": "Invoices",
+      "msg91_template_type": "standard",
+      "body_parameters": 3,
+      "parameters": [
+        {
+          "position": 1,
+          "type": "text",
+          "variable_name": "{{1}}",
+          "description": "Client name",
+          "example_value": "John Doe",
+          "source_method": "WhatsAppNotificationService::invoiceOverdue()"
+        },
+        {
+          "position": 2,
+          "type": "text",
+          "variable_name": "{{2}}",
+          "description": "Invoice number",
+          "example_value": "INV-2026-001",
+          "source_method": "WhatsAppNotificationService::invoiceOverdue()"
+        },
+        {
+          "position": 3,
+          "type": "text",
+          "variable_name": "{{3}}",
+          "description": "Amount with currency",
+          "example_value": "₹ 50,000.00",
+          "source_method": "WhatsAppNotificationService::invoiceOverdue()"
+        }
+      ],
+      "usage": "Sent when invoice is overdue for payment.",
+      "namespace_required": true,
+      "language_overridable": true
+    },
+    {
+      "name": "erp_payment_received",
+      "category": "Payments",
+      "msg91_template_type": "standard",
+      "body_parameters": 3,
+      "parameters": [
+        {
+          "position": 1,
+          "type": "text",
+          "variable_name": "{{1}}",
+          "description": "Client name",
+          "example_value": "John Doe",
+          "source_method": "WhatsAppNotificationService::paymentReceived()"
+        },
+        {
+          "position": 2,
+          "type": "text",
+          "variable_name": "{{2}}",
+          "description": "Invoice number or payment number",
+          "example_value": "INV-2026-001",
+          "source_method": "WhatsAppNotificationService::paymentReceived()"
+        },
+        {
+          "position": 3,
+          "type": "text",
+          "variable_name": "{{3}}",
+          "description": "Amount with currency symbol (e.g., ₹ 5,000.00)",
+          "example_value": "₹ 5,000.00",
+          "source_method": "WhatsAppNotificationService::paymentReceived()"
+        }
+      ],
+      "usage": "Sent when a payment is received. This is the template the user originally asked about.",
+      "namespace_required": true,
+      "language_overridable": true
+    },
+    {
+      "name": "erp_task_assigned",
+      "category": "Tasks",
+      "msg91_template_type": "standard",
+      "body_parameters": 3,
+      "parameters": [
+        {
+          "position": 1,
+          "type": "text",
+          "variable_name": "{{1}}",
+          "description": "User/assignee name",
+          "example_value": "John Doe",
+          "source_method": "WhatsAppNotificationService::taskAssigned()"
+        },
+        {
+          "position": 2,
+          "type": "text",
+          "variable_name": "{{2}}",
+          "description": "Task name",
+          "example_value": "Design homepage",
+          "source_method": "WhatsAppNotificationService::taskAssigned()"
+        },
+        {
+          "position": 3,
+          "type": "text",
+          "variable_name": "{{3}}",
+          "description": "Due date",
+          "example_value": "2026-12-15",
+          "source_method": "WhatsAppNotificationService::taskAssigned()"
+        }
+      ],
+      "usage": "Sent when a task is assigned to a user.",
+      "namespace_required": true,
+      "language_overridable": true
+    },
+    {
+      "name": "erp_general_notification",
+      "category": "General",
+      "msg91_template_type": "standard",
+      "body_parameters": 2,
+      "parameters": [
+        {
+          "position": 1,
+          "type": "text",
+          "variable_name": "{{1}}",
+          "description": "Recipient name",
+          "example_value": "John Doe",
+          "source_method": "WhatsAppNotificationService::general()"
+        },
+        {
+          "position": 2,
+          "type": "text",
+          "variable_name": "{{2}}",
+          "description": "Message content",
+          "example_value": "Your monthly report is ready.",
+          "source_method": "WhatsAppNotificationService::general()"
+        }
+      ],
+      "usage": "Sent for general WhatsApp notifications (fallback/utility).",
+      "namespace_required": true,
+      "language_overridable": true
+    }
+  ],
+  "configuration_summary": {
+    "msg91_namespace": "Required - obtain from MSG91 panel when creating templates. Must match the value set in Settings > WhatsApp > Template Namespace.",
+    "auth_key": "Required - from MSG91 panel, set in Settings > WhatsApp > Auth Key.",
+    "integrated_number": "Required - WhatsApp business number (digits only, country code, no +), set in Settings > WhatsApp > Integrated Number.",
+    "all_templates_need_approval": "Yes - after creating templates in MSG91 panel, they must be approved before they can be used.",
+    "template_language": "Default is 'en' (English) from msg91_language setting, but can be overridden per message send.",
+    "template_creation_endpoint": "POST https://api.msg91.com/api/v5/whatsapp/whatsapp-template?integrated_number=<your_number>",
+    "auth_header": "authkey: <your_msg91_authkey>"
+  },
+  "body_value_generation_helpers": {
+    "wa_body": "PHP helper function that creates ordered {{1}}, {{2}}, {{3}}... array from variadic arguments. Example: wa_body('John', 'INV-001', '₹ 5,000.00') returns [0=>'John', 1=>'INV-001', 2=>'₹ 5,000.00']",
+    "wa_template": "PHP helper that wraps template name and body array. Example: wa_template('erp_payment_received', wa_body($name, $invoiceNum, $amount))"
+  }
+}

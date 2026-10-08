@@ -1,0 +1,167 @@
+{
+  "generated_at": "2026-10-08",
+  "crm_whatsapp_capabilities": {
+    "session_messages": {
+      "description": "Works inside the 24-hour customer service window. No template needed. Uses session endpoint.",
+      "endpoint": "https://control.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/",
+      "message_types": [
+        {
+          "type": "text",
+          "method": "sendText($phone, $body)",
+          "example": "(new WhatsAppService())->sendText('919876543210', 'Hello!')",
+          "limitations": "No template required, only works within 24h of last customer message"
+        },
+        {
+          "type": "image",
+          "method": "sendImage($phone, $image_url, $caption)",
+          "example": "(new WhatsAppService())->msg91()->sendImage('919876543210', 'https://example.com/image.jpg', 'Product image')",
+          "requirements": "Image must be a public HTTPS URL"
+        },
+        {
+          "type": "video",
+          "method": "sendVideo($phone, $video_url, $caption)",
+          "example": "(new WhatsAppService())->msg91()->sendVideo('919876543210', 'https://example.com/video.mp4', 'Demo video')",
+          "requirements": "Video must be a public HTTPS URL"
+        },
+        {
+          "type": "document",
+          "method": "sendDocument($phone, $pdf_url, $filename, $caption)",
+          "example": "(new WhatsAppService())->msg91()->sendDocument('919876543210', 'https://example.com/invoice.pdf', 'Invoice', 'Monthly Invoice')",
+          "requirements": "Document PDF must be a public HTTPS URL"
+        },
+        {
+          "type": "audio",
+          "method": "sendAudio($phone, $audio_url)",
+          "example": "(new WhatsAppService())->msg91()->sendAudio('919876543210', 'https://example.com/audio.mp3')",
+          "requirements": "Audio URL must be public HTTPS"
+        },
+        {
+          "type": "link",
+          "method": "sendLink($phone, $url, $caption)",
+          "example": "(new WhatsAppService())->msg91()->sendLink('919876543210', 'https://example.com', 'Check this out')",
+          "description": "Sends a link with preview card"
+        },
+        {
+          "type": "buttons (reply)",
+          "method": "sendButtons($phone, $body, $buttons)",
+          "example": "(new WhatsAppService())->sendButtons('919876543210', 'What would you like?', [['id'=>'yes','title'=>'Yes'],['id'=>'no','title'=>'No']])",
+          "limitations": "Max 3 buttons, reply type"
+        },
+        {
+          "type": "buttons (CTA)",
+          "method": "sendCtaButtons($phone, $body, $buttons)",
+          "example": "(new WhatsAppService())->msg91()->sendCtaButtons('919876543210', 'Choose option', [['url','Visit Site','https://example.com']])",
+          "limitations": "Max 2 buttons (1 URL + 1 call max), CTA type"
+        },
+        {
+          "type": "list",
+          "method": "sendList($phone, $body, $buttonText, $sections)",
+          "example": "(new WhatsAppService())->msg91()->sendList('919876543210', 'Select plan', 'View Plans', [['title'=>'Plans','rows'=>[['id'=>'basic','title'=>'Basic']]]])",
+          "limitations": "Single-select menu with sections"
+        }
+      ],
+      "session_window": "24 hours from last customer message - after this, templates must be used"
+    },
+    "template_messages": {
+      "description": "Starts a new conversation. Requires approved template in MSG91 panel. Works outside 24h window.",
+      "endpoint": "https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/",
+      "requirements": [
+        "MSG91 must be configured (auth key + integrated number)",
+        "Template must be created and approved in MSG91 panel",
+        "Template namespace must match setting msg91_namespace"
+      ],
+      "message_types": [
+        {
+          "type": "standard_template",
+          "description": "Basic text template with ordered parameters {{1}}, {{2}}, etc.",
+          "helper": "wa_template('template_name', wa_body($val1, $val2, ...))",
+          "example": "wa_template('erp_payment_received', wa_body('John Doe', 'INV-001', '₹ 5,000.00'))",
+          "body_params": "Variable based on template design (1-5 params)"
+        },
+        {
+          "type": "template_with_header",
+          "description": "Template with media header (image/document video). Uses wa_header_media() helper.",
+          "helper": "wa_template('template_name', wa_body($val1, $val2, ...), ['header' => wa_header_media('image', $url, $filename)])",
+          "example": "wa_send_template($phone, wa_template('erp_invoice_sent2', wa_body($name, $invNum, $amount, $due, $company), ['header' => wa_header_media('image', $pdfUrl, 'invoice.pdf')]))",
+          "templates_using": ["erp_invoice_sent2", "erp_agreement_sent", "erp_client_welcome (per user request)"],
+          "note": "Allows attaching PDF/Invoice as header media in the WhatsApp template"
+        },
+        {
+          "type": "template_with_buttons",
+          "description": "Template with action buttons (URL or quick reply).",
+          "helper": "wa_template('template_name', wa_body(...), ['buttons' => [wa_button_url($index, $suffix), wa_button_qr($index, $payload)]])",
+          "example": "wa_send_template($phone, wa_template('promo_offer', wa_body($name), ['language' => 'hi', 'buttons' => [wa_button_url(1, 'Pay Now')]]))",
+          "limitations": "Button indexes are 1-based and must match template button positions"
+        }
+      ]
+    },
+    "user_requested_enhancements": {
+      "erp_client_welcome": {
+        "current_body_params": 1,
+        "user_requested_additions": [
+          "Username for login",
+          "Password for login",
+          "Login link"
+        ],
+        "suggested_payload_structure": {
+          "name": "erp_client_welcome",
+          "body_parameters": 4,  // was 1, now 4 for credentials
+          "parameters": [
+            "{{1}}": "Client name",
+            "{{2}}": "Username",
+            "{{3}}": "Password",
+            "{{4}}": "Login link (e.g., https://yourcrm.com/login)"
+          ],
+          "with_header": true,
+          "suggested_header": "wa_header_text('Welcome to NGWebD')",
+          "or": "wa_header_media('image', 'https://example.com/logo.png', 'logo.png')"
+        }
+      },
+      "erp_agreement_sent": {
+        "current_body_params": 1,
+        "user_requested_additions": [
+          "Agreement PDF in header"
+        ],
+        "suggested_payload_structure": {
+          "name": "erp_agreement_sent",
+          "body_parameters": 2,  // was 1, now 2: client name + agreement note
+          "parameters": [
+            "{{1}}": "Client name",
+            "{{2}}": "Agreement status or note (e.g., 'Agreement sent for signing')"
+          ],
+          "with_header": true,
+          "suggested_header": "wa_header_media('document', 'https://yourcrm.com/agreements/agreement-001.pdf', 'Agreement-001.pdf')",
+          "note": "Sends the agreement PDF as a document header in the WhatsApp template"
+        }
+      },
+      "general_notes": {
+        "all_templates_require": [
+          "Approval in MSG91 panel before first use",
+          "Correct namespace in Settings > WhatsApp > Template Namespace",
+          "Proper language setting (msg91_language, default: 'en')"
+        ],
+        "session_vs_template": "Use session messages (sendText/sendImage/etc) when within 24h window. Use templates when session expired or starting new conversation.",
+        "code_helpers_available": [
+          "wa_body($val1, $val2, ...): Creates {{1}}, {{2}}... array",
+          "wa_header_text($text): Creates text header component",
+          "wa_header_media($type, $link, $filename): Creates image/video/document header",
+          "wa_button_url($index, $suffix): Creates URL button",
+          "wa_button_payload($index, $payload): Creates quick-reply button",
+          "wa_template($name, $body, $options): Wraps template for send",
+          "wa_send_template($to, $template): Sends template via MSG91"
+        ]
+      }
+    }
+  },
+  "quick_guide": {
+    "within_24h_window_send": {
+      "text": "(new WhatsAppService())->sendText('919876543210', 'Hello')",
+      "image": "(new WhatsAppService())->msg91()->sendImage('919876543210', 'https://example.com/img.jpg', 'Caption')",
+      "document": "(new WhatsAppService())->msg91()->sendDocument('919876543210', 'https://example.com/pdf.pdf', 'File.pdf', 'Monthly Invoice')"
+    },
+    "after_24h_or_new_conversation_send": {
+      "template": "$svc->sendTemplate('919876543210', wa_template('erp_payment_received', wa_body('John', 'INV-001', '₹ 5,000.00')))",
+      "template_with_pdf_header": "$svc->sendTemplate('919876543210', wa_template('erp_invoice_sent2', wa_body($name, $inv, $amount, $due, $company), ['header' => wa_header_media('image', $pdfUrl, 'invoice.pdf')]))"
+    }
+  }
+}

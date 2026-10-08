@@ -1,0 +1,156 @@
+{
+  "total_templates": 15,
+  "generated_at": "2026-10-08",
+  "templates": [
+    {
+      "name": "erp_client_welcome",
+      "category": "Client",
+      "used_by": ["WhatsAppNotificationService::clientWelcome()"],
+      "description": "Welcome message for new clients",
+      "body_params": 1,
+      "namespace_required": true
+    },
+    {
+      "name": "erp_lead_created2",
+      "category": "Leads",
+      "used_by": ["WhatsAppNotificationService::leadCreated()"],
+      "description": "Lead creation notification",
+      "body_params": 2,
+      "namespace_required": true
+    },
+    {
+      "name": "erp_lead_followup",
+      "category": "Leads",
+      "used_by": ["WhatsAppNotificationService::leadFollowup()"],
+      "description": "Lead follow-up reminder",
+      "body_params": 2,
+      "namespace_required": true
+    },
+    {
+      "name": "erp_proposal_sent",
+      "category": "Proposals",
+      "used_by": ["WhatsAppNotificationService::proposalSent()"],
+      "description": "Proposal sent to client",
+      "body_params": 3,
+      "namespace_required": true
+    },
+    {
+      "name": "erp_agreement_sent",
+      "category": "Agreements",
+      "used_by": ["WhatsAppNotificationService::agreementSent()"],
+      "description": "Agreement sent to client",
+      "body_params": 1,
+      "namespace_required": true
+    },
+    {
+      "name": "erp_project_created",
+      "category": "Projects",
+      "used_by": ["WhatsAppNotificationService::projectCreated()"],
+      "description": "Project creation notification",
+      "body_params": 2,
+      "namespace_required": true
+    },
+    {
+      "name": "erp_milestone_updated",
+      "category": "Milestones",
+      "used_by": ["WhatsAppNotificationService::milestoneUpdated()"],
+      "description": "Milestone status update",
+      "body_params": 5,
+      "namespace_required": true
+    },
+    {
+      "name": "erp_milestone_due",
+      "category": "Milestones",
+      "used_by": ["WhatsAppNotificationService::milestoneDue()"],
+      "description": "Milestone due date reminder",
+      "body_params": 3,
+      "namespace_required": true
+    },
+    {
+      "name": "erp_invoice_created",
+      "category": "Invoices",
+      "used_by": ["WhatsAppNotificationService::invoiceCreated()"],
+      "description": "New invoice creation notification",
+      "body_params": 3,
+      "namespace_required": true
+    },
+    {
+      "name": "erp_invoice_sent2",
+      "category": "Invoices",
+      "used_by": ["WhatsAppNotificationService::invoiceSent()"],
+      "description": "Invoice sent with due date and company info",
+      "body_params": 5,
+      "namespace_required": true,
+      "note": "Special template with header and optional buttons"
+    },
+    {
+      "name": "erp_invoice_reminder",
+      "category": "Invoices",
+      "used_by": ["WhatsAppNotificationService::invoiceReminder()"],
+      "description": "Invoice reminder notification",
+      "body_params": 4,
+      "namespace_required": true
+    },
+    {
+      "name": "erp_invoice_overdue",
+      "category": "Invoices",
+      "used_by": ["WhatsAppNotificationService::invoiceOverdue()"],
+      "description": "Invoice overdue notification",
+      "body_params": 3,
+      "namespace_required": true
+    },
+    {
+      "name": "erp_payment_received",
+      "category": "Payments",
+      "used_by": ["WhatsAppNotificationService::paymentReceived()"],
+      "description": "Payment received notification",
+      "body_params": 3,
+      "namespace_required": true
+    },
+    {
+      "name": "erp_task_assigned",
+      "category": "Tasks",
+      "used_by": ["WhatsAppNotificationService::taskAssigned()"],
+      "description": "Task assigned to user",
+      "body_params": 3,
+      "namespace_required": true
+    },
+    {
+      "name": "erp_general_notification",
+      "category": "General",
+      "used_by": ["WhatsAppNotificationService::general()"],
+      "description": "General WhatsApp notification",
+      "body_params": 2,
+      "namespace_required": true
+    }
+  ],
+  "summary": {
+    "by_category": {
+      "Client": 1,
+      "Leads": 2,
+      "Proposals": 1,
+      "Agreements": 1,
+      "Projects": 1,
+      "Milestones": 2,
+      "Invoices": 5,
+      "Payments": 1,
+      "Tasks": 1,
+      "General": 1
+    },
+    "total_unique_templates": 15,
+    "templates_with_body_params": {
+      "1_param": ["erp_agreement_sent"],
+      "2_params": ["erp_client_welcome", "erp_lead_created2", "erp_project_created", "erp_general_notification"],
+      "3_params": ["erp_lead_followup", "erp_milestone_due", "erp_invoice_overdue", "erp_payment_received", "erp_task_assigned"],
+      "4_params": ["erp_invoice_reminder"],
+      "5_params": ["erp_proposal_sent", "erp_milestone_updated", "erp_invoice_sent2"]
+    }
+  },
+  "configuration_requirements": {
+    "msg91_namespace": "Required - set in Settings > WhatsApp > Template Namespace",
+    "msg91_authkey": "Required - set in Settings > WhatsApp > Auth Key",
+    "msg91_integrated_number": "Required - set in Settings > WhatsApp > Integrated Number",
+    "all_templates_must_be_approved": "Yes, in MSG91 panel before use",
+    "language_setting": "msg91_language (default: 'en') - can be overridden per send"
+  }
+}
