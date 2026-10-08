@@ -15,6 +15,7 @@ class WhatsappConversationModel extends Model
 
     protected $allowedFields = [
         'client_id', 'lead_id', 'phone_number', 'contact_name', 'contact_type',
+        'integrated_number',
         'last_message_at', 'last_message_preview', 'last_message_direction',
         'unread_count', 'status',
     ];

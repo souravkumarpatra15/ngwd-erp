@@ -18,3 +18,9 @@ session.savePath       = 'ci_sessions'
 session.matchIP        = false
 
 encryption.key = hex2bin(GENERATE_WITH_SPARK_KEY_GENERATE)
+
+# MSG91 WhatsApp inbound webhook shared secret.
+# Set the SAME value in MSG91 Dashboard → WhatsApp → Webhook as
+# ?secret=... (or X-Webhook-Secret header). Falls back to the
+# `whatsapp_webhook_secret` settings row when empty.
+# MSG91_WEBHOOK_SECRET = 'CHANGE_ME_TO_A_LONG_RANDOM_STRING'

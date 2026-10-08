@@ -96,7 +96,22 @@ INSERT INTO `migrations` (`version`, `class`, `group`, `namespace`, `time`, `bat
 SELECT '2026-10-08-000002', 'App\\Database\\Migrations\\CreateWhatsappConversations', 'default', 'App', UNIX_TIMESTAMP(), 4
 WHERE NOT EXISTS (SELECT 1 FROM `migrations` WHERE `version` = '2026-10-08-000002');
 
--- 6) Verify --------------------------------------------------------------
+-- 6) Webhook hardening columns (migration 2026-10-08-000003) ---------------
+-- Conversations keyed per integrated business number:
+ALTER TABLE `whatsapp_conversations`
+    ADD COLUMN IF NOT EXISTS `integrated_number` VARCHAR(20) NULL AFTER `contact_type`;
+-- (MySQL < 8.0.13 has no IF NOT EXISTS for ADD COLUMN — on older servers,
+-- run the plain ADD COLUMN and ignore "duplicate column" errors.)
+-- CREATE UNIQUE INDEX `uq_integrated_phone` ON `whatsapp_conversations` (`integrated_number`, `phone_number`);
+-- Raw provider event per message (debugging + future media rendering):
+ALTER TABLE `whatsapp_messages`
+    ADD COLUMN IF NOT EXISTS `raw_payload` TEXT NULL AFTER `error_message`;
+
+INSERT INTO `migrations` (`version`, `class`, `group`, `namespace`, `time`, `batch`)
+SELECT '2026-10-08-000003', 'App\\Database\\Migrations\\AddWhatsappWebhookColumns', 'default', 'App', UNIX_TIMESTAMP(), 5
+WHERE NOT EXISTS (SELECT 1 FROM `migrations` WHERE `version` = '2026-10-08-000003');
+
+-- 7) Verify --------------------------------------------------------------
 -- SELECT * FROM `chat_messages` LIMIT 1;
 -- SELECT * FROM `whatsapp_conversations` LIMIT 5;
 -- SELECT `key`, LEFT(`value`, 12) FROM `settings` WHERE `group` = 'whatsapp';

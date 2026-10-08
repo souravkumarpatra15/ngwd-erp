@@ -20,7 +20,7 @@ class Filters extends BaseConfig
 
     public array $globals = [
         'before' => [
-            'csrf' => ['except' => ['webhook/*']],
+            'csrf' => ['except' => ['webhook/*', 'webhooks/*']],
         ],
         'after' => [
             'secureheaders',

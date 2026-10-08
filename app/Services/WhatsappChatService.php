@@ -75,10 +75,14 @@ class WhatsappChatService
         return ['client_id' => null, 'lead_id' => null, 'name' => $fallbackName !== '' ? $fallbackName : 'Unknown Contact', 'type' => 'unknown'];
     }
 
-    public function getOrCreateConversation(string $phone, string $name = ''): ?array
+    public function getOrCreateConversation(string $phone, string $name = '', string $integratedNumber = ''): ?array
     {
         if ($phone === '') return null;
-        $conv = $this->convs->findByPhone($phone);
+        $conv = null;
+        if ($integratedNumber !== '') {
+            $conv = $this->convs->where('integrated_number', $integratedNumber)->where('phone_number', $phone)->first();
+        }
+        if (! $conv) $conv = $this->convs->findByPhone($phone);
         if ($conv) {
             // Backfill link when an unknown contact later matches CRM data.
             if (($conv['contact_type'] ?? 'unknown') === 'unknown') {
@@ -97,6 +101,7 @@ class WhatsappChatService
         $id = $this->convs->insert([
             'client_id' => $r['client_id'], 'lead_id' => $r['lead_id'], 'phone_number' => $phone,
             'contact_name' => $r['name'], 'contact_type' => $r['type'], 'status' => 'open',
+            'integrated_number' => $integratedNumber !== '' ? $integratedNumber : null,
         ], true);
         return $id ? $this->convs->find($id) : null;
     }
@@ -187,60 +192,33 @@ class WhatsappChatService
 
     // ── Inbound ─────────────────────────────────────────────────
 
-    /**
-     * Normalize an inbound payload (MSG91 custom webhook or generic).
-     * @return array{phone:string,text:string,media_url:string,msg_type:string,provider_id:string,name:string,is_report:bool}
-     */
-    public function normalizeInbound(array $in): array
-    {
-        $data = $in['data'] ?? $in;
-        $phone = $this->normalize((string) (
-            $data['from'] ?? $data['sender'] ?? $data['phone'] ?? $data['mobile']
-            ?? $data['customerNumber'] ?? $data['customer_number'] ?? ''
-        ));
-        $text = '';
-        if (isset($data['message'])) {
-            $text = is_array($data['message'])
-                ? (string) ($data['message']['content']['text'] ?? $data['message']['text'] ?? $data['message']['body'] ?? '')
-                : (string) $data['message'];
-        }
-        $text = trim($text !== '' ? $text : (string) ($data['text'] ?? $data['body'] ?? $data['caption'] ?? ''));
-        $mediaUrl = trim((string) ($data['url'] ?? ''));
-        $msgType = strtolower((string) ($data['messageType'] ?? $data['contentType'] ?? ($mediaUrl !== '' ? 'image' : 'text')));
-        $providerId = (string) ($data['message_id'] ?? $data['messageId'] ?? $data['uuid'] ?? $data['requestId'] ?? $data['replyMsgId'] ?? '');
-        return [
-            'phone' => $phone, 'text' => $text, 'media_url' => $mediaUrl, 'msg_type' => $msgType,
-            'provider_id' => $providerId,
-            'name' => trim((string) ($data['customerName'] ?? $data['customer_name'] ?? '')),
-            // Delivery/status reports carry identifiers but no content.
-            'is_report' => $text === '' && $mediaUrl === '' && $providerId !== '',
-        ];
-    }
-
     /** Store an inbound message. Returns conversation id or null (reports/empty). */
     public function inbound(array $payload): ?int
     {
-        $n = $this->normalizeInbound($payload);
+        if (! function_exists('normalizeInboundWhatsAppMessage')) return null;
+        $n = normalizeInboundWhatsAppMessage($payload);
         // Status callbacks resolve against previously sent messages.
         if ($n['is_report']) {
             $this->applyStatusCallback($payload);
             return null;
         }
-        if ($n['phone'] === '') return null;
+        if ($n['phone_number'] === '') return null;
         // Idempotency: provider may redeliver the same event.
-        if ($n['provider_id'] !== '' && $this->msgs->findByProviderId($n['provider_id'])) return null;
-        $conv = $this->getOrCreateConversation($n['phone'], $n['name']);
+        if ($n['provider_message_id'] !== '' && $this->msgs->findByProviderId($n['provider_message_id'])) return null;
+        $conv = $this->getOrCreateConversation($n['phone_number'], $n['contact_name'], $n['integrated_number']);
         if (! $conv) return null;
-        $isImage = $n['media_url'] !== '' && str_contains($n['msg_type'], 'image');
-        $text = $n['text'] !== '' ? $n['text'] : ($n['media_url'] !== '' ? '[media]' : '');
+        $mediaKind = in_array($n['message_type'], ['image', 'document', 'audio', 'video'], true) ? $n['message_type'] : null;
+        $isImage = $mediaKind === 'image' && $n['media_url'] !== '';
+        $text = $n['message_text'] !== '' ? $n['message_text'] : ($n['media_url'] !== '' ? '[' . ($mediaKind ?? $n['message_type']) . ']' : '');
         $this->msgs->insert([
-            'conversation_id' => (int) $conv['id'], 'provider_message_id' => $n['provider_id'] !== '' ? $n['provider_id'] : null,
-            'phone_number' => $n['phone'], 'direction' => 'inbound',
-            'message_type' => $isImage ? 'image' : 'text', 'message_text' => mb_substr($text, 0, 2000),
-            'media_url' => $isImage ? $n['media_url'] : null, 'media_type' => $isImage ? 'image' : null,
+            'conversation_id' => (int) $conv['id'], 'provider_message_id' => $n['provider_message_id'] !== '' ? $n['provider_message_id'] : null,
+            'phone_number' => $n['phone_number'], 'direction' => 'inbound',
+            'message_type' => $isImage ? 'image' : ($mediaKind ?? $n['message_type']), 'message_text' => mb_substr($text, 0, 2000),
+            'media_url' => $n['media_url'] !== '' ? $n['media_url'] : null, 'media_type' => $mediaKind,
+            'raw_payload' => json_encode($n['raw_payload']),
             'status' => 'received',
         ]);
-        $this->convs->touch((int) $conv['id'], $text !== '' ? $text : '[image]', 'inbound', true);
+        $this->convs->touch((int) $conv['id'], $text !== '' ? $text : '[message]', 'inbound', true);
         return (int) $conv['id'];
     }
 

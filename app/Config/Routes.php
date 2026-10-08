@@ -253,4 +253,7 @@ $routes->group('', ['namespace' => 'App\Controllers'], function ($routes) {
     $routes->post('webhook/razorpay', 'Api\WebhookController::razorpay');
     $routes->post('webhook/whatsapp', 'Api\WebhookController::whatsappIncoming');
     $routes->get('webhook/whatsapp', 'Api\WebhookController::whatsappIncoming');
+    // Canonical MSG91 WhatsApp webhook (inbound + outbound reports).
+    // Configure this URL in MSG91 Dashboard → WhatsApp → Webhook.
+    $routes->post('webhooks/msg91/whatsapp', 'Webhooks\Msg91WhatsAppWebhook::index');
 });

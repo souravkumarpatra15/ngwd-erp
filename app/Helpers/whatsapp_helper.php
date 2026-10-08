@@ -129,6 +129,84 @@ if (!function_exists('maskPhone')) {
     }
 }
 
+if (!function_exists('normalizeInboundWhatsAppMessage')) {
+    /**
+     * Normalize an MSG91 WhatsApp webhook payload (inbound message or
+     * outbound status report) into one canonical shape.
+     *
+     * Handles MSG91's documented quirks:
+     *  - direction "0" = inbound (customer → business)
+     *  - sender in customerNumber; business number in integratedNumber
+     *  - content may be an array OR a JSON-encoded string
+     *  - messages may be a JSON-encoded array (first entry wins)
+     *  - status reports carry ids (uuid/requestId) but no content
+     *
+     * Never throws on malformed input — returns direction=inbound with
+     * empty phone/text so callers can acknowledge-and-ignore safely.
+     */
+    function normalizeInboundWhatsAppMessage(array $in): array
+    {
+        $data = $in['data'] ?? $in;
+
+        // messages: stringified JSON array → first entry merged under data.
+        if (isset($data['messages']) && is_string($data['messages'])) {
+            $arr = json_decode($data['messages'], true);
+            if (is_array($arr) && isset($arr[0]) && is_array($arr[0])) {
+                $data = array_merge($data, $arr[0]);
+            }
+        }
+
+        // content: array | JSON string | plain string.
+        $content = $data['content'] ?? null;
+        if (is_string($content)) {
+            $decoded = json_decode($content, true);
+            $content = is_array($decoded) ? $decoded : ['text' => $content];
+        }
+        if (! is_array($content)) $content = [];
+
+        $type = strtolower((string) (
+            $data['contentType'] ?? $data['messageType'] ?? $data['message_type']
+            ?? $content['type'] ?? 'text'
+        ));
+        $text = trim((string) (
+            $content['text'] ?? $content['body'] ?? $content['caption'] ??
+            $data['text'] ?? $data['body'] ?? $data['caption'] ?? ''
+        ));
+        $media = trim((string) (
+            $content['url'] ?? $content['link'] ?? $content['media_url'] ??
+            $data['url'] ?? ''
+        ));
+        $providerId = (string) (
+            $data['uuid'] ?? $data['requestId'] ?? $data['message_id'] ?? $data['messageId']
+            ?? $content['id'] ?? $content['message_id'] ?? ''
+        );
+        // MSG91 direction "0" = inbound. Anything else with content is
+        // still stored inbound; content-less payloads are status reports.
+        $direction = (string) ($data['direction'] ?? '0');
+        $isInbound = $direction === '0' || strtolower($direction) === 'inbound' || strtolower($direction) === 'mo';
+
+        return [
+            'provider_message_id' => $providerId,
+            'phone_number'        => wa_to((string) (
+                $data['customerNumber'] ?? $data['customer_number'] ?? $data['from']
+                ?? $data['sender'] ?? $data['phone'] ?? $data['mobile'] ?? ''
+            )),
+            'contact_name'      => trim((string) ($data['customerName'] ?? $data['customer_name'] ?? '')),
+            'integrated_number' => wa_to((string) ($data['integratedNumber'] ?? $data['integrated_number'] ?? '')),
+            'message_type'      => $type !== '' ? $type : 'text',
+            'message_text'      => $text,
+            'media_url'         => $media,
+            'media_caption'     => trim((string) ($content['caption'] ?? $data['caption'] ?? '')),
+            'event'             => (string) ($data['eventName'] ?? $data['event'] ?? ''),
+            'status_hint'       => strtolower((string) ($data['status'] ?? $data['reason'] ?? '')),
+            'occurred_at'       => (string) ($data['ts'] ?? ''),
+            'raw_payload'       => $in,
+            'direction'         => $isInbound ? 'inbound' : 'outbound',
+            'is_report'         => $text === '' && $media === '' && $providerId !== '',
+        ];
+    }
+}
+
 if (!function_exists('wa_send_template')) {
     function wa_send_template(string $to, array $template): array
     {
