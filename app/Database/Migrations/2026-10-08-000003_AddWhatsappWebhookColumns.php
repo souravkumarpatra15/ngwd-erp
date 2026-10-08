@@ -20,7 +20,14 @@ class AddWhatsappWebhookColumns extends Migration
             $this->forge->addColumn('whatsapp_conversations', [
                 'integrated_number' => ['type' => 'VARCHAR', 'constraint' => 20, 'null' => true, 'after' => 'contact_type'],
             ]);
-            $this->db->query('CREATE UNIQUE INDEX uq_integrated_phone ON whatsapp_conversations (integrated_number, phone_number)');
+        }
+        try {
+            $idxNames = array_map(static fn($o) => strtolower((string) ($o->name ?? '')), $this->db->getIndexData('whatsapp_conversations'));
+            if (! in_array('uq_integrated_phone', $idxNames, true)) {
+                $this->db->query('CREATE UNIQUE INDEX uq_integrated_phone ON whatsapp_conversations (integrated_number, phone_number)');
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'AddWhatsappWebhookColumns index skipped: {message}', ['message' => $e->getMessage()]);
         }
         $msgCols = array_column($this->db->getFieldData('whatsapp_messages'), 'name');
         if (! in_array('raw_payload', $msgCols, true)) {
