@@ -48,4 +48,16 @@ class ProjectController extends BaseController
     public function update($id){if(!$this->canEditProject((int)$id))return redirect()->to('admin/projects/'.$id)->with('error','Access denied.');$data=$this->request->getPost();unset($data['csrf_test_name']);$this->projectModel->update($id,$data);return redirect()->to("admin/projects/$id")->with('success','Updated!');}
     public function delete($id){if(!$this->canManageProject((int)$id))return $this->jsonError('Access denied.');$this->projectModel->delete($id);return $this->jsonSuccess('Deleted');}
     public function updateStatus($id){if(!$this->canEditProject((int)$id))return $this->jsonError('Access denied.');$s=$this->request->getPost('status');$this->projectModel->update($id,['status'=>$s]);$this->logActivity('projects',$id,'status_changed',"Status: $s");return $this->jsonSuccess('Status updated');}
+
+    // ── AJAX: projects by client (for dropdowns) ─────────────
+    // Route: GET admin/projects/by-client/(:num)
+    public function byClient($clientId = null)
+    {
+        $projects = $this->db->table('projects')
+            ->select('id, name, client_id, status')
+            ->where('client_id', (int) $clientId)
+            ->orderBy('name', 'ASC')
+            ->get()->getResultArray();
+        return $this->response->setJSON(['status' => 'success', 'data' => $projects]);
+    }
 }

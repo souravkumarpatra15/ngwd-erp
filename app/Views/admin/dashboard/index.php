@@ -194,7 +194,7 @@ foreach ($cards as $c): ?>
         <table class="table table-hover mb-0 small">
           <thead class="table-light"><tr><th>Name</th><th>Source</th><th>Status</th><th></th></tr></thead>
           <tbody>
-          <?php foreach ($recent_leads as $l): ?>
+          <?php foreach (($recent_leads ?? []) as $l): ?>
           <tr>
             <td><div class="fw-semibold"><?= esc($l['name']) ?></div><div class="text-muted" style="font-size:11px"><?= esc($l['mobile']) ?></div></td>
             <td><span class="badge bg-info text-dark"><?= ucfirst(str_replace('_',' ',$l['source'])) ?></span></td>
@@ -202,7 +202,7 @@ foreach ($cards as $c): ?>
             <td><a href="<?= base_url('admin/leads/'.$l['id']) ?>" class="btn btn-xs btn-outline-primary"><i class="bi bi-eye"></i></a></td>
           </tr>
           <?php endforeach; ?>
-          <?php if (empty($recent_leads)): ?><tr><td colspan="4" class="text-center text-muted py-3">No leads yet</td></tr><?php endif; ?>
+          <?php if (empty($recent_leads ?? [])): ?><tr><td colspan="4" class="text-center text-muted py-3">No leads yet</td></tr><?php endif; ?>
           </tbody>
         </table>
       </div>

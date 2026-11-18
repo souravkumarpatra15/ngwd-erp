@@ -4,6 +4,7 @@ writable/logs/
 writable/cache/
 writable/session/
 writable/pdfs/
+writable/debugbar/
 public/uploads/
 *.log
 .DS_Store

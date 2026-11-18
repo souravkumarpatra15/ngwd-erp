@@ -17,7 +17,7 @@ class HostingController extends BaseController
         $days=(strtotime($data['expiry_date'])-time())/86400;$data['status']=$days<=0?'expired':($days<=30?'expiring_soon':'active');
         $this->hm->insert($data);return redirect()->to('admin/hostings')->with('success','Hosting added!');
     }
-    public function edit($id) { return view('admin/hostings/edit',['title'=>'Edit Hosting','hosting'=>$this->hm->find($id),'clients'=>(new ClientModel())->findAll()]); }
+    public function edit($id) { $hosting=$this->hm->find($id); if(!$hosting) return redirect()->to('admin/hostings')->with('error','Hosting record not found.'); return view('admin/hostings/edit',['title'=>'Edit Hosting','hosting'=>$hosting,'clients'=>(new ClientModel())->findAll()]); }
     public function update($id) {
         $data=$this->request->getPost();unset($data['csrf_test_name']);
         $days=(strtotime($data['expiry_date'])-time())/86400;$data['status']=$days<=0?'expired':($days<=30?'expiring_soon':'active');

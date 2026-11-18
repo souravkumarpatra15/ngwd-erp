@@ -136,6 +136,7 @@ class AgreementController extends BaseController
     public function generatePDF($id)
     {
         $agreement = $this->am->getWithDetails($id);
+        if (!$agreement) return redirect()->to('admin/agreements')->with('error', 'Agreement not found.');
         return (new PDFService())->generateAgreement($agreement, $this->settings);
     }
 
@@ -184,5 +185,56 @@ class AgreementController extends BaseController
             return $this->jsonSuccess('WhatsApp sent!');
         }
         return $this->jsonError('Failed to send WhatsApp message.');
+    }
+
+    // ── MANUAL REMINDER ─────────────────────────────────────
+    // Route: POST admin/agreements/remind/(:num)
+    public function remind($id)
+    {
+        $a = $this->am->getWithDetails($id);
+        if (!$a) return $this->jsonError('Agreement not found.');
+        if (empty($a['client_whatsapp'])) return $this->jsonError('Client WhatsApp number not available.');
+        if ($a['status'] === 'signed') return $this->jsonError('This agreement is already signed.');
+        $link = base_url('agreements/sign/' . $a['id']);
+        $ok = (new WhatsAppNotificationService())->general(
+            (string) $a['client_whatsapp'],
+            (string) ($a['client_name'] ?? ''),
+            "Reminder: agreement {$a['agreement_number']} ({$a['title']}) is awaiting your signature. Review & sign: {$link}"
+        );
+        return $ok ? $this->jsonSuccess('WhatsApp reminder sent!') : $this->jsonError('Failed to send WhatsApp message.');
+    }
+
+    // ── PAYMENT LINK ──────────────────────────────────────────
+    // Route: POST admin/agreements/payment-link/(:num)
+    // Agreements have no amount of their own — the link is created
+    // against the first open invoice of the same client.
+    public function generatePaymentLink($id)
+    {
+        $a = $this->am->getWithDetails($id);
+        if (!$a) return $this->jsonError('Agreement not found.');
+
+        $invoice = $this->db->table('invoices')
+            ->select('id, invoice_number, balance_due, client_id')
+            ->where('client_id', (int) $a['client_id'])
+            ->whereNotIn('status', ['paid', 'cancelled'])
+            ->orderBy('due_date', 'ASC')
+            ->get()->getRowArray();
+
+        if (!$invoice) return $this->jsonError('No open invoice found for this client. Record the invoice first.');
+
+        $order = (new \App\Services\PaymentService())->createOrder(
+            (float) $invoice['balance_due'],
+            'invoice',
+            (int) $invoice['id'],
+            (int) $invoice['client_id']
+        );
+        if (!$order) return $this->jsonError('Could not create Razorpay order. Check your keys in Settings.');
+
+        return $this->jsonSuccess('Order created.', [
+            'order_id'     => $order['id'],
+            'amount'       => $order['amount'],
+            'razorpay_key' => $this->settings['razorpay_key'] ?? '',
+            'pay_url'      => base_url('portal/pay/' . $invoice['id']),
+        ]);
     }
 }

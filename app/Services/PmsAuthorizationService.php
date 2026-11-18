@@ -36,6 +36,17 @@ class PmsAuthorizationService
         return in_array(strtolower((string) $role), ['superadmin', 'admin'], true);
     }
 
+    /**
+     * Team-productivity features (stand-up, quick capture, blockers, notes,
+     * weekly reports, team activity) are open to all internal roles — any
+     * logged-in internal user may view projects they are scoped to.
+     */
+    public function canViewProjects(?string $role): bool
+    {
+        $role = strtolower((string) $role);
+        return $role !== '' && $role !== 'client';
+    }
+
     // ── Internal staff departments (spec: developer/designer/qa/hr/support/
     // sales_finance permission tiers, distinct from the login-tier role) ──
 
@@ -315,5 +326,182 @@ class PmsAuthorizationService
         }
         $visible = $this->getClientVisibleProjectIds($userId, $clientRole);
         return $visible === null || in_array($projectId, $visible, true);
+    }
+
+    // ── HRMS Permission Methods ──────────────────────────────────────────────
+
+    /** Superadmin/Admin: unrestricted access to all HRMS modules. */
+    public function hasHrmsPermission(int $userId, ?string $role, ?string $clientRole, string $action = 'view'): bool
+    {
+        $role = strtolower((string) $role);
+
+        // Superadmin/Admin: unrestricted everywhere.
+        if (in_array($role, ['superadmin', 'admin'], true)) {
+            return true;
+        }
+
+        // Check explicit module permissions first
+        $explicit = $this->modulePerms->where('user_id', $userId)->where('module', 'hrms')->first();
+        if ($explicit) {
+            return (bool) ($explicit['can_' . $action] ?? false);
+        }
+
+        // HR Manager has full HRMS access
+        if ($role === 'hr_manager') {
+            return true;
+        }
+
+        // Recruitment Manager has hiring/recruitment access
+        if ($role === 'recruitment_manager') {
+            return in_array($action, ['view', 'create', 'update', 'delete', 'approve'], true);
+        }
+
+        // Project Manager limited HR access (employee lookup only)
+        if ($role === 'project_manager') {
+            return $action === 'view';
+        }
+
+        // Team Leader limited HR access
+        if ($role === 'team_leader') {
+            return $action === 'view' || $action === 'assign';
+        }
+
+        // Permanent Employee can view own record
+        if ($role === 'permanent_employee') {
+            return $action === 'view';
+        }
+
+        // Intern can view own record
+        if ($role === 'intern') {
+            return $action === 'view';
+        }
+
+        return false;
+    }
+
+    /** Can view employee list (HR/Finance/Manager) */
+    public function canViewEmployeeList(?string $role, ?string $department = null): bool
+    {
+        if (in_array(strtolower((string) $role), ['superadmin', 'admin', 'manager'], true)) {
+            return true;
+        }
+        return strtolower((string) $department) === 'hr';
+    }
+
+    /** Can view salary/payroll information */
+    public function canViewPayroll(?string $role, ?string $department = null): bool
+    {
+        if (in_array(strtolower((string) $role), ['superadmin', 'admin', 'finance_manager', 'manager'], true)) {
+            return true;
+        }
+        return strtolower((string) $department) === 'hr' || strtolower((string) $department) === 'sales_finance';
+    }
+
+    /** Can manage employee records (hire, update, terminate) */
+    public function canManageEmployees(?string $role): bool
+    {
+        return in_array(strtolower((string) $role), ['superadmin', 'admin', 'hr_manager'], true);
+    }
+
+    /** Can approve leave and employment status changes */
+    public function canApproveEmploymentChanges(?string $role): bool
+    {
+        return in_array(strtolower((string) $role), ['superadmin', 'admin', 'hr_manager'], true);
+    }
+
+    /** Can view department dashboards */
+    public function canViewDepartmentDashboard(?string $role, ?string $department = null): bool
+    {
+        if (in_array(strtolower((string) $role), ['superadmin', 'admin', 'manager'], true)) {
+            return true;
+        }
+        return strtolower((string) $department) === 'hr';
+    }
+
+    /** Can view own employee profile */
+    public function canViewOwnEmployee(?string $role): bool
+    {
+        return in_array(strtolower((string) $role), ['permanent_employee', 'intern', 'hr_manager', 'admin', 'superadmin'], true);
+    }
+
+    /** Can edit own employee profile */
+    public function canEditOwnEmployee(?string $role): bool
+    {
+        return in_array(strtolower((string) $role), ['permanent_employee', 'hr_manager', 'admin', 'superadmin'], true);
+    }
+
+    /** Can manage departments (create, update, deactivate) */
+    public function canManageDepartments(?string $role): bool
+    {
+        return in_array(strtolower((string) $role), ['superadmin', 'admin', 'hr_manager'], true);
+    }
+
+    /** Can manage designations (create, update) */
+    public function canManageDesignations(?string $role): bool
+    {
+        return in_array(strtolower((string) $role), ['superadmin', 'admin', 'hr_manager'], true);
+    }
+
+    /** Can view recruitment/applications */
+    public function canViewRecruitment(?string $role): bool
+    {
+        return in_array(strtolower((string) $role), ['superadmin', 'admin', 'hr_manager', 'recruitment_manager'], true);
+    }
+
+    /** Can manage interview scheduling */
+    public function canManageInterviews(?string $role): bool
+    {
+        return in_array(strtolower((string) $role), ['superadmin', 'admin', 'hr_manager', 'recruitment_manager', 'project_manager'], true);
+    }
+
+    /** Can issue/send offers */
+    public function canIssueOffers(?string $role): bool
+    {
+        return in_array(strtolower((string) $role), ['superadmin', 'admin', 'hr_manager'], true);
+    }
+
+    /** Can view offer letters */
+    public function canViewOffers(?string $role): bool
+    {
+        return in_array(strtolower((string) $role), ['superadmin', 'admin', 'hr_manager', 'recruitment_manager', 'project_manager'], true);
+    }
+
+    /** Can view onboarding progress */
+    public function canViewOnboarding(?string $role): bool
+    {
+        return in_array(strtolower((string) $role), ['superadmin', 'admin', 'hr_manager', 'project_manager', 'team_leader'], true);
+    }
+
+    /** Can view attendance records */
+    public function canViewAttendance(?string $role): bool
+    {
+        return in_array(strtolower((string) $role), ['superadmin', 'admin', 'hr_manager', 'project_manager', 'team_leader', 'permanent_employee', 'intern'], true);
+    }
+
+    /** Can manage attendance (check in/out, corrections, viewing others) */
+    public function canManageAttendance(?string $role): bool
+    {
+        return in_array(strtolower((string) $role), ['superadmin', 'admin', 'hr_manager'], true);
+    }
+
+    /** Can view certificates */
+    public function canViewCertificates(?string $role): bool
+    {
+        return in_array(strtolower((string) $role), ['superadmin', 'admin', 'hr_manager', 'finance_manager'], true);
+    }
+
+    /** Can manage certificates (generate, revoke) */
+    public function canManageCertificates(?string $role): bool
+    {
+        return in_array(strtolower((string) $role), ['superadmin', 'admin', 'hr_manager'], true);
+    }
+
+    /** Can access payslip information */
+    public function canViewPayslips(?string $role, ?string $department = null): bool
+    {
+        if (in_array(strtolower((string) $role), ['superadmin', 'admin', 'finance_manager'], true)) {
+            return true;
+        }
+        return strtolower((string) $department) === 'hr' || strtolower((string) $department) === 'sales_finance';
     }
 }

@@ -10,7 +10,9 @@ class LoginController extends BaseController
     public function index()
     {
         if (session()->get('user_id')) {
-            return redirect()->to(in_array(session()->get('user_role'), ['superadmin', 'admin', 'manager', 'staff'], true) ? 'admin/dashboard' : 'portal/dashboard');
+            $role = session()->get('user_role');
+            $isClientOnly = $role === 'client' && !session()->get('client_id') ? true : in_array($role, ['client'], true);
+            return redirect()->to($isClientOnly ? 'portal/dashboard' : 'admin/dashboard');
         }
         return view('auth/login', ['title' => 'Login — NGWebD ERP']);
     }
@@ -33,7 +35,7 @@ class LoginController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Invalid email or password.');
         }
 
-        $validRoles = ['superadmin', 'admin', 'manager', 'staff', 'client'];
+        $validRoles = ['superadmin', 'admin', 'manager', 'staff', 'client', 'hr_manager', 'recruitment_manager', 'project_manager', 'team_leader', 'permanent_employee', 'intern', 'finance_manager'];
         if (!in_array((string) $user['role'], $validRoles, true)) {
             log_message('critical', 'Login blocked: user #{id} has an invalid role value ({role}). Check whether the users.role ENUM migration has been run.', ['id' => $user['id'], 'role' => $user['role']]);
             return redirect()->back()->withInput()->with('error', 'Your account role is not configured correctly. Please contact an administrator.');
@@ -56,7 +58,7 @@ class LoginController extends BaseController
         ]);
 
         $userModel->update($user['id'], ['last_login' => date('Y-m-d H:i:s')]);
-        $dashboard = in_array($user['role'], ['superadmin', 'admin', 'manager', 'staff'], true) ? 'admin/dashboard' : 'portal/dashboard';
+        $dashboard = in_array($user['role'], ['client'], true) && (int) ($user['client_id'] ?? 0) > 0 ? 'portal/dashboard' : 'admin/dashboard';
         return redirect()->to($dashboard)->with('success', 'Welcome back, ' . $user['name'] . '!');
     }
 

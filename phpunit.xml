@@ -1,13 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd" bootstrap="vendor/autoload.php" colors="true">
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="http://phpunit.changelog.org/schemas/phpunit-9.5.xsd"
+         backupGlobals="false"
+         cacheResult="false"
+         >
     <testsuites>
-        <testsuite name="ERP Tests">
-            <directory>tests</directory>
+        <testsuite name="NGWebD ERP">
+            <directory suffix="Test.php">./tests</directory>
         </testsuite>
     </testsuites>
-    <source>
-        <include>
-            <directory suffix=".php">app</directory>
-        </include>
-    </source>
+
+    <php>
+        <env name="CI_ENVIRONMENT" value="test"/>
+        <env name="database.default.hostname" value="localhost"/>
+        <env name="database.default.database" value="ngwd_erp"/>
+        <env name="database.default.username" value="root"/>
+        <env name="database.default.password" value="Sourav@15"/>
+        <env name="database.default.DBDriver" value="MySQLi"/>
+        <env name="database.default.DBPrefix" value=""/>
+        <env name="database.default.charset" value="utf8mb4"/>
+        <env name="database.default.DBCollat" value="utf8mb4_general_ci"/>
+        <env name="TESTPATH" value="./tests"/>
+    </php>
+
+    <extensions>
+        <extension class="PHPUnit\Extensions\MaildirExtension" />
+    </extensions>
+
+    <filter>
+        <whitelist>
+            <directory suffix=".php">./app</directory>
+        </whitelist>
+    </filter>
+
+    <logging>
+        <log type="coverage-html" target="./coverage"/>
+        <log type="junit" target="./build/logs"/>
+        <log type="xml" target="./build/reports"/>
+    </logging>
 </phpunit>

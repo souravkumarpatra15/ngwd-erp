@@ -7,7 +7,7 @@ use App\Services\PmsAuthorizationService;
 
 class SearchController extends BaseController
 {
-    private const ALLOWED_ROLES = ['superadmin', 'admin', 'manager', 'staff'];
+    private const ALLOWED_ROLES = ['superadmin', 'admin', 'manager', 'staff', 'hr_manager', 'recruitment_manager', 'project_manager', 'team_leader', 'finance_manager'];
 
     public function index()
     {

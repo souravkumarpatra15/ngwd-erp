@@ -97,4 +97,17 @@ class PaymentController extends BaseController
         );
         return $res['ok'] ? $this->jsonSuccess('WhatsApp receipt sent!') : $this->jsonError($res['error'] ?? 'Failed to send WhatsApp message.');
     }
+
+    // ── AJAX: milestones by project (for payment create page) ─
+    // Route: GET|POST admin/payments/milestones-by-project/(:num)
+    public function milestonesByProject($projectId = null)
+    {
+        $rows = $this->db->table('milestones')
+            ->select('id, title, amount, currency, status')
+            ->where('project_id', (int) $projectId)
+            ->whereNotIn('status', ['paid'])
+            ->orderBy('sort_order', 'ASC')
+            ->get()->getResultArray();
+        return $this->response->setJSON(['status' => 'success', 'data' => $rows]);
+    }
 }

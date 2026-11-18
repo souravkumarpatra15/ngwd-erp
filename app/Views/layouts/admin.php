@@ -91,6 +91,41 @@
         <a href="<?= base_url('admin/deliverables') ?>" class="sidebar-link <?= isActive('admin/deliverables') ?>">
           <i class="bi bi-box-seam"></i> Deliverables</a>
 
+        <?php
+        // ── Team & HR (HRMS / ATS / Payroll / Team Productivity) ──
+        // Visible to every internal (non-client) role; individual links are
+        // gated by the HRMS permission methods so each role only sees what
+        // it can actually open.
+        $__hrAuth = new \App\Services\PmsAuthorizationService();
+        $__hrRole = (string) session()->get('user_role');
+        $__isInternalUser = $__hrRole !== '' && $__hrRole !== 'client';
+        ?>
+        <?php if ($__isInternalUser && ($__hrAuth->canViewEmployeeList($__hrRole) || $__hrAuth->canViewRecruitment($__hrRole) || $__hrAuth->canViewAttendance($__hrRole) || $__hrAuth->canViewPayroll($__hrRole) || $__hrAuth->canViewCertificates($__hrRole) || $__hrAuth->canViewProjects($__hrRole))): ?>
+        <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Team &amp; HR</div>
+        <?php if ($__hrAuth->canViewEmployeeList($__hrRole)): ?>
+        <a href="<?= base_url('admin/employees') ?>" class="sidebar-link <?= isActive('admin/employees') ?>">
+          <i class="bi bi-person-badge"></i> Employees</a>
+        <?php endif; if ($__hrAuth->canViewRecruitment($__hrRole)): ?>
+        <a href="<?= base_url('admin/recruitment') ?>" class="sidebar-link <?= isActive('admin/recruitment') ?>">
+          <i class="bi bi-person-vcard"></i> Intern Recruitment</a>
+        <?php endif; if ($__hrAuth->canViewAttendance($__hrRole)): ?>
+        <a href="<?= base_url('admin/attendance') ?>" class="sidebar-link <?= isActive('admin/attendance') ?>">
+          <i class="bi bi-calendar-check"></i> Attendance</a>
+        <?php endif; if ($__hrAuth->canViewPayroll($__hrRole)): ?>
+        <a href="<?= base_url('admin/payroll') ?>" class="sidebar-link <?= isActive('admin/payroll') ?>">
+          <i class="bi bi-cash-coin"></i> Payroll</a>
+        <?php endif; if ($__hrAuth->canViewCertificates($__hrRole)): ?>
+        <a href="<?= base_url('admin/certificates') ?>" class="sidebar-link <?= isActive('admin/certificates') ?>">
+          <i class="bi bi-award"></i> Certificates</a>
+        <?php endif; if ($__hrAuth->canViewProjects($__hrRole)): ?>
+        <a href="<?= base_url('admin/team-pilot/stand-up') ?>" class="sidebar-link <?= isActive('admin/team-pilot/stand-up') ?>">
+          <i class="bi bi-chat-left-text"></i> Daily Stand-Up</a>
+        <a href="<?= base_url('admin/team-pilot/weekly-report') ?>" class="sidebar-link <?= isActive('admin/team-pilot/weekly-report') ?>">
+          <i class="bi bi-journal-week"></i> Weekly Report</a>
+        <a href="<?= base_url('admin/team-pilot/team-activity') ?>" class="sidebar-link <?= isActive('admin/team-pilot/team-activity') ?>">
+          <i class="bi bi-activity"></i> Team Activity</a>
+        <?php endif; endif; ?>
+
         <?php if ($__canSee('proposals') || $__canSee('agreements')): ?>
         <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Sales</div>
         <?php if ($__canSee('proposals')): ?>
