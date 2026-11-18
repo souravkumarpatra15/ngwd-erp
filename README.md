@@ -161,5 +161,5 @@ ngwd-erp/
 
 ---
 
-© 2024 NGWebD Consulting Pvt. Ltd.
+© 2024 NGWebD Digital Solutions
 # ngwd-erp

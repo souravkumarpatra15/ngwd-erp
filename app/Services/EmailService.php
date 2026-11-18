@@ -65,7 +65,7 @@ class EmailService
 
     public function sendClientWelcome($to, $clientName, $password)
     {
-        $company = $this->settings['company_name'] ?? 'NGWebD Consulting Pvt. Ltd.';
+        $company = $this->settings['company_name'] ?? 'NGWebD Digital Solutions';
         $portalUrl = base_url('login');
 
         $subject = "Welcome to {$company} Client Portal";
@@ -126,7 +126,7 @@ class EmailService
 
     protected function wrap($content)
     {
-        $company = $this->settings['company_name'] ?? 'NGWebD Consulting Pvt. Ltd.';
+        $company = $this->settings['company_name'] ?? 'NGWebD Digital Solutions';
         $website = $this->settings['company_website'] ?? 'https://ngwebd.com';
         $email   = $this->settings['company_email'] ?? 'info@ngwebd.com';
         $phone   = $this->settings['company_phone'] ?? '+91 9593026451';

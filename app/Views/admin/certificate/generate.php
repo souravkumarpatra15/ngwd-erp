@@ -199,8 +199,8 @@
 
         <div class="footer">
             <p>
-                <strong>NGWebD Consulting Pvt. Ltd.</strong><br>
-                This certificate is issued by NGWebD Consulting Pvt. Ltd.<br>
+                <strong>NGWebD Digital Solutions</strong><br>
+                This certificate is issued by NGWebD Digital Solutions<br>
                 For any verification, please visit: <?= esc($verifyUrl) ?>
             </p>
         </div>

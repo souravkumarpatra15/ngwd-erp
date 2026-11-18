@@ -1,6 +1,6 @@
 {
-    "name": "ngwebdconsulting/erp",
-    "description": "NGWebD Consulting Pvt. Ltd. — ERP System",
+    "name": "ngwebddigitalsollution/erp",
+    "description": "NGWebD Digital Solutions — ERP System",
     "license": "MIT",
     "require": {
         "php": "^8.3",

@@ -827,8 +827,8 @@ class RecruitmentController extends BaseController
             'compensation_disclosure' => 'Unpaid educational internship, subject to legal review and applicable law.',
             'learning_objectives' => 'Gain practical experience in ' . ($application['preferred_role'] ?? 'software development') . '. Develop professional skills. Contribute to real projects.',
             'terms_conditions' => 'Please review the internship programme details carefully. By accepting, you agree to the terms and conditions of the NGWebD Internship Programme.',
-            'authorized_signatory' => 'Super Admin, NGWebD Consulting Pvt. Ltd.',
-            'company_branding' => 'NGWebD Consulting Pvt. Ltd. - Internship Programme',
+            'authorized_signatory' => 'Super Admin, NGWebD Digital Solutions',
+            'company_branding' => 'NGWebD Digital Solutions - Internship Programme',
         ];
 
         // Generate PDF using OfferLetterService
@@ -852,8 +852,8 @@ class RecruitmentController extends BaseController
             'compensation_disclosure' => 'Unpaid educational internship, subject to legal review and applicable law.',
             'learning_objectives' => 'Gain practical experience in ' . ($application['preferred_role'] ?? 'software development') . '. Develop professional skills. Contribute to real projects.',
             'terms_conditions' => 'Please review the internship programme details carefully. By accepting, you agree to the terms and conditions of the NGWebD Internship Programme.',
-            'authorized_signatory' => 'Super Admin, NGWebD Consulting Pvt. Ltd.',
-            'company_branding' => 'NGWebD Consulting Pvt. Ltd. - Internship Programme',
+            'authorized_signatory' => 'Super Admin, NGWebD Digital Solutions',
+            'company_branding' => 'NGWebD Digital Solutions - Internship Programme',
             'offer_reference' => $offerRef,
             'issue_date' => date('Y-m-d'),
             'acceptance_deadline' => date('Y-m-d', strtotime('+14 days')), // 14 days to accept

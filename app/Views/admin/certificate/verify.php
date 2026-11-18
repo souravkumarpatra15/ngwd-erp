@@ -54,7 +54,7 @@
                             </dl>
                             
                             <p class="mt-3">
-                                <small>This certificate was issued by NGWebD Consulting Pvt. Ltd.</small>
+                                <small>This certificate was issued by NGWebD Digital Solutions</small>
                                 <br>
                                 <small>For any queries, please contact the HR department.</small>
                             </p>

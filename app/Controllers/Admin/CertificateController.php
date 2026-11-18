@@ -297,7 +297,7 @@ class CertificateController extends BaseController
             'durationMonths'    => $certificate['duration_months'] ? (int) $certificate['duration_months'] . ' months' : 'N/A',
             'finalScore'        => $certificate['final_evaluation'] ? $certificate['final_evaluation'] . ' / 10' : 'N/A',
             'issuedDate'        => $certificate['issued_at'] ? date('F j, Y', strtotime($certificate['issued_at'])) : 'N/A',
-            'organization'      => 'NGWebD Consulting Pvt. Ltd.',
+            'organization'      => 'NGWebD Digital Solutions',
         ];
 
         return view('admin/certificate/verify', $data);
@@ -327,7 +327,7 @@ class CertificateController extends BaseController
             'internRole'        => $certificate['internship_program'],
             'durationMonths'    => $certificate['duration_months'] ? (int) $certificate['duration_months'] . ' months' : 'N/A',
             'issuedDate'        => $certificate['issued_at'] ? date('F j, Y', strtotime($certificate['issued_at'])) : 'N/A',
-            'organization'      => 'NGWebD Consulting Pvt. Ltd.',
+            'organization'      => 'NGWebD Digital Solutions',
         ]);
     }
 }

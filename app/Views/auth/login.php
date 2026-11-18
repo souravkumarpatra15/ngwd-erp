@@ -299,7 +299,7 @@
 
             <div class="brand-badge">
               <i class="bi bi-stars"></i>
-              NGWebD Consulting Pvt. Ltd.
+              NGWebD Digital Solutions
             </div>
 
             <h1 class="brand-title">
@@ -419,7 +419,7 @@
               <hr class="my-4">
 
               <p class="text-center footer-text mb-0">
-                NGWebD Consulting Pvt. Ltd. &copy; <?= date('Y') ?>
+                NGWebD Digital Solutions &copy; <?= date('Y') ?>
               </p>
 
             </div>

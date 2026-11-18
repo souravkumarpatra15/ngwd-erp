@@ -14,7 +14,7 @@ class InitialSeeder extends Seeder
     {
         // ── Default Settings ───────────────────────────────────
         $settings = [
-            ['key' => 'company_name',    'value' => 'NGWebD Consulting Pvt. Ltd.', 'group' => 'company'],
+            ['key' => 'company_name',    'value' => 'NGWebD Digital Solutions', 'group' => 'company'],
             ['key' => 'company_logo',    'value' => '',                             'group' => 'company'],
             ['key' => 'company_gst',     'value' => '',                             'group' => 'company'],
             ['key' => 'company_pan',     'value' => '',                             'group' => 'company'],

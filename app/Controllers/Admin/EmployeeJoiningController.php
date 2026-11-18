@@ -432,7 +432,7 @@ class EmployeeJoiningController extends BaseController
         <div class="header">
             <div class="logo" alt="NGWebD Logo"></div>
             <h1>Joining Confirmation Letter</h1>
-            <p>NGWebD Consulting Pvt. Ltd.</p>
+            <p>NGWebD Digital Solutions</p>
         </div>
 
         <div class="qr-code">
@@ -469,12 +469,12 @@ class EmployeeJoiningController extends BaseController
 
         <div class="section">
             <h2>Terms and Conditions</h2>
-            <p>By joining NGWebD Consulting Pvt. Ltd., you agree to the terms and conditions of the internship programme.</p>
+            <p>By joining NGWebD Digital Solutions, you agree to the terms and conditions of the internship programme.</p>
             <p>Please report to your mentor on your joining date.</p>
         </div>
 
         <div class="footer">
-            <p>This joining confirmation letter is issued by NGWebD Consulting Pvt. Ltd.<br>
+            <p>This joining confirmation letter is issued by NGWebD Digital Solutions<br>
             Date: <?= date('F j, Y') ?><br>
             For any queries, please contact HR department.</p>
         </div>
@@ -545,7 +545,7 @@ class EmployeeJoiningController extends BaseController
         </div>
 
         <div class="footer">
-            <p>NGWebD Consulting Pvt. Ltd.<br>
+            <p>NGWebD Digital Solutions<br>
             This is a professional employee identification card.</p>
         </div>
     </div>

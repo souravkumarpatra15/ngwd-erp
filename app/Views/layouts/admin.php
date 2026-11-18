@@ -271,7 +271,7 @@
       </div>
 
       <footer class="border-top bg-white px-4 py-2 text-center text-muted small">
-        &copy; <?= date('Y') ?> NGWebD Consulting Pvt. Ltd. &mdash; ERP v1.0
+        &copy; <?= date('Y') ?> NGWebD Digital Solutions &mdash; ERP v1.0
       </footer>
     </div>
   </div>
