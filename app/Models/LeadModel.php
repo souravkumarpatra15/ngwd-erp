@@ -21,8 +21,17 @@ class LeadModel extends Model {
     }
     public function getRecent($limit=5) { return $this->orderBy('created_at','DESC')->limit($limit)->findAll(); }
     public function getConversionChart() {
-        $rows = $this->db->table('leads')->select('status, COUNT(*) as count')->where('deleted_at IS NULL')->groupBy('status')->get()->getResultArray();
-        return array_column($rows,'count','status');
+        // Stable pipeline order → consistent colours/labels on every reload.
+        $order = ['new', 'contacted', 'follow_up', 'proposal_sent', 'negotiation', 'converted', 'lost'];
+        $rows = $this->db->table('leads')->select('status, COUNT(*) as count')
+            ->where('deleted_at IS NULL')->groupBy('status')->get()->getResultArray();
+        $map = array_fill_keys($order, 0);
+        foreach ($rows as $r) {
+            $status = (string) ($r['status'] ?? '');
+            if ($status === '') continue;
+            $map[$status] = (int) $r['count'];
+        }
+        return $map;
     }
     public function search($term) {
         return $this->like('name',$term)->orLike('mobile',$term)->orLike('email',$term)->select('id,name,mobile,email')->limit(10)->findAll();

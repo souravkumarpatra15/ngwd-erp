@@ -1,12 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance - NGWebD ERP</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
-          integrity="sha512-...", crossorigin="anonymous">
-    <style>
+<?= $this->extend('layouts/admin') ?>
+<?= $this->section('content') ?>
+<style>
         .work-mode-badge { font-size: 0.85rem; }
         .duration-badge { font-size: 0.8rem; }
         .status-present { color: #198754; font-weight: bold; }
@@ -17,9 +11,7 @@
         .status-week-off { color: #6f42c1; font-weight: bold; }
         .status-pending { color: #fd7e14; font-weight: bold; }
     </style>
-</head>
-<body>
-    <div class="container-fluid mt-3">
+<div class="container-fluid mt-3">
         <div class="row">
             <div class="col-12">
                 <div class="card shadow-sm">
@@ -154,10 +146,9 @@
         </div>
 
     </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"
-            integrity="sha512-...", crossorigin="anonymous"></script>
-    <script>
+<?= $this->endSection() ?>
+<?= $this->section('scripts') ?>
+<script>
     // Attendance workspace initialization
     document.addEventListener('DOMContentLoaded', function() {
         // Check if we're on the employee workspace
@@ -244,5 +235,4 @@
         }
     });
     </script>
-</body>
-</html>
+<?= $this->endSection() ?>

@@ -1,17 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= esc($title) ?> - NGWebD ERP</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="<?= base_url('assets/css/custom.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/css/admin-modern.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/css/admin-app-theme.css') ?>">
-</head>
-<body>
-    <div class="container-fluid">
+<?= $this->extend('layouts/admin') ?>
+<?= $this->section('content') ?>
+<div class="container-fluid">
         <div class="page-header">
             <h1><?= esc($title) ?></h1>
             <a href="<?= base_url('admin/employees') ?>" class="btn btn-secondary">
@@ -29,7 +18,7 @@
                             <input type="hidden" name="id" value="<?= $employee['id'] ?>">
                             <input type="hidden" name="original_user_id" value="<?= $employee['user_id'] ?>">
 
-                            <div class="row gutters-3">
+                            <div class="row g-3">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="employeeId" class="form-label">Employee ID</label>
@@ -51,7 +40,7 @@
                                 </div>
                             </div>
 
-                            <div class="row gutters-3">
+                            <div class="row g-3">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="departmentId" class="form-label">Department</label>
@@ -80,7 +69,7 @@
                                 </div>
                             </div>
 
-                            <div class="row gutters-3">
+                            <div class="row g-3">
                                 <div class="col-md-4">
                                     <div class="mb-3">
                                         <label for="employmentType" class="form-label">Employment Type</label>
@@ -114,12 +103,12 @@
                                 <div class="col-md-4">
                                     <div class="mb-3">
                                         <label for="joiningDate" class="form-label">Joining Date</label>
-                                        <input type="date" class="form-control" name="joining_date" id="joiningDate" value="<?= $employee['joining_date'] ?>" required>
+                                        <input type="date" class="form-control" name="joining_date" id="joiningDate" value="<?= esc((string) ($employee['joining_date'] ?? '')) ?>" required>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="row gutters-3">
+                            <div class="row g-3">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="emergencyContactName" class="form-label">Emergency Contact Name</label>
@@ -134,7 +123,7 @@
                                 </div>
                             </div>
 
-                            <div class="row gutters-3">
+                            <div class="row g-3">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addressLine1" class="form-label">Address Line 1</label>
@@ -149,7 +138,7 @@
                                 </div>
                             </div>
 
-                            <div class="row gutters-3">
+                            <div class="row g-3">
                                 <div class="col-md-4">
                                     <div class="mb-3">
                                         <label for="city" class="form-label">City</label>
@@ -198,28 +187,4 @@
             </div>
         </div>
     </div>
-
-    <script>
-    // Set the selected user on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        const userSelect = document.getElementById('selectUser');
-        const originalUserId = <?= json_encode($employee['user_id']) ?>;
-        
-        // Find and select the user
-        <?php foreach ($users as $user): ?>
-        if (userSelect.value === '<?= $user['id'] ?>' || userSelect.options[userSelect.selectedIndex].value === '<?= $user['id'] ?>') {
-            // Already handled by set_select
-        }
-        <?php endforeach; ?>
-        
-        // Set the selection based on original user
-        <?php 
-        $userIndex = array_search($employee['user_id'], array_column($users, 'id'));
-        if ($userIndex !== false): 
-        ?>
-        userSelect.selectedIndex = <?= $userIndex + 1 ?>; // +1 because first option is "-- Select User --"
-        <?php endif; ?>
-    });
-    </script>
-</body>
-</html>
+<?= $this->endSection() ?>

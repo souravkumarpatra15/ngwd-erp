@@ -157,9 +157,9 @@ $('#docClientSel').on('change', function() {
   if (!cid) { sel.html('<option value="">— Select client first —</option>'); return; }
   $.get(`${BASE}admin/ajax/projects/${cid}`, data => {
     let opts = '<option value="">— No Project —</option>';
-    data.forEach(p => opts += `<option value="${p.id}">${p.name}</option>`);
+    ngList(data).forEach(p => opts += `<option value="${p.id}">${p.name}</option>`);
     sel.html(opts);
-  });
+  }).fail(() => ngListError('projects'));
 });
 
 // Select2 in modal

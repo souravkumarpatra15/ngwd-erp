@@ -1,17 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= esc($title) ?> - NGWebD ERP</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="<?= base_url('assets/css/custom.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/css/admin-modern.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/css/admin-app-theme.css') ?>">
-</head>
-<body>
-    <div class="container-fluid">
+<?= $this->extend('layouts/admin') ?>
+<?= $this->section('content') ?>
+<div class="container-fluid">
         <div class="page-header">
             <h1><?= esc($title) ?></h1>
             
@@ -149,8 +138,9 @@
         </div>
 
     </div>
-
-    <script>
+<?= $this->endSection() ?>
+<?= $this->section('scripts') ?>
+<script>
     // Accordion functionality for stand-ups
     document.addEventListener('DOMContentLoaded', function() {
         const accordion = document.getElementById('standupAccordion');
@@ -171,5 +161,4 @@
         });
     });
     </script>
-</body>
-</html>
+<?= $this->endSection() ?>

@@ -1,17 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= esc($title) ?> - NGWebD ERP</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="<?= base_url('assets/css/custom.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/css/admin-modern.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/css/admin-app-theme.css') ?>">
-</head>
-<body>
-    <div class="container-fluid">
+<?= $this->extend('layouts/admin') ?>
+<?= $this->section('content') ?>
+<div class="container-fluid">
         <div class="page-header">
             <h1><?= esc($title) ?></h1>
             <a href="<?= base_url('admin/employees') ?>" class="btn btn-secondary">
@@ -26,9 +15,7 @@
                         <form action="<?= base_url('admin/employees/store') ?>" method="post" enctype="multipart/form-data" id="employeeForm">
                             <?= csrf_field() ?>
 
-                            <input type="hidden" name="user_id" id="userId" required>
-
-                            <div class="row gutters-3">
+                            <div class="row g-3">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="employeeId" class="form-label">Employee ID</label>
@@ -50,7 +37,7 @@
                                 </div>
                             </div>
 
-                            <div class="row gutters-3">
+                            <div class="row g-3">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="departmentId" class="form-label">Department</label>
@@ -79,7 +66,7 @@
                                 </div>
                             </div>
 
-                            <div class="row gutters-3">
+                            <div class="row g-3">
                                 <div class="col-md-4">
                                     <div class="mb-3">
                                         <label for="employmentType" class="form-label">Employment Type</label>
@@ -118,7 +105,7 @@
                                 </div>
                             </div>
 
-                            <div class="row gutters-3">
+                            <div class="row g-3">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="emergencyContactName" class="form-label">Emergency Contact Name</label>
@@ -133,7 +120,7 @@
                                 </div>
                             </div>
 
-                            <div class="row gutters-3">
+                            <div class="row g-3">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addressLine1" class="form-label">Address Line 1</label>
@@ -148,7 +135,7 @@
                                 </div>
                             </div>
 
-                            <div class="row gutters-3">
+                            <div class="row g-3">
                                 <div class="col-md-4">
                                     <div class="mb-3">
                                         <label for="city" class="form-label">City</label>
@@ -189,21 +176,4 @@
             </div>
         </div>
     </div>
-
-    <script>
-    // Populate user selector on page load
-    document.getElementById('selectUser').addEventListener('change', function() {
-        const userId = this.value;
-        if (userId) {
-            $.ajax({
-                url: '<?= base_url("api/users/") ?>' + userId,
-                type: 'GET',
-                success: function(response) {
-                    // Could populate additional fields from user record
-                }
-            });
-        }
-    });
-    </script>
-</body>
-</html>
+<?= $this->endSection() ?>

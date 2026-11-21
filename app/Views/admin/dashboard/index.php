@@ -79,25 +79,52 @@ foreach ($cards as $c): ?>
 <!-- Charts Row -->
 <div class="row g-3 mb-4">
 <?php if (!empty($canViewFinancials)): ?>
-  <div class="col-md-8">
+  <div class="col-xl-8 col-lg-7">
     <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white border-0 py-3">
-        <h6 class="mb-0 fw-semibold"><i class="bi bi-bar-chart me-2 text-primary"></i>Monthly Revenue — <?= date('Y') ?></h6>
+      <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+        <div>
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-bar-chart me-2 text-primary"></i>Monthly Revenue — <?= date('Y') ?></h6>
+          <div class="text-muted small mt-1">Payments received per month</div>
+        </div>
       </div>
-      <div class="card-body pt-0"><canvas id="revenueChart" height="80"></canvas></div>
+      <div class="card-body pt-0">
+        <div class="ng-chart-box" style="height:260px"><canvas id="revenueChart"></canvas></div>
+      </div>
     </div>
   </div>
-  <div class="col-md-4">
+  <div class="col-xl-4 col-lg-5">
 <?php else: ?>
-  <div class="col-md-12">
+  <div class="col-12">
+<?php endif; ?>
     <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white border-0 py-3">
-        <h6 class="mb-0 fw-semibold"><i class="bi bi-pie-chart me-2 text-success"></i>Lead Status</h6>
+      <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-start">
+        <div>
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-pie-chart me-2 text-success"></i>Lead Status</h6>
+          <div class="text-muted small mt-1">Pipeline distribution</div>
+        </div>
+        <span class="badge rounded-pill text-bg-light border"><?= (int) array_sum($lead_conversion_chart ?? []) ?> total</span>
       </div>
-      <div class="card-body pt-0"><canvas id="leadChart" height="140"></canvas></div>
+      <div class="card-body pt-1">
+        <?php if ((int) array_sum($lead_conversion_chart ?? []) === 0): ?>
+          <div class="text-center py-5">
+            <div class="empty-activity-icon mb-3"><i class="bi bi-pie-chart"></i></div>
+            <h6 class="fw-semibold mb-1">No leads yet</h6>
+            <p class="text-muted small mb-3">Lead status will appear here once the first lead is added.</p>
+            <a href="<?= base_url('admin/leads/create') ?>" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Lead</a>
+          </div>
+        <?php else: ?>
+          <div class="ng-chart-box ng-doughnut-box" style="height:220px">
+            <canvas id="leadChart"></canvas>
+            <div class="ng-doughnut-center" aria-hidden="true">
+              <span id="leadCenterTotal"><?= (int) array_sum($lead_conversion_chart ?? []) ?></span>
+              <small>leads</small>
+            </div>
+          </div>
+          <div id="leadLegend" class="ng-chart-legend"></div>
+        <?php endif; ?>
+      </div>
     </div>
   </div>
-<?php endif; ?>
 </div>
 
 <!-- Widgets Row -->
@@ -214,23 +241,125 @@ foreach ($cards as $c): ?>
 <?= $this->section('scripts') ?>
 <script>
 <?php if (!empty($canViewFinancials)): ?>
-const revenueData = <?= json_encode(array_values($monthly_revenue_chart)) ?>;
-new Chart(document.getElementById('revenueChart'), {
-  type: 'bar',
-  data: { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-    datasets: [{ label:'Revenue (₹)', data: revenueData, backgroundColor:'rgba(13,110,253,.7)', borderRadius:4 }]
-  },
-  options: { responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,ticks:{callback:v=>'₹'+(v/1000).toFixed(0)+'K'}}}}
-});
+(function () {
+  const el = document.getElementById('revenueChart');
+  if (!el) return;
+  const revenueData = <?= json_encode(array_values($monthly_revenue_chart ?? array_fill(0, 12, 0))) ?>;
+  const compact = v => {
+    const n = Number(v) || 0;
+    if (n >= 10000000) return '₹' + (n / 10000000).toFixed(n % 10000000 ? 1 : 0) + 'Cr';
+    if (n >= 100000) return '₹' + (n / 100000).toFixed(n % 100000 ? 1 : 0) + 'L';
+    if (n >= 1000) return '₹' + Math.round(n / 1000) + 'K';
+    return '₹' + n;
+  };
+  new Chart(el, {
+    type: 'bar',
+    data: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      datasets: [{
+        label: 'Revenue',
+        data: revenueData,
+        backgroundColor: 'rgba(79,70,229,.75)',
+        hoverBackgroundColor: 'rgba(79,70,229,1)',
+        borderRadius: 6,
+        maxBarThickness: 34
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 350 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(17,24,39,.92)',
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: { label: ctx => ' ₹' + Number(ctx.parsed.y || 0).toLocaleString('en-IN') }
+        }
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: 'rgba(17,24,39,.06)' }, border: { display: false }, ticks: { callback: compact, font: { size: 11 } } },
+        x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+})();
 <?php endif; ?>
 
-const leadData = <?= json_encode($lead_conversion_chart) ?>;
-new Chart(document.getElementById('leadChart'), {
-  type: 'doughnut',
-  data: { labels: Object.keys(leadData).map(k=>k.replace(/_/g,' ')),
-    datasets: [{ data: Object.values(leadData), backgroundColor:['#0d6efd','#198754','#ffc107','#17a2b8','#dc3545','#6f42c1','#fd7e14'] }]
-  },
-  options: { responsive:true, plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}} }
-});
+(function () {
+  const el = document.getElementById('leadChart');
+  if (!el) return;
+
+  const counts = <?= json_encode($lead_conversion_chart ?? []) ?>;
+  const ORDER = ['new', 'contacted', 'follow_up', 'proposal_sent', 'negotiation', 'converted', 'lost'];
+  const LABELS = {
+    new: 'New', contacted: 'Contacted', follow_up: 'Follow-up',
+    proposal_sent: 'Proposal sent', negotiation: 'Negotiation',
+    converted: 'Converted', lost: 'Lost'
+  };
+  const COLORS = {
+    new: '#6366f1', contacted: '#0ea5e9', follow_up: '#f59e0b',
+    proposal_sent: '#8b5cf6', negotiation: '#14b8a6',
+    converted: '#22c55e', lost: '#ef4444'
+  };
+
+  const keys = Object.keys(counts)
+    .filter(k => Number(counts[k]) > 0)
+    .sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
+  if (!keys.length) return;
+
+  const labels = keys.map(k => LABELS[k] || k.replace(/_/g, ' '));
+  const values = keys.map(k => Number(counts[k]));
+  const colors = keys.map(k => COLORS[k] || '#94a3b8');
+  const total = values.reduce((a, b) => a + b, 0);
+  const pct = v => (total ? Math.round((v / total) * 100) : 0) + '%';
+
+  document.getElementById('leadCenterTotal')?.replaceChildren(document.createTextNode(String(total)));
+
+  const legend = document.getElementById('leadLegend');
+  if (legend) {
+    legend.innerHTML = keys.map((k, i) =>
+      '<div class="ng-legend-item" title="' + labels[i] + ': ' + values[i] + '">' +
+        '<span class="ng-legend-dot" style="background:' + colors[i] + '"></span>' +
+        '<span class="ng-legend-label">' + labels[i] + '</span>' +
+        '<span class="ng-legend-value">' + values[i] + '<small>' + pct(values[i]) + '</small></span>' +
+      '</div>'
+    ).join('');
+  }
+
+  new Chart(el, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderColor: '#fff',
+        borderWidth: 2,
+        hoverOffset: 6,
+        spacing: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '72%',
+      animation: { duration: 350 },
+      layout: { padding: 4 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(17,24,39,.92)',
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            label: ctx => ' ' + ctx.label + ': ' + ctx.parsed + ' (' + pct(ctx.parsed) + ')'
+          }
+        }
+      }
+    }
+  });
+})();
 </script>
 <?= $this->endSection() ?>

@@ -36,6 +36,11 @@ class DashboardController extends BaseController
         // Merge role-specific with common data
         $data = array_merge($roleDashboard, $commonData);
 
+        // The dashboard view reads the camelCase key; keep both spellings so
+        // older partials that use the snake_case key keep working too.
+        $data['canViewFinancials'] = $canViewFinancials;
+        $data['can_view_financials'] = $canViewFinancials;
+
         // Add role-specific metadata
         $data['user_role'] = $role;
         $data['role_dashboard'] = $role;

@@ -309,9 +309,9 @@
     if (!cid) return;
     $.get(`<?= base_url('admin/ajax/projects/') ?>${cid}`, data => {
       let opts = '<option value="">— No Project —</option>';
-      data.forEach(p => opts += `<option value="${p.id}">${p.name}</option>`);
+      ngList(data).forEach(p => opts += `<option value="${p.id}">${p.name}</option>`);
       $('#projectSelect').html(opts);
-    });
+    }).fail(() => ngListError('projects'));
     const type = $('#invoiceForType').val();
     if (type === 'domain') loadDomains(cid);
     if (type === 'hosting') loadHostings(cid);
@@ -333,10 +333,10 @@
   if (prefill.client_id) {
     $.get(`<?= base_url('admin/ajax/projects/') ?>${prefill.client_id}`, data => {
       let opts = '<option value="">— No Project —</option>';
-      data.forEach(p => opts += `<option value="${p.id}">${p.name}</option>`);
-      $('#projectSelect').html(opts);
+      ngList(data).forEach(p => opts += `<option value="${p.id}" ${prefill.project_id == p.id ? 'selected' : ''}>${p.name}</option>`);
+      $('#projectSelect').html(opts).trigger('change');
       if (prefill.milestone_id) loadMilestones('', null); // shown only after a project is chosen manually
-    });
+    }).fail(() => ngListError('projects'));
     if (prefill.type === 'domain') loadDomains(prefill.client_id, prefill.domain_id);
     if (prefill.type === 'hosting') loadHostings(prefill.client_id, prefill.hosting_id);
   }

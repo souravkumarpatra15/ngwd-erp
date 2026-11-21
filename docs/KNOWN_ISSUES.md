@@ -249,3 +249,23 @@ removed after verification)
 2. Resolve PHPUnit bootstrap for automated regression suite (Medium)
 3. Ensure department session data for all authenticated users (Low)
 4. Complete remaining informational enhancements (Informational)
+## Audit Update — 2026-11-19
+
+### Resolved
+- Chat message visibility: `View::include()` in CI 4.7.3 ignores the second
+  argument for view data; bubbles rendered empty (`data-mid="0"`). Fixed with
+  `$this->setData(['m' => $m])->include(...)`.
+- Sidebar responsive drawer did not open when icons-only mode had been persisted
+  on desktop (`.drawer-open` lost the specificity battle to the collapsed rule).
+- Payment-create invoice/project/milestone selects showed the raw AJAX envelope;
+  all consumers now use `ngList()`/`ngListError()`.
+- Dashboard `canViewFinancials` (snake) vs `$canViewFinancials` (camel) mismatch.
+- Employee list gated by manage instead of view; attendance others-view gate.
+
+### Open / not exercised
+- Outbound WhatsApp send (MSG91/Graph API credentials) not called; UI error path
+  is implemented but delivery is unverified.
+- Cross-role matrix (hr_manager, project_manager, team_leader, intern, client)
+  requires staging accounts; only superadmin sessions were exercised here.
+- Live MySQL host `sdb-81.hosting.stackcp.net` unreachable from the audit host.
+- PHPUnit bootstrap (TESTPATH) still unresolved; verification was E2E/browser.

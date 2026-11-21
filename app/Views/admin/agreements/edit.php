@@ -103,9 +103,9 @@ $('#clientSel').on('change', function() {
   if (!cid) { $('#projectSel').html('<option value="">— No Project —</option>'); return; }
   $.get(`${BASE}admin/ajax/projects/${cid}`, data => {
     let opts = '<option value="">— No Project —</option>';
-    data.forEach(p => opts += `<option value="${p.id}" ${p.id==currentProjectId?'selected':''}>${p.name}</option>`);
+    ngList(data).forEach(p => opts += `<option value="${p.id}" ${p.id==currentProjectId?'selected':''}>${p.name}</option>`);
     $('#projectSel').html(opts);
-  });
+  }).fail(() => ngListError('projects'));
 });
 </script>
 <?= $this->endSection() ?>

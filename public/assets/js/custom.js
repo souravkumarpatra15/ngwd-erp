@@ -24,6 +24,24 @@ $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
 const CURRENCY_SYMBOLS = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AUD: 'A$', CAD: 'C$', AED: 'د.إ', SGD: 'S$' };
 function curSym(code) { return CURRENCY_SYMBOLS[code] || (code ? code + ' ' : '₹'); }
 
+// ── AJAX list normaliser ─────────────────────────────────────────
+// Admin AJAX endpoints answer with { status: 'success', data: [...] }
+// (invoices, projects, clients…). A few older endpoints answer with a
+// bare array. Callers must never assume which one arrived — use this
+// to get a guaranteed array before .forEach()/.map().
+function ngList(res) {
+  if (Array.isArray(res)) return res;
+  if (res && Array.isArray(res.data)) return res.data;
+  if (res && Array.isArray(res.items)) return res.items;
+  return [];
+}
+
+// Standard failure surface for list-loading AJAX calls: one toast, no
+// uncaught console errors, no broken dropdowns.
+function ngListError(label) {
+  if (typeof showToast === 'function') showToast('Could not load ' + label + '. Please retry.', 'error');
+}
+
 // Belt-and-braces: after ANY jQuery AJAX request finishes — success or
 // error — make sure the loader isn't left spinning. Individual showLoader()
 // call sites that only hide it on success (missing a .fail() handler) are

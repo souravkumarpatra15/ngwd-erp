@@ -382,7 +382,8 @@ class PmsAuthorizationService
     /** Can view employee list (HR/Finance/Manager) */
     public function canViewEmployeeList(?string $role, ?string $department = null): bool
     {
-        if (in_array(strtolower((string) $role), ['superadmin', 'admin', 'manager'], true)) {
+        $role = strtolower((string) $role);
+        if (in_array($role, ['superadmin', 'admin', 'manager', 'hr_manager'], true)) {
             return true;
         }
         return strtolower((string) $department) === 'hr';

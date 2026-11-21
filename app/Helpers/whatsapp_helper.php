@@ -148,61 +148,116 @@ if (!function_exists('normalizeInboundWhatsAppMessage')) {
     {
         $data = $in['data'] ?? $in;
 
-        // messages: stringified JSON array → first entry merged under data.
-        if (isset($data['messages']) && is_string($data['messages'])) {
-            $arr = json_decode($data['messages'], true);
+        // messages: JSON string OR array → first entry merged under data.
+        if (isset($data['messages'])) {
+            $arr = is_string($data['messages']) ? json_decode($data['messages'], true) : $data['messages'];
             if (is_array($arr) && isset($arr[0]) && is_array($arr[0])) {
                 $data = array_merge($data, $arr[0]);
             }
         }
 
-        // content: array | JSON string | plain string.
+        // content: array | JSON string | plain string | list of parts.
+        // MSG91 sometimes sends content as [{"type":"text","text":"hi"}] and
+        // sometimes as {"type":"text","text":"hi"}. Both must yield the text,
+        // otherwise a real inbound message looks like a status report.
         $content = $data['content'] ?? null;
         if (is_string($content)) {
             $decoded = json_decode($content, true);
             $content = is_array($decoded) ? $decoded : ['text' => $content];
         }
+        if (is_array($content) && array_is_list($content) && isset($content[0]) && is_array($content[0])) {
+            $content = $content[0];
+        }
         if (! is_array($content)) $content = [];
+
+        // Some payloads nest the body one level deeper.
+        $payload = is_array($content['payload'] ?? null) ? $content['payload'] : [];
 
         $type = strtolower((string) (
             $data['contentType'] ?? $data['messageType'] ?? $data['message_type']
-            ?? $content['type'] ?? 'text'
+            ?? $content['type'] ?? ''
         ));
+        if ($type === '') {
+            foreach (['image', 'video', 'document', 'audio', 'sticker', 'location', 'contacts'] as $guess) {
+                if (isset($content[$guess]) || isset($payload[$guess])) { $type = $guess; break; }
+            }
+        }
+
         $text = trim((string) (
             $content['text'] ?? $content['body'] ?? $content['caption'] ??
+            $content['text']['body'] ?? $content['button']['text'] ??
+            $content['interactive']['button_reply']['title'] ??
+            $content['interactive']['list_reply']['title'] ??
+            $payload['text'] ?? $payload['body'] ??
             $data['text'] ?? $data['body'] ?? $data['caption'] ?? ''
         ));
+
         $media = trim((string) (
             $content['url'] ?? $content['link'] ?? $content['media_url'] ??
-            $data['url'] ?? ''
+            $content['image']['link'] ?? $content['video']['link'] ??
+            $content['document']['link'] ?? $content['audio']['link'] ??
+            $content['sticker']['link'] ?? $payload['url'] ?? $data['url'] ?? ''
         ));
+
         $providerId = (string) (
             $data['uuid'] ?? $data['requestId'] ?? $data['message_id'] ?? $data['messageId']
-            ?? $content['id'] ?? $content['message_id'] ?? ''
+            ?? $data['id'] ?? $content['id'] ?? $content['message_id'] ?? ''
         );
+
         // MSG91 direction "0" = inbound. Anything else with content is
         // still stored inbound; content-less payloads are status reports.
         $direction = (string) ($data['direction'] ?? '0');
         $isInbound = $direction === '0' || strtolower($direction) === 'inbound' || strtolower($direction) === 'mo';
 
+        $event = (string) ($data['eventName'] ?? $data['event'] ?? $in['eventName'] ?? $in['event'] ?? '');
+        $eventLower = strtolower($event);
+        $isInboundEvent = $isInbound
+            || str_contains($eventLower, 'received')
+            || str_contains($eventLower, 'inbound')
+            || $eventLower === 'mo';
+        $looksLikeStatus = (bool) preg_match('/\b(sent|delivered|read|failed|deleted|status|report)\b/i', $eventLower);
+
+        // Media-only / interactive messages carry no text — keep them.
+        $isReport = $text === '' && $media === ''
+            && $providerId !== ''
+            && ! $isInboundEvent
+            && ($looksLikeStatus || $eventLower === '');
+
+        $contactName = trim((string) (
+            $data['customerName'] ?? $data['customer_name'] ?? $data['profile']['name']
+            ?? $data['contacts'][0]['profile']['name'] ?? ''
+        ));
+
+        if (! $isReport && ! $isInbound && $providerId === '') {
+            // Outbound echo without an id is still a real message.
+            $isInbound = $direction === '0';
+        }
+
+        $displayText = $text;
+        if ($displayText === '' && $media === '' && ! $isReport && $isInbound) {
+            // Render a readable marker instead of an empty bubble for
+            // unsupported inbound types (location, contacts, reaction...).
+            $displayText = '[' . ($type !== '' ? $type : 'unsupported') . ' message]';
+        }
+
         return [
             'provider_message_id' => $providerId,
             'phone_number'        => wa_to((string) (
                 $data['customerNumber'] ?? $data['customer_number'] ?? $data['from']
-                ?? $data['sender'] ?? $data['phone'] ?? $data['mobile'] ?? ''
+                ?? $data['sender'] ?? $data['phone'] ?? $data['mobile'] ?? $data['waId'] ?? ''
             )),
-            'contact_name'      => trim((string) ($data['customerName'] ?? $data['customer_name'] ?? '')),
+            'contact_name'      => $contactName,
             'integrated_number' => wa_to((string) ($data['integratedNumber'] ?? $data['integrated_number'] ?? '')),
             'message_type'      => $type !== '' ? $type : 'text',
-            'message_text'      => $text,
+            'message_text'      => $displayText,
             'media_url'         => $media,
-            'media_caption'     => trim((string) ($content['caption'] ?? $data['caption'] ?? '')),
-            'event'             => (string) ($data['eventName'] ?? $data['event'] ?? ''),
+            'media_caption'     => trim((string) ($content['caption'] ?? $payload['caption'] ?? $data['caption'] ?? '')),
+            'event'             => $event,
             'status_hint'       => strtolower((string) ($data['status'] ?? $data['reason'] ?? '')),
             'occurred_at'       => (string) ($data['ts'] ?? ''),
             'raw_payload'       => $in,
             'direction'         => $isInbound ? 'inbound' : 'outbound',
-            'is_report'         => $text === '' && $media === '' && $providerId !== '',
+            'is_report'         => $isReport,
         ];
     }
 }

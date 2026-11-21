@@ -282,9 +282,9 @@
     if (!clientId) { $(targetSelect).html('<option value="">— No Project —</option>'); return; }
     $.get(`<?= base_url('admin/ajax/projects/') ?>${clientId}`, data => {
       let opts = '<option value="">— No Project —</option>';
-      data.forEach(p => opts += `<option value="${p.id}" ${selectedId == p.id ? 'selected' : ''}>${p.name}</option>`);
+      ngList(data).forEach(p => opts += `<option value="${p.id}" ${selectedId == p.id ? 'selected' : ''}>${p.name}</option>`);
       $(targetSelect).html(opts);
-    });
+    }).fail(() => ngListError('projects'));
   }
 
   $('#addClientSelect').on('change', function() { loadProjects($(this).val(), '#addProjectSelect'); });

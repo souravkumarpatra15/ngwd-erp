@@ -32,7 +32,7 @@ class EmployeeController extends BaseController
     {
         $role = session()->get('user_role');
         $auth = new \App\Services\PmsAuthorizationService();
-        if (!$auth->canManageEmployees($role)) {
+        if (!$auth->canViewEmployeeList($role, session()->get('department'))) {
             return redirect()->to('/admin/dashboard')->with('error', 'You do not have permission to access employee management.');
         }
 
@@ -298,14 +298,74 @@ class EmployeeController extends BaseController
 
     public function show($id = null)
     {
-        $employee = $this->employeeModel->withDetails()->find($id);
+        $auth = new \App\Services\PmsAuthorizationService();
+        $role = (string) session()->get('user_role');
+        $employee = $this->employeeModel->withDetails()->find((int) $id);
+
         if (!$employee) {
-            return $this->jsonError('Employee not found.');
+            if ($this->request->isAJAX()) return $this->jsonError('Employee not found.');
+            return redirect()->to('admin/employees')->with('error', 'Employee not found.');
         }
 
-        return $this->response->setJSON([
-            'status' => 'success',
-            'data' => $employee,
+        $isOwnProfile = (int) ($employee['user_id'] ?? 0) === (int) session()->get('user_id');
+        if (!$isOwnProfile && !$auth->canViewEmployeeList($role, session()->get('department'))) {
+            if ($this->request->isAJAX()) return $this->jsonError('You do not have permission to view this employee.');
+            return redirect()->to('admin/dashboard')->with('error', 'You do not have permission to view this employee.');
+        }
+
+        // AJAX clients (legacy) keep the JSON contract.
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => 'success', 'data' => $employee]);
+        }
+
+        $db = \Config\Database::connect();
+        $userId = (int) ($employee['user_id'] ?? 0);
+
+        // Attendance — last 30 days (attendance.employee_id stores employees.id).
+        $since = date('Y-m-d', strtotime('-30 days'));
+        $attendance = $db->table('attendance')
+            ->where('employee_id', (int) $employee['id'])
+            ->where('date >=', $since)
+            ->orderBy('date', 'DESC')
+            ->limit(30)->get()->getResultArray();
+
+        $attendanceSummary = ['present' => 0, 'absent' => 0, 'half_day' => 0, 'leave' => 0, 'work_from_home' => 0, 'hours' => 0.0];
+        foreach ($attendance as $row) {
+            $key = (string) ($row['status'] ?? 'present');
+            if (isset($attendanceSummary[$key])) $attendanceSummary[$key]++;
+            $attendanceSummary['hours'] += (float) ($row['hours_worked'] ?? 0);
+        }
+
+        // Recent activity for the linked user (never expose other modules' rows).
+        $activity = [];
+        if ($userId > 0) {
+            $activity = $db->table('activities a')
+                ->select('a.*, u.name AS user_name')
+                ->join('users u', 'u.id = a.user_id', 'left')
+                ->where('a.user_id', $userId)
+                ->orderBy('a.created_at', 'DESC')
+                ->limit(15)->get()->getResultArray();
+        }
+
+        // Onboarding checklist (employee or user scoped).
+        $onboarding = $db->table('onboarding_checklists')
+            ->groupStart()
+                ->where('employee_id', (int) $employee['id'])
+                ->orWhere('user_id', $userId)
+            ->groupEnd()
+            ->orderBy('order_index', 'ASC')
+            ->get()->getResultArray();
+
+        return view('admin/employees/show', [
+            'title' => ($employee['user_name'] ?? 'Employee') . ' — Profile',
+            'employee' => $employee,
+            'attendance' => $attendance,
+            'attendanceSummary' => $attendanceSummary,
+            'activities' => $activity,
+            'onboarding' => $onboarding,
+            'isOwnProfile' => $isOwnProfile,
+            'canManage' => $auth->canManageEmployees($role),
+            'canViewSensitive' => $auth->canManageEmployees($role) || $isOwnProfile,
         ]);
     }
 

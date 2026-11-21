@@ -36,9 +36,9 @@ class AttendanceController extends BaseController
         $isSelfView = $employeeId === null;
 
         if ($employeeId !== null) {
-            // HR/managers may view others; employees only their own
-            if (!in_array($role, ['intern', 'permanent_employee'], true) && !$auth->canManageEmployees($role)) {
-                return redirect()->to('/admin/dashboard')->with('error', 'You do not have permission to access attendance.');
+            // HR may view anyone; other roles only their own attendance.
+            if (!$auth->canManageAttendance($role)) {
+                return redirect()->to('/admin/dashboard')->with('error', 'You do not have permission to view other employees\' attendance.');
             }
         } elseif ($myEmployeeId === null && !in_array($role, ['intern', 'permanent_employee'], true)) {
             return redirect()->to('/admin/dashboard')->with('error', 'No employee record is linked to your account.');

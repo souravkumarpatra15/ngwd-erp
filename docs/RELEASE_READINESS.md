@@ -148,3 +148,29 @@ programmes/applications, offer letter OFF-E2E-0001, certificate
 NGW-CERT-2026-840491, attendance rows, salary components, activity logs,
 cookie jars, and all one-off helper scripts. `.env` restored to
 `CI_ENVIRONMENT = production`.
+
+## Audit Update — 2026-11-19
+
+- Sidebar/topbar rebuilt and made responsive: 264 px expanded, 78 px icons-only
+  (persisted in localStorage), off-canvas drawer at <=991.98 px with backdrop,
+  Escape/close/link-click dismissal, scroll lock, safe-area footer padding.
+  Verified at 320/360/390/480/576/667/768/800/991/992/1024/1280/1440 px with no
+  horizontal overflow. Fixed the drawer failing to open when an icons-only
+  state was persisted on desktop (CSS specificity on `.drawer-open`).
+- Chat: server-rendered bubbles were blank because CodeIgniter 4.7 `View::include()`
+  treats its second argument as render options, not view data. The bubble partial
+  now receives `$m` via `setData()`. Inbound/outbound text, time, ticks, day pills
+  and unread badges verified against seeded rows; list/messages polling contract
+  (`{status,data}`) verified.
+- Payments: create form AJAX now consumes the `{status,data}` envelope
+  (`ngList`), fills invoices/projects/milestones, locks currency, shows inline
+  errors and never throws in the console. Verified with a seeded client,
+  invoice, project and milestone.
+- Dashboard: financial cards and revenue chart render again (`canViewFinancials`
+  key mismatch); lead-status doughnut always renders with pipeline order.
+- HR: employee list/profile pages render inside the admin layout with corrected
+  permission gates; 24 admin/HR/team-pilot pages loaded with zero console errors.
+
+Still required before production: multi-role acceptance testing on staging,
+outbound WhatsApp/MSG91 delivery, and validation against the live database
+(not reachable from the development host during this audit).

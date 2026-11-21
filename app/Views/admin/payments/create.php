@@ -72,6 +72,39 @@
     $('#paySymbol').text(symbols[code]);
     $('#currencyHelp').text(locked ? 'Currency is locked to the selected invoice/milestone.' : 'Select the currency for a general payment.');
   }
+
+  // Inline, dismissible error banner (never a raw alert or console error).
+  function showFormError(msg) {
+    let $box = $('#paymentAjaxError');
+    if (!$box.length) {
+      $box = $('<div id="paymentAjaxError" class="alert alert-warning d-flex align-items-start gap-2 py-2" role="alert"></div>').prependTo('.card-body');
+    }
+    $box.html('<i class="bi bi-exclamation-triangle mt-1"></i><div class="flex-grow-1 small"></div>')
+      .find('.flex-grow-1').text(msg);
+    $box.show();
+  }
+  function clearFormError() { $('#paymentAjaxError').hide(); }
+
+  // Load a { status, data } (or bare array) endpoint into a select.
+  function loadList(url, label, $select, placeholder, render) {
+    $select.prop('disabled', true).trigger('change.select2');
+    return $.getJSON(url)
+      .done(res => {
+        const rows = ngList(res);
+        let opts = `<option value="">${placeholder}</option>`;
+        rows.forEach(row => { opts += render(row); });
+        if (!rows.length) opts = `<option value="">${label === 'invoices' ? 'No open invoices for this client' : 'No projects for this client'}</option>`;
+        $select.html(opts).trigger('change.select2');
+      })
+      .fail(xhr => {
+        $select.html(`<option value="">${placeholder}</option>`).trigger('change.select2');
+        const apiMsg = xhr.responseJSON && xhr.responseJSON.message;
+        showFormError(apiMsg || ('Could not load ' + label + '. Please retry.'));
+        ngListError(label);
+      })
+      .always(() => $select.prop('disabled', false).trigger('change.select2'));
+  }
+
   if (typeof $.fn.select2 !== 'undefined') $('.select2').select2({
     theme: 'bootstrap-5',
     width: '100%'
@@ -82,27 +115,22 @@
   });
   $('#clientSel').on('change', function() {
     const cid = $(this).val();
+    clearFormError();
     $('#invoiceSel').html('<option value="">None — general payment</option>').trigger('change.select2');
     $('#projectSel').html('<option value="">None</option>').trigger('change.select2');
     $('#milestoneSel').html('<option value="">None — select project first</option>');
     setCurrency($('#currencySel').val() || 'INR', false);
     if (!cid) return;
-    $.getJSON(`${BASE}admin/ajax/invoices/${cid}`, res => {
-      let opts = '<option value="">None — general payment</option>';
-      (res.data || []).forEach(inv => {
+
+    loadList(`${BASE}admin/ajax/invoices/${cid}`, 'invoices', $('#invoiceSel'),
+      'None — general payment', inv => {
         const cur = String(inv.currency || 'INR').toUpperCase();
-        const bal = parseFloat(inv.balance_due || 0).toLocaleString('en-IN', {
-          minimumFractionDigits: 2
-        });
-        opts += `<option value="${inv.id}" data-amount="${inv.balance_due}" data-currency="${cur}">${inv.invoice_number} — ${symbols[cur]||cur+' '}${bal} due</option>`;
+        const bal = parseFloat(inv.balance_due || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        return `<option value="${inv.id}" data-amount="${inv.balance_due}" data-currency="${cur}">${inv.invoice_number} — ${symbols[cur] || cur + ' '}${bal} due</option>`;
       });
-      $('#invoiceSel').html(opts).trigger('change.select2');
-    });
-    $.getJSON(`${BASE}admin/ajax/projects/${cid}`, data => {
-      let opts = '<option value="">None</option>';
-      (data || []).forEach(p => opts += `<option value="${p.id}">${p.name}</option>`);
-      $('#projectSel').html(opts).trigger('change.select2');
-    });
+
+    loadList(`${BASE}admin/ajax/projects/${cid}`, 'projects', $('#projectSel'),
+      'None', p => `<option value="${p.id}">${p.name}</option>`);
   });
   $('#invoiceSel').on('change', function() {
     const opt = $(this).find(':selected'),
@@ -118,19 +146,16 @@
   });
   $('#projectSel').on('change', function() {
     const pid = $(this).val();
+    $('#milestoneSel').html('<option value="">None — select project first</option>');
     if (!pid) {
-      $('#milestoneSel').html('<option value="">None — select project first</option>');
       if (!$('#invoiceSel').val()) setCurrency($('#currencySel').val() || 'INR', false);
       return;
     }
-    $.getJSON(`${BASE}admin/milestones/by-project/${pid}`, res => {
-      let opts = '<option value="">None</option>';
-      (res.data || []).forEach(ms => {
+    loadList(`${BASE}admin/milestones/by-project/${pid}`, 'milestones', $('#milestoneSel'),
+      'None', ms => {
         const cur = String(ms.currency || 'INR').toUpperCase();
-        opts += `<option value="${ms.id}" data-currency="${cur}">${ms.title} — ${symbols[cur]||cur+' '}${parseFloat(ms.amount).toLocaleString('en-IN')} (${ms.status})</option>`;
+        return `<option value="${ms.id}" data-currency="${cur}">${ms.title} — ${symbols[cur] || cur + ' '}${parseFloat(ms.amount).toLocaleString('en-IN')} (${ms.status})</option>`;
       });
-      $('#milestoneSel').html(opts);
-    });
   });
   $('#milestoneSel').on('change', function() {
     const cur = String($(this).find(':selected').data('currency') || '').toUpperCase();

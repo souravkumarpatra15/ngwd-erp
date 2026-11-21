@@ -38,10 +38,12 @@ class WhatsappConversationModel extends Model
         elseif (in_array($filter, ['unknown'], true)) $b->where('contact_type', 'unknown');
         $search = trim((string) $search);
         if ($search !== '') {
-            $b->groupStart()
-                ->like('contact_name', $search)
-                ->orLike('phone_number', preg_replace('/\D/', '', $search))
-              ->groupEnd();
+            $digits = preg_replace('/\D/', '', $search);
+            $b->groupStart()->like('contact_name', $search);
+            if ($digits !== '') {
+                $b->orLike('phone_number', $digits);
+            }
+            $b->groupEnd();
         }
         return $b->orderBy('last_message_at', 'DESC')->orderBy('id', 'DESC')->limit(max(1, $limit))->get()->getResultArray();
     }

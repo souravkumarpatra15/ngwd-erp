@@ -255,9 +255,9 @@ $('#clientSelect').on('change', function() {
   const cid = $(this).val();
   $.get(`<?= base_url('admin/ajax/projects/') ?>${cid}`, data => {
     let opts = '<option value="">— No Project —</option>';
-    data.forEach(p => opts += `<option value="${p.id}">${p.name}</option>`);
+    ngList(data).forEach(p => opts += `<option value="${p.id}">${p.name}</option>`);
     $('#projectSelect').html(opts);
-  });
+  }).fail(() => ngListError('projects'));
   const type = $('#invoiceForType').val();
   if (type === 'domain') loadDomains(cid);
   if (type === 'hosting') loadHostings(cid);
@@ -271,9 +271,9 @@ const currentProjectId = '<?= $invoice['project_id'] ?>';
 const currentClientId  = '<?= $invoice['client_id'] ?>';
 $.get('<?= base_url('admin/ajax/projects/') ?><?= $invoice['client_id'] ?>', data => {
   let opts = '<option value="">— No Project —</option>';
-  data.forEach(p => opts += `<option value="${p.id}" ${p.id==currentProjectId?'selected':''}>${p.name}</option>`);
+  ngList(data).forEach(p => opts += `<option value="${p.id}" ${p.id==currentProjectId?'selected':''}>${p.name}</option>`);
   $('#projectSelect').html(opts);
-});
+}).fail(() => ngListError('projects'));
 
 // Prefill the For-type picker with this invoice's existing linkage
 const initialForType = $('#invoiceForType').val();

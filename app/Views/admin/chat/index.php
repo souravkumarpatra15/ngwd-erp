@@ -13,13 +13,19 @@
 .tick.read { color: #53bdeb; }
 .day-pill { align-self: center; background: #e2e6ea; color: #54656f; font-size: 11px; padding: 3px 12px; border-radius: 8px; }
 #newMsgPill { position: sticky; bottom: 8px; align-self: center; z-index: 5; }
+.chat-back { display: none; }
+@media (max-width: 767.98px) {
+  .wa-wrap { height: calc(100dvh - 200px); min-height: 420px; }
+  .chat-back { display: inline-flex; }
+  .bubble { max-width: 88%; }
+}
 </style>
 
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
     <div class="row g-0 wa-wrap">
       <!-- LEFT: conversations -->
-      <div class="col-md-4 border-end d-flex flex-column">
+      <div class="col-md-4 border-end d-flex flex-column <?= !empty($selected) ? 'd-none d-md-flex' : '' ?>">
         <div class="p-2 border-bottom">
           <div class="fw-semibold px-1 mb-2"><i class="bi bi-whatsapp me-2 text-success"></i>WhatsApp Inbox</div>
           <input type="text" id="convSearch" class="form-control form-control-sm mb-2" placeholder="Search name or number..." value="<?= esc($search) ?>" autocomplete="off">
@@ -52,11 +58,14 @@
         </div>
       </div>
       <!-- RIGHT: thread -->
-      <div class="col-md-8 d-flex flex-column" style="min-width:0">
+      <div class="col-12 col-md-8 d-flex flex-column" style="min-width:0">
         <?php if (empty($selected)): ?>
           <div class="d-flex align-items-center justify-content-center h-100 text-muted small py-5"><i class="bi bi-chat-dots me-2"></i>Select a conversation.</div>
         <?php else: ?>
           <div class="p-2 px-3 border-bottom d-flex align-items-center gap-2">
+            <a href="<?= base_url('admin/chat?filter=' . urlencode($filter)) ?>" class="chat-back btn btn-sm btn-light border" aria-label="Back to conversations">
+              <i class="bi bi-arrow-left"></i>
+            </a>
             <span class="rounded-circle bg-success text-white d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width:38px;height:38px"><?= esc(strtoupper(substr($selected['contact_name'] ?? '?', 0, 1))) ?></span>
             <div class="flex-grow-1 overflow-hidden">
               <div class="fw-semibold small text-truncate"><?= esc($selected['contact_name'] ?? $selected['phone_number']) ?></div>
@@ -71,7 +80,7 @@
                   <?php if (($m['day'] ?? '') !== $lastDay): $lastDay = $m['day'] ?? ''; ?>
                     <div class="day-pill"><?= esc($lastDay) ?></div>
                   <?php endif; ?>
-                  <?= $this->include('admin/chat/_bubble', ['m' => $m]) ?>
+                  <?= $this->setData(['m' => $m])->include('admin/chat/_bubble') ?>
                 <?php endforeach; ?>
                 <button class="btn btn-sm btn-light border d-none" id="newMsgPill">↓ <span id="newMsgCount">0</span> new</button>
               </div>
@@ -144,6 +153,7 @@
   const imgFile = document.getElementById('imgFile');
   const pill = document.getElementById('newMsgPill');
   const pillCount = document.getElementById('newMsgCount');
+  const notify = (msg) => { if (typeof showToast === 'function') showToast(msg, 'error'); else console.warn(msg); };
   let lastId = <?= empty($messages) ? 0 : (int) end($messages)['id'] ?>;
   let unread = 0;
   list.scrollTop = list.scrollHeight;
@@ -198,7 +208,7 @@
         });
         if (stick) { list.scrollTop = list.scrollHeight; unread = 0; pill.classList.add('d-none'); }
         else if (unread > 0) { pillCount.textContent = unread; pill.classList.remove('d-none'); }
-      }).catch(e => console.error(e));
+      }).catch(() => {});
   }
   pill.addEventListener('click', () => { list.scrollTop = list.scrollHeight; unread = 0; pill.classList.add('d-none'); });
   function send() {
@@ -212,8 +222,8 @@
           list.insertBefore(bubble(res.data, null), pill);
           lastId = Math.max(lastId, parseInt(res.data.id, 10));
           list.scrollTop = list.scrollHeight;
-        } else alert(res.message || 'Send failed.');
-      }).catch(() => alert('Send failed.')).finally(() => { sendBtn.disabled = false; });
+        } else notify(res.message || 'Send failed.');
+      }).catch(() => notify('Send failed. Please check your connection.')).finally(() => { sendBtn.disabled = false; });
   }
   sendBtn.addEventListener('click', send);
   input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
@@ -223,8 +233,8 @@
     fetch(BASE + '/retry/' + b.dataset.mid, { method: 'POST', headers: csrfHeaders() })
       .then(r => r.json()).then(res => {
         if (res.status === 'success') location.reload();
-        else alert(res.message || 'Retry failed.');
-      }).catch(() => alert('Retry failed.'));
+        else notify(res.message || 'Retry failed.');
+      }).catch(() => notify('Retry failed.'));
   });
   imgFile.addEventListener('change', () => {
     if (!imgFile.files.length) return;
@@ -240,8 +250,8 @@
           list.insertBefore(bubble(res.data, null), pill);
           lastId = Math.max(lastId, parseInt(res.data.id, 10));
           list.scrollTop = list.scrollHeight;
-        } else alert(res.message || 'Upload failed.');
-      }).catch(() => alert('Upload failed.'));
+        } else notify(res.message || 'Upload failed.');
+      }).catch(() => notify('Upload failed.'));
   });
   // Template composer
   const tplSelect = document.getElementById('tplSelect');
@@ -274,25 +284,91 @@
           list.insertBefore(bubble(res.data, null), pill);
           lastId = Math.max(lastId, parseInt(res.data.id, 10));
           list.scrollTop = list.scrollHeight;
-        } else alert(res.message || 'Template send failed.');
-      }).catch(() => alert('Template send failed.'));
+        } else notify(res.message || 'Template send failed.');
+      }).catch(() => notify('Template send failed.'));
   });
-  // Filters + search (page reload keeps it simple and robust)
-  document.querySelectorAll('.filter-btn').forEach(b => b.addEventListener('click', () => {
-    const q = document.getElementById('convSearch').value.trim();
-    location.href = '<?= base_url('admin/chat') ?>?filter=' + b.dataset.filter + (q ? '&q=' + encodeURIComponent(q) : '');
-  }));
-  document.getElementById('convSearch').addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      const f = document.querySelector('.filter-btn.btn-success');
-      location.href = '<?= base_url('admin/chat') ?>?filter=' + (f ? f.dataset.filter : 'all') + '&q=' + encodeURIComponent(e.target.value.trim());
-    }
-  });
-  document.getElementById('contactToggle').addEventListener('click', () => {
+  document.getElementById('contactToggle')?.addEventListener('click', () => {
     document.getElementById('contactPanel').classList.toggle('d-none');
   });
   setInterval(poll, 5000);
 })();
 </script>
 <?php endif; ?>
+
+<script>
+// Inbox list: live refresh + filters/search. Runs with or without an open
+// conversation, so the sidebar list is never frozen on a stale snapshot.
+(function () {
+  const BASE = '<?= base_url('admin/chat') ?>';
+  const list = document.getElementById('convList');
+  const search = document.getElementById('convSearch');
+  if (!list || !search) return;
+
+  const filter = () => document.querySelector('.filter-btn.btn-success')?.dataset.filter || 'all';
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  const initial = (s) => esc((String(s || '?').trim()[0] || '?').toUpperCase());
+  const cap = (s) => { s = String(s || 'unknown'); return s.charAt(0).toUpperCase() + s.slice(1); };
+  let signature = list.innerHTML.trim();
+
+  function hrefFor(cid) {
+    let url = BASE + '?c=' + encodeURIComponent(cid) + '&filter=' + encodeURIComponent(filter());
+    const q = search.value.trim();
+    if (q) url += '&q=' + encodeURIComponent(q);
+    return url;
+  }
+
+  function row(c) {
+    const cid = String(c.id);
+    const active = document.querySelector('.conv-item.active')?.dataset.cid === cid;
+    const color = c.contact_type === 'client' ? 'bg-primary' : (c.contact_type === 'lead' ? 'bg-warning text-dark' : 'bg-secondary');
+    let when = '';
+    if (c.last_message_at) {
+      const d = new Date(String(c.last_message_at).replace(' ', 'T'));
+      if (!isNaN(d)) when = d.toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    }
+    const unread = Number(c.unread_count) > 0
+      ? '<span class="badge bg-success rounded-pill flex-shrink-0">' + Number(c.unread_count) + '</span>'
+      : '';
+    return '<a href="' + hrefFor(cid) + '" data-cid="' + esc(cid) + '" class="conv-item d-flex align-items-center gap-2 text-decoration-none text-dark p-2 rounded ' + (active ? 'active' : '') + '">' +
+      '<span class="rounded-circle ' + color + ' text-white d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width:38px;height:38px">' + initial(c.contact_name) + '</span>' +
+      '<span class="flex-grow-1 overflow-hidden">' +
+        '<span class="d-flex justify-content-between align-items-center">' +
+          '<span class="fw-semibold small text-truncate">' + esc(c.contact_name || c.phone_number) + '</span>' +
+          '<span class="text-muted flex-shrink-0" style="font-size:10px">' + esc(when) + '</span>' +
+        '</span>' +
+        '<span class="d-flex justify-content-between align-items-center gap-1">' +
+          '<span class="text-muted text-truncate" style="font-size:12px">' + (c.last_message_direction === 'outbound' ? '&#10003; ' : '') + esc(c.last_message_preview || '') + '</span>' + unread +
+        '</span>' +
+        '<span class="badge bg-light text-muted border" style="font-size:10px">' + esc(cap(c.contact_type)) + ' &middot; ' + esc(c.phone_number) + '</span>' +
+      '</span>' +
+    '</a>';
+  }
+
+  function refresh() {
+    fetch(BASE + '/conversations?filter=' + encodeURIComponent(filter()) + '&q=' + encodeURIComponent(search.value.trim()), { headers: csrfHeaders() })
+      .then(r => r.json())
+      .then(res => {
+        if (res.status !== 'success' || !Array.isArray(res.data)) return;
+        const html = res.data.length
+          ? res.data.map(row).join('')
+          : '<div class="text-center text-muted py-5 small">No conversations yet.</div>';
+        if (html === signature) return;
+        signature = html;
+        list.innerHTML = html;
+      })
+      .catch(() => {});
+  }
+
+  search.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    location.href = BASE + '?filter=' + encodeURIComponent(filter()) + '&q=' + encodeURIComponent(search.value.trim());
+  });
+  document.querySelectorAll('.filter-btn').forEach(b => b.addEventListener('click', () => {
+    location.href = BASE + '?filter=' + encodeURIComponent(b.dataset.filter) + (search.value.trim() ? '&q=' + encodeURIComponent(search.value.trim()) : '');
+  }));
+
+  setInterval(refresh, 12000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+})();
+</script>
 <?= $this->endSection() ?>

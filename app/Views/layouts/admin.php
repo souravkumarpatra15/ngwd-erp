@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= $title ?? 'Dashboard' ?> — NGWebD ERP</title>
+  <title><?= $title ?? 'Dashboard' ?> &mdash; NGWebD ERP</title>
   <meta name="csrf-token" content="<?= csrf_hash() ?>">
   <meta name="<?= csrf_header() ?>" content="<?= csrf_hash() ?>">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="<?= base_url('assets/css/ng-ui.css') ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/admin-modern.css') ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/admin-app-theme.css') ?>">
+  <link rel="stylesheet" href="<?= base_url('assets/css/sidebar.css') ?>">
   <meta name="base-url" data-base-url="<?= base_url('/') ?>">
   <meta name="theme-color" content="#4f46e5">
   <meta name="mobile-web-app-capable" content="yes">
@@ -28,176 +29,320 @@
 
   <div class="d-flex" id="wrapper">
 
-    <!-- ── Sidebar ── -->
-    <nav id="sidebar" class="bg-dark text-white d-flex flex-column" style="min-width:240px;max-width:240px;min-height:100vh;transition:all .3s">
-      <?php
-      $companyLogo = !empty($settings['company_logo'])
-        ? base_url($settings['company_logo'])
-        : base_url('assets/images/logo/logo.png');
-      ?>
+    <!-- Sidebar -->
+    <?php
+    $companyLogo = !empty($settings['company_logo'])
+      ? base_url($settings['company_logo'])
+      : base_url('assets/images/logo/logo.png');
 
-      <div class="p-3 border-bottom border-secondary d-flex align-items-center gap-2 sidebar-brand">
-        <div class="sidebar-logo">
-          <img src="<?= $companyLogo ?>" alt="Logo">
-        </div>
+    $__hrAuth = new \App\Services\PmsAuthorizationService();
+    $__hrRole = (string) session()->get('user_role');
+    $__department = (string) session()->get('department');
+    $__isInternalUser = $__hrRole !== '' && $__hrRole !== 'client';
 
-        <div class="sidebar-brand-text">
-          <div class="fw-bold" style="font-size:13px;line-height:1">
-            <?= esc($settings['company_name'] ?? 'NGWebD ERP') ?>
+    if ($__hrRole === 'staff') {
+      $__auth = $__hrAuth;
+      $__uid = (int) session()->get('user_id');
+      $__canSee = static fn(string $m) => $__auth->hasModulePermission($__uid, 'staff', null, $m, 'view');
+    } else {
+      $__canSee = static fn(string $m) => true;
+    }
+
+    // Keep a group expanded when it contains the current page.
+    $__groupOpen = static function (array $paths): string {
+      foreach ($paths as $p) {
+        if (isActive($p) === 'active') return ' is-active-group';
+      }
+      return '';
+    };
+
+    $__showCrm     = $__canSee('leads') || $__canSee('clients') || $__canSee('marketing_leads') || $__canSee('chat');
+    $__showHr      = $__isInternalUser && (
+      $__hrAuth->canViewEmployeeList($__hrRole, $__department) ||
+      $__hrAuth->canViewRecruitment($__hrRole) ||
+      $__hrAuth->canViewAttendance($__hrRole) ||
+      $__hrAuth->canViewPayroll($__hrRole) ||
+      $__hrAuth->canViewCertificates($__hrRole) ||
+      $__hrAuth->canViewProjects($__hrRole)
+    );
+    $__showSales   = $__canSee('proposals') || $__canSee('agreements');
+    $__showBilling = $__canSee('invoices') || $__canSee('payments');
+    $__showInfra   = $__canSee('domains') || $__canSee('hostings');
+    $__isAdminRole = in_array($__hrRole, ['superadmin', 'admin'], true);
+    $__showSystem  = $__isAdminRole || $__canSee('documents') || $__canSee('tickets') || $__canSee('reports');
+    ?>
+
+    <aside id="sidebar" class="app-sidebar" aria-label="Main navigation">
+      <div class="sidebar-brand">
+        <a class="sidebar-brand-link" href="<?= base_url('admin/dashboard') ?>">
+          <span class="sidebar-logo"><img src="<?= $companyLogo ?>" alt="<?= esc($settings['company_name'] ?? 'NGWebD') ?>"></span>
+          <span class="sidebar-brand-text">
+            <strong><?= esc($settings['company_name'] ?? 'NGWebD ERP') ?></strong>
+            <small>Admin Panel</small>
+          </span>
+        </a>
+        <button type="button" class="sidebar-collapse-btn d-none d-lg-inline-flex" id="sidebarCollapseBtn"
+                title="Collapse sidebar" aria-label="Collapse sidebar">
+          <i class="bi bi-chevron-double-left"></i>
+        </button>
+        <button type="button" class="sidebar-close-btn d-lg-none" id="sidebarCloseBtn" aria-label="Close menu">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="sidebar-nav" id="sidebarNav">
+        <div class="sidebar-group open<?= $__groupOpen(['admin/dashboard']) ?>" data-group="main">
+          <button type="button" class="sidebar-group-toggle" aria-expanded="true">
+            <span>Main</span><i class="bi bi-chevron-down"></i>
+          </button>
+          <div class="sidebar-group-items">
+            <a href="<?= base_url('admin/dashboard') ?>" class="sidebar-link <?= isActive('admin/dashboard') ?>" title="Dashboard">
+              <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+            </a>
           </div>
-          <div class="text-secondary" style="font-size:10px">Admin Panel</div>
+        </div>
+
+        <?php if ($__showCrm): ?>
+        <div class="sidebar-group open<?= $__groupOpen(['admin/leads', 'admin/clients', 'admin/marketing-leads', 'admin/chat']) ?>" data-group="crm">
+          <button type="button" class="sidebar-group-toggle" aria-expanded="true">
+            <span>CRM</span><i class="bi bi-chevron-down"></i>
+          </button>
+          <div class="sidebar-group-items">
+            <?php if ($__canSee('leads')): ?>
+            <a href="<?= base_url('admin/leads') ?>" class="sidebar-link <?= isActive('admin/leads') ?>" title="Leads">
+              <i class="bi bi-person-plus"></i><span>Leads</span>
+            </a>
+            <?php endif; ?>
+            <?php if ($__canSee('clients')): ?>
+            <a href="<?= base_url('admin/clients') ?>" class="sidebar-link <?= isActive('admin/clients') ?>" title="Clients">
+              <i class="bi bi-people"></i><span>Clients</span>
+            </a>
+            <?php endif; ?>
+            <?php if ($__canSee('marketing_leads')): ?>
+            <a href="<?= base_url('admin/marketing-leads') ?>" class="sidebar-link <?= isActive('admin/marketing-leads') ?>" title="Marketing Leads">
+              <i class="bi bi-megaphone"></i><span>Marketing Leads</span>
+            </a>
+            <?php endif; ?>
+            <?php if ($__canSee('chat')): ?>
+            <a href="<?= base_url('admin/chat') ?>" class="sidebar-link <?= isActive('admin/chat') ?>" title="WhatsApp Chat">
+              <i class="bi bi-whatsapp"></i><span>Chat</span>
+            </a>
+            <?php endif; ?>
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <div class="sidebar-group open<?= $__groupOpen(['admin/projects', 'admin/milestones', 'admin/tasks', 'admin/deliverables']) ?>" data-group="projects">
+          <button type="button" class="sidebar-group-toggle" aria-expanded="true">
+            <span>Projects</span><i class="bi bi-chevron-down"></i>
+          </button>
+          <div class="sidebar-group-items">
+            <a href="<?= base_url('admin/projects') ?>" class="sidebar-link <?= isActive('admin/projects') ?>" title="Projects">
+              <i class="bi bi-folder2-open"></i><span>Projects</span>
+            </a>
+            <a href="<?= base_url('admin/milestones') ?>" class="sidebar-link <?= isActive('admin/milestones') ?>" title="Milestones">
+              <i class="bi bi-flag"></i><span>Milestones</span>
+            </a>
+            <a href="<?= base_url('admin/tasks') ?>" class="sidebar-link <?= isActive('admin/tasks') ?>" title="Tasks">
+              <i class="bi bi-check2-square"></i><span>Tasks</span>
+            </a>
+            <a href="<?= base_url('admin/deliverables') ?>" class="sidebar-link <?= isActive('admin/deliverables') ?>" title="Deliverables">
+              <i class="bi bi-box-seam"></i><span>Deliverables</span>
+            </a>
+          </div>
+        </div>
+
+        <?php if ($__showHr): ?>
+        <div class="sidebar-group open<?= $__groupOpen(['admin/employees', 'admin/recruitment', 'admin/attendance', 'admin/payroll', 'admin/certificates', 'admin/team-pilot']) ?>" data-group="hr">
+          <button type="button" class="sidebar-group-toggle" aria-expanded="true">
+            <span>Team &amp; HR</span><i class="bi bi-chevron-down"></i>
+          </button>
+          <div class="sidebar-group-items">
+            <?php if ($__hrAuth->canViewEmployeeList($__hrRole, $__department)): ?>
+            <a href="<?= base_url('admin/employees') ?>" class="sidebar-link <?= isActive('admin/employees') ?>" title="Employees">
+              <i class="bi bi-person-badge"></i><span>Employees</span>
+            </a>
+            <?php endif; ?>
+            <?php if ($__hrAuth->canViewRecruitment($__hrRole)): ?>
+            <a href="<?= base_url('admin/recruitment') ?>" class="sidebar-link <?= isActive('admin/recruitment') ?>" title="Intern Recruitment">
+              <i class="bi bi-person-vcard"></i><span>Intern Recruitment</span>
+            </a>
+            <?php endif; ?>
+            <?php if ($__hrAuth->canViewAttendance($__hrRole)): ?>
+            <a href="<?= base_url('admin/attendance') ?>" class="sidebar-link <?= isActive('admin/attendance') ?>" title="Attendance">
+              <i class="bi bi-calendar-check"></i><span>Attendance</span>
+            </a>
+            <?php endif; ?>
+            <?php if ($__hrAuth->canViewPayroll($__hrRole)): ?>
+            <a href="<?= base_url('admin/payroll') ?>" class="sidebar-link <?= isActive('admin/payroll') ?>" title="Payroll">
+              <i class="bi bi-cash-coin"></i><span>Payroll</span>
+            </a>
+            <?php endif; ?>
+            <?php if ($__hrAuth->canViewCertificates($__hrRole)): ?>
+            <a href="<?= base_url('admin/certificates') ?>" class="sidebar-link <?= isActive('admin/certificates') ?>" title="Certificates">
+              <i class="bi bi-award"></i><span>Certificates</span>
+            </a>
+            <?php endif; ?>
+            <?php if ($__hrAuth->canViewProjects($__hrRole)): ?>
+            <a href="<?= base_url('admin/team-pilot/stand-up') ?>" class="sidebar-link <?= isActive('admin/team-pilot/stand-up') ?>" title="Daily Stand-Up">
+              <i class="bi bi-chat-left-text"></i><span>Daily Stand-Up</span>
+            </a>
+            <a href="<?= base_url('admin/team-pilot/weekly-report') ?>" class="sidebar-link <?= isActive('admin/team-pilot/weekly-report') ?>" title="Weekly Report">
+              <i class="bi bi-journal-text"></i><span>Weekly Report</span>
+            </a>
+            <a href="<?= base_url('admin/team-pilot/team-activity') ?>" class="sidebar-link <?= isActive('admin/team-pilot/team-activity') ?>" title="Team Activity">
+              <i class="bi bi-activity"></i><span>Team Activity</span>
+            </a>
+            <?php endif; ?>
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($__showSales): ?>
+        <div class="sidebar-group open<?= $__groupOpen(['admin/proposals', 'admin/agreements']) ?>" data-group="sales">
+          <button type="button" class="sidebar-group-toggle" aria-expanded="true">
+            <span>Sales</span><i class="bi bi-chevron-down"></i>
+          </button>
+          <div class="sidebar-group-items">
+            <?php if ($__canSee('proposals')): ?>
+            <a href="<?= base_url('admin/proposals') ?>" class="sidebar-link <?= isActive('admin/proposals') ?>" title="Proposals">
+              <i class="bi bi-file-earmark-text"></i><span>Proposals</span>
+            </a>
+            <?php endif; ?>
+            <?php if ($__canSee('agreements')): ?>
+            <a href="<?= base_url('admin/agreements') ?>" class="sidebar-link <?= isActive('admin/agreements') ?>" title="Agreements">
+              <i class="bi bi-file-earmark-check"></i><span>Agreements</span>
+            </a>
+            <?php endif; ?>
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($__showBilling): ?>
+        <div class="sidebar-group open<?= $__groupOpen(['admin/invoices', 'admin/payments']) ?>" data-group="billing">
+          <button type="button" class="sidebar-group-toggle" aria-expanded="true">
+            <span>Billing</span><i class="bi bi-chevron-down"></i>
+          </button>
+          <div class="sidebar-group-items">
+            <?php if ($__canSee('invoices')): ?>
+            <a href="<?= base_url('admin/invoices') ?>" class="sidebar-link <?= isActive('admin/invoices') ?>" title="Invoices">
+              <i class="bi bi-receipt"></i><span>Invoices</span>
+            </a>
+            <?php endif; ?>
+            <?php if ($__canSee('payments')): ?>
+            <a href="<?= base_url('admin/payments') ?>" class="sidebar-link <?= isActive('admin/payments') ?>" title="Payments">
+              <i class="bi bi-cash-stack"></i><span>Payments</span>
+            </a>
+            <?php endif; ?>
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($__showInfra): ?>
+        <div class="sidebar-group open<?= $__groupOpen(['admin/domains', 'admin/hostings']) ?>" data-group="infra">
+          <button type="button" class="sidebar-group-toggle" aria-expanded="true">
+            <span>Infrastructure</span><i class="bi bi-chevron-down"></i>
+          </button>
+          <div class="sidebar-group-items">
+            <?php if ($__canSee('domains')): ?>
+            <a href="<?= base_url('admin/domains') ?>" class="sidebar-link <?= isActive('admin/domains') ?>" title="Domains">
+              <i class="bi bi-globe"></i><span>Domains</span>
+            </a>
+            <?php endif; ?>
+            <?php if ($__canSee('hostings')): ?>
+            <a href="<?= base_url('admin/hostings') ?>" class="sidebar-link <?= isActive('admin/hostings') ?>" title="Hosting">
+              <i class="bi bi-server"></i><span>Hosting</span>
+            </a>
+            <?php endif; ?>
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($__showSystem): ?>
+        <div class="sidebar-group open<?= $__groupOpen(['admin/users', 'admin/documents', 'admin/tickets', 'admin/reports', 'admin/settings', 'admin/notifications', 'admin/profile']) ?>" data-group="system">
+          <button type="button" class="sidebar-group-toggle" aria-expanded="true">
+            <span>Administration</span><i class="bi bi-chevron-down"></i>
+          </button>
+          <div class="sidebar-group-items">
+            <?php if ($__isAdminRole): ?>
+            <a href="<?= base_url('admin/users') ?>" class="sidebar-link <?= isActive('admin/users') ?>" title="Users">
+              <i class="bi bi-people"></i><span>Users</span>
+            </a>
+            <?php endif; ?>
+            <?php if ($__canSee('documents')): ?>
+            <a href="<?= base_url('admin/documents') ?>" class="sidebar-link <?= isActive('admin/documents') ?>" title="Documents">
+              <i class="bi bi-folder"></i><span>Documents</span>
+            </a>
+            <?php endif; ?>
+            <?php if ($__canSee('tickets')): ?>
+            <a href="<?= base_url('admin/tickets') ?>" class="sidebar-link <?= isActive('admin/tickets') ?>" title="Support">
+              <i class="bi bi-headset"></i><span>Support</span>
+            </a>
+            <?php endif; ?>
+            <?php if ($__canSee('reports')): ?>
+            <a href="<?= base_url('admin/reports') ?>" class="sidebar-link <?= isActive('admin/reports') ?>" title="Reports">
+              <i class="bi bi-bar-chart-line"></i><span>Reports</span>
+            </a>
+            <?php endif; ?>
+            <?php if ($__isAdminRole): ?>
+            <a href="<?= base_url('admin/settings') ?>" class="sidebar-link <?= isActive('admin/settings') ?>" title="Settings">
+              <i class="bi bi-gear"></i><span>Settings</span>
+            </a>
+            <?php endif; ?>
+          </div>
+        </div>
+        <?php endif; ?>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <span class="sidebar-avatar"><?= strtoupper(substr((string) ($current_user['name'] ?? 'A'), 0, 1)) ?></span>
+          <span class="sidebar-user-meta">
+            <strong><?= esc($current_user['name'] ?? 'User') ?></strong>
+            <small><?= esc(ucwords(str_replace('_', ' ', $__hrRole ?: 'member'))) ?></small>
+          </span>
+          <a href="<?= base_url('logout') ?>" class="sidebar-logout" title="Logout" aria-label="Logout">
+            <i class="bi bi-box-arrow-right"></i>
+          </a>
         </div>
       </div>
-
-      <div class="overflow-auto flex-grow-1 py-2">
-        <?php
-          $__staffPerms = null;
-          if ((string) session()->get('user_role') === 'staff') {
-            $__auth = new \App\Services\PmsAuthorizationService();
-            $__uid = (int) session()->get('user_id');
-            $__canSee = static fn(string $m) => $__auth->hasModulePermission($__uid, 'staff', null, $m, 'view');
-          } else {
-            $__canSee = static fn(string $m) => true; // unrestricted: superadmin/admin/manager
-          }
-        ?>
-        <div class="px-3 py-1" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Main</div>
-        <a href="<?= base_url('admin/dashboard') ?>" class="sidebar-link <?= isActive('admin/dashboard') ?>">
-          <i class="bi bi-speedometer2"></i> Dashboard</a>
-
-        <?php if ($__canSee('leads') || $__canSee('clients') || $__canSee('marketing_leads')): ?>
-        <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">CRM</div>
-        <?php if ($__canSee('leads')): ?>
-        <a href="<?= base_url('admin/leads') ?>" class="sidebar-link <?= isActive('admin/leads') ?>">
-          <i class="bi bi-person-plus"></i> Leads</a>
-        <?php endif; if ($__canSee('clients')): ?>
-        <a href="<?= base_url('admin/clients') ?>" class="sidebar-link <?= isActive('admin/clients') ?>">
-          <i class="bi bi-people"></i> Clients</a>
-        <?php endif; if ($__canSee('marketing_leads')): ?>
-        <a href="<?= base_url('admin/marketing-leads') ?>" class="sidebar-link <?= isActive('admin/marketing-leads') ?>">
-          <i class="bi bi-megaphone"></i> Marketing Leads</a>
-        <?php endif; ?>
-        <?php if ($__canSee('chat')): ?>
-        <a href="<?= base_url('admin/chat') ?>" class="sidebar-link <?= isActive('admin/chat') ?>">
-          <i class="bi bi-whatsapp"></i> Chat</a>
-        <?php endif; endif; ?>
-
-        <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Projects</div>
-        <a href="<?= base_url('admin/projects') ?>" class="sidebar-link <?= isActive('admin/projects') ?>">
-          <i class="bi bi-folder2-open"></i> Projects</a>
-        <a href="<?= base_url('admin/milestones') ?>" class="sidebar-link <?= isActive('admin/milestones') ?>">
-          <i class="bi bi-flag"></i> Milestones</a>
-        <a href="<?= base_url('admin/tasks') ?>" class="sidebar-link <?= isActive('admin/tasks') ?>">
-          <i class="bi bi-check2-square"></i> Tasks</a>
-        <a href="<?= base_url('admin/deliverables') ?>" class="sidebar-link <?= isActive('admin/deliverables') ?>">
-          <i class="bi bi-box-seam"></i> Deliverables</a>
-
-        <?php
-        // ── Team & HR (HRMS / ATS / Payroll / Team Productivity) ──
-        // Visible to every internal (non-client) role; individual links are
-        // gated by the HRMS permission methods so each role only sees what
-        // it can actually open.
-        $__hrAuth = new \App\Services\PmsAuthorizationService();
-        $__hrRole = (string) session()->get('user_role');
-        $__isInternalUser = $__hrRole !== '' && $__hrRole !== 'client';
-        ?>
-        <?php if ($__isInternalUser && ($__hrAuth->canViewEmployeeList($__hrRole) || $__hrAuth->canViewRecruitment($__hrRole) || $__hrAuth->canViewAttendance($__hrRole) || $__hrAuth->canViewPayroll($__hrRole) || $__hrAuth->canViewCertificates($__hrRole) || $__hrAuth->canViewProjects($__hrRole))): ?>
-        <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Team &amp; HR</div>
-        <?php if ($__hrAuth->canViewEmployeeList($__hrRole)): ?>
-        <a href="<?= base_url('admin/employees') ?>" class="sidebar-link <?= isActive('admin/employees') ?>">
-          <i class="bi bi-person-badge"></i> Employees</a>
-        <?php endif; if ($__hrAuth->canViewRecruitment($__hrRole)): ?>
-        <a href="<?= base_url('admin/recruitment') ?>" class="sidebar-link <?= isActive('admin/recruitment') ?>">
-          <i class="bi bi-person-vcard"></i> Intern Recruitment</a>
-        <?php endif; if ($__hrAuth->canViewAttendance($__hrRole)): ?>
-        <a href="<?= base_url('admin/attendance') ?>" class="sidebar-link <?= isActive('admin/attendance') ?>">
-          <i class="bi bi-calendar-check"></i> Attendance</a>
-        <?php endif; if ($__hrAuth->canViewPayroll($__hrRole)): ?>
-        <a href="<?= base_url('admin/payroll') ?>" class="sidebar-link <?= isActive('admin/payroll') ?>">
-          <i class="bi bi-cash-coin"></i> Payroll</a>
-        <?php endif; if ($__hrAuth->canViewCertificates($__hrRole)): ?>
-        <a href="<?= base_url('admin/certificates') ?>" class="sidebar-link <?= isActive('admin/certificates') ?>">
-          <i class="bi bi-award"></i> Certificates</a>
-        <?php endif; if ($__hrAuth->canViewProjects($__hrRole)): ?>
-        <a href="<?= base_url('admin/team-pilot/stand-up') ?>" class="sidebar-link <?= isActive('admin/team-pilot/stand-up') ?>">
-          <i class="bi bi-chat-left-text"></i> Daily Stand-Up</a>
-        <a href="<?= base_url('admin/team-pilot/weekly-report') ?>" class="sidebar-link <?= isActive('admin/team-pilot/weekly-report') ?>">
-          <i class="bi bi-journal-week"></i> Weekly Report</a>
-        <a href="<?= base_url('admin/team-pilot/team-activity') ?>" class="sidebar-link <?= isActive('admin/team-pilot/team-activity') ?>">
-          <i class="bi bi-activity"></i> Team Activity</a>
-        <?php endif; endif; ?>
-
-        <?php if ($__canSee('proposals') || $__canSee('agreements')): ?>
-        <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Sales</div>
-        <?php if ($__canSee('proposals')): ?>
-        <a href="<?= base_url('admin/proposals') ?>" class="sidebar-link <?= isActive('admin/proposals') ?>">
-          <i class="bi bi-file-earmark-text"></i> Proposals</a>
-        <?php endif; if ($__canSee('agreements')): ?>
-        <a href="<?= base_url('admin/agreements') ?>" class="sidebar-link <?= isActive('admin/agreements') ?>">
-          <i class="bi bi-file-earmark-check"></i> Agreements</a>
-        <?php endif; endif; ?>
-
-        <?php if ($__canSee('invoices') || $__canSee('payments')): ?>
-        <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Billing</div>
-        <?php if ($__canSee('invoices')): ?>
-        <a href="<?= base_url('admin/invoices') ?>" class="sidebar-link <?= isActive('admin/invoices') ?>">
-          <i class="bi bi-receipt"></i> Invoices</a>
-        <?php endif; if ($__canSee('payments')): ?>
-        <a href="<?= base_url('admin/payments') ?>" class="sidebar-link <?= isActive('admin/payments') ?>">
-          <i class="bi bi-cash-stack"></i> Payments</a>
-        <?php endif; endif; ?>
-
-        <?php if ($__canSee('domains') || $__canSee('hostings')): ?>
-        <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Infrastructure</div>
-        <?php if ($__canSee('domains')): ?>
-        <a href="<?= base_url('admin/domains') ?>" class="sidebar-link <?= isActive('admin/domains') ?>">
-          <i class="bi bi-globe"></i> Domains</a>
-        <?php endif; if ($__canSee('hostings')): ?>
-        <a href="<?= base_url('admin/hostings') ?>" class="sidebar-link <?= isActive('admin/hostings') ?>">
-          <i class="bi bi-server"></i> Hosting</a>
-        <?php endif; endif; ?>
-
-        <?php if (in_array((string) session()->get('user_role'), ['superadmin', 'admin'], true)): ?>
-        <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Associates</div>
-        <a href="<?= base_url('admin/users') ?>" class="sidebar-link <?= isActive('admin/users') ?>">
-          <i class="bi bi-people"></i> Users</a>
-        <?php endif; ?>
-
-        <?php if ($__canSee('documents') || $__canSee('tickets') || $__canSee('reports')): ?>
-        <div class="px-3 py-1 mt-2" style="font-size:10px;letter-spacing:1px;color:#6c757d;text-transform:uppercase">Other</div>
-        <?php if ($__canSee('documents')): ?>
-        <a href="<?= base_url('admin/documents') ?>" class="sidebar-link <?= isActive('admin/documents') ?>">
-          <i class="bi bi-folder"></i> Documents</a>
-        <?php endif; if ($__canSee('tickets')): ?>
-        <a href="<?= base_url('admin/tickets') ?>" class="sidebar-link <?= isActive('admin/tickets') ?>">
-          <i class="bi bi-headset"></i> Support</a>
-        <?php endif; if ($__canSee('reports')): ?>
-        <a href="<?= base_url('admin/reports') ?>" class="sidebar-link <?= isActive('admin/reports') ?>">
-          <i class="bi bi-bar-chart-line"></i> Reports</a>
-        <?php endif; endif; ?>
-        <?php if (in_array((string) session()->get('user_role'), ['superadmin', 'admin'], true)): ?>
-        <a href="<?= base_url('admin/settings') ?>" class="sidebar-link <?= isActive('admin/settings') ?>">
-          <i class="bi bi-gear"></i> Settings</a>
-        <?php endif; ?>
-      </div>
-    </nav>
+    </aside>
     <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
 
-    <!-- ── Main Content ── -->
+    <!-- Main Content -->
     <div class="flex-grow-1 d-flex flex-column" style="min-width:0">
 
       <!-- Topbar -->
-      <nav class="navbar navbar-expand bg-white border-bottom px-3 py-2 sticky-top" style="z-index:100">
-        <!-- <button class="btn btn-sm btn-outline-secondary me-2" id="sidebarOpen"><i class="bi bi-list fs-5"></i></button> -->
+      <nav class="app-topbar navbar navbar-expand bg-white border-bottom px-3 py-2">
+        <button type="button" class="sidebar-toggle-btn me-2" id="sidebarOpen"
+                aria-label="Toggle navigation" title="Toggle navigation">
+          <i class="bi bi-list"></i>
+        </button>
 
-        <div class="me-auto">
-          <input type="text" id="globalSearch" class="form-control form-control-sm" placeholder="Everything Search here..." style="width:280px; height:40px;font-family:'Bootstrap Icons',sans-serif">
+        <div class="me-auto ng-topbar-search">
+          <i class="bi bi-search"></i>
+          <input type="text" id="globalSearch" class="form-control form-control-sm"
+                 placeholder="Search anything..." autocomplete="off" aria-label="Global search">
         </div>
 
-        <ul class="navbar-nav ms-3 gap-1 align-items-center">
+        <ul class="navbar-nav ms-auto gap-1 align-items-center">
+          <?php if (!empty($__isInternalUser) && !empty($__hrAuth) && $__hrAuth->canViewProjects($__hrRole)): ?>
+          <li class="nav-item d-none d-sm-block">
+            <a href="<?= base_url('admin/team-pilot/weekly-report') ?>"
+               class="btn btn-sm btn-outline-secondary ng-nav-action"
+               title="Weekly Report" aria-label="Weekly Report">
+              <i class="bi bi-journal-text"></i>
+              <span class="d-none d-xl-inline ms-1">Weekly Report</span>
+            </a>
+          </li>
+          <?php endif; ?>
+
           <!-- Quick Add -->
           <li class="nav-item dropdown">
-            <a class="btn btn-primary btn-sm" data-bs-toggle="dropdown" href="#" title="Quick Add">
-              <i class="bi bi-plus-lg"></i></a>
+            <a class="btn btn-primary btn-sm ng-nav-action" data-bs-toggle="dropdown" href="#" title="Quick Add" aria-label="Quick Add">
+              <i class="bi bi-plus-lg"></i>
+              <span class="d-none d-xl-inline ms-1">Create</span>
+            </a>
             <ul class="dropdown-menu dropdown-menu-end shadow">
               <li><a class="dropdown-item" href="<?= base_url('admin/leads/create') ?>"><i class="bi bi-person-plus me-2 text-primary"></i>Add Lead</a></li>
               <li><a class="dropdown-item" href="<?= base_url('admin/clients/create') ?>"><i class="bi bi-people me-2 text-success"></i>Add Client</a></li>
@@ -209,17 +354,17 @@
 
           <!-- Notifications -->
           <li class="nav-item dropdown">
-            <a class="btn btn-sm btn-outline-secondary position-relative" data-bs-toggle="dropdown" href="#" id="notifBellBtn">
-              <i class="bi bi-bell fs-6"></i>
+            <a class="btn btn-sm btn-outline-secondary position-relative ng-nav-action" data-bs-toggle="dropdown" href="#" id="notifBellBtn" title="Notifications" aria-label="Notifications">
+              <i class="bi bi-bell"></i>
               <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="notifBadge" style="font-size:9px"></span>
             </a>
-            <div class="dropdown-menu dropdown-menu-end shadow p-0" style="width:320px">
+            <div class="dropdown-menu dropdown-menu-end shadow p-0" style="width:min(320px,92vw)">
               <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
                 <strong class="small">Notifications</strong>
                 <a href="#" class="text-muted small" id="markAllRead">Mark all read</a>
               </div>
               <div id="notifList" style="max-height:280px;overflow-y:auto">
-                <p class="text-center text-muted py-3 small">Loading…</p>
+                <p class="text-center text-muted py-3 small">Loading...</p>
               </div>
               <div class="p-2 border-top text-center">
                 <a href="<?= base_url('admin/notifications') ?>" class="text-primary small">View All</a>
@@ -229,19 +374,17 @@
 
           <!-- User -->
           <li class="nav-item dropdown">
-            <a class="d-flex align-items-center gap-2 text-decoration-none" data-bs-toggle="dropdown" href="#">
+            <a class="d-flex align-items-center gap-2 text-decoration-none" data-bs-toggle="dropdown" href="#" aria-label="Account menu">
               <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width:32px;height:32px;font-size:13px">
-                <?= strtoupper(substr($current_user['name'] ?? 'A', 0, 1)) ?>
+                <?= strtoupper(substr((string) ($current_user['name'] ?? 'A'), 0, 1)) ?>
               </div>
               <span class="d-none d-md-inline small fw-semibold"><?= esc($current_user['name'] ?? '') ?></span>
               <i class="bi bi-chevron-down small text-muted"></i>
             </a>
             <ul class="dropdown-menu dropdown-menu-end shadow">
-              <li><a class="dropdown-item" href="<?= base_url('admin/profile') ?>"><i class="bi bi-people me-2"></i>My Profile</a></li>
+              <li><a class="dropdown-item" href="<?= base_url('admin/profile') ?>"><i class="bi bi-person me-2"></i>My Profile</a></li>
               <li><a class="dropdown-item" href="<?= base_url('admin/settings') ?>"><i class="bi bi-gear me-2"></i>Settings</a></li>
-              <li>
-                <hr class="dropdown-divider">
-              </li>
+              <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item text-danger" href="<?= base_url('logout') ?>"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
             </ul>
           </li>
@@ -308,7 +451,7 @@
 
   </div>
 
-  <!-- ── Mobile App-Style Bottom Nav ── -->
+    <!-- Mobile App-Style Bottom Nav -->
   <nav id="mobileBottomNav">
     <a href="<?= base_url('admin/dashboard') ?>" class="mbn-item <?= isActive('admin/dashboard') ? 'active' : '' ?>">
       <i class="bi bi-speedometer2"></i><span>Home</span>
@@ -423,23 +566,88 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="<?= base_url('assets/js/custom.js') ?>"></script>
   <script>
-    // Sidebar toggle — desktop collapses (existing behavior), mobile opens as an overlay with backdrop
-    function isMobileNav() { return window.innerWidth <= 768; }
-    function openMobileSidebar() {
-      document.getElementById('sidebar')?.classList.add('mobile-show');
-      document.getElementById('sidebarBackdrop')?.classList.add('show');
-    }
-    function closeMobileSidebar() {
-      document.getElementById('sidebar')?.classList.remove('mobile-show');
-      document.getElementById('sidebarBackdrop')?.classList.remove('show');
-    }
-    function handleSidebarToggleClick() {
-      if (isMobileNav()) {
-        document.getElementById('sidebar')?.classList.contains('mobile-show') ? closeMobileSidebar() : openMobileSidebar();
-      } else {
-        document.getElementById('sidebar')?.classList.toggle('d-none');
+    //  Sidebar controller
+    // Desktop: collapse to icons (persisted). Mobile: off-canvas drawer.
+    (function () {
+      const mq = window.matchMedia('(max-width: 991.98px)');
+      const wrapper = document.getElementById('wrapper');
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      const KEY = 'ng.sidebar.collapsed';
+      const isMobile = () => mq.matches;
+
+      function setCollapsed(collapsed) {
+        wrapper.classList.toggle('sidebar-collapsed', collapsed);
+        try { localStorage.setItem(KEY, collapsed ? '1' : '0'); } catch (e) { /* private mode */ }
+        document.getElementById('sidebarCollapseBtn')?.setAttribute('aria-expanded', String(!collapsed));
       }
-    }
+
+      function openDrawer() {
+        sidebar?.classList.add('drawer-open');
+        backdrop?.classList.add('show');
+        document.body.classList.add('sidebar-open');
+      }
+
+      function closeDrawer() {
+        sidebar?.classList.remove('drawer-open');
+        backdrop?.classList.remove('show');
+        document.body.classList.remove('sidebar-open');
+      }
+
+      function toggleSidebarNav() {
+        if (isMobile()) {
+          if (sidebar?.classList.contains('drawer-open')) closeDrawer();
+          else openDrawer();
+        } else {
+          setCollapsed(!wrapper.classList.contains('sidebar-collapsed'));
+        }
+      }
+
+      window.toggleSidebar = toggleSidebarNav;
+      window.openMobileSidebar = openDrawer;
+      window.closeMobileSidebar = closeDrawer;
+
+      if (!isMobile()) {
+        let saved = null;
+        try { saved = localStorage.getItem(KEY); } catch (e) {}
+        if (saved === '1') setCollapsed(true);
+      }
+
+      document.getElementById('sidebarOpen')?.addEventListener('click', toggleSidebarNav);
+      document.getElementById('sidebarCollapseBtn')?.addEventListener('click', () => setCollapsed(true));
+      document.getElementById('sidebarCloseBtn')?.addEventListener('click', closeDrawer);
+      backdrop?.addEventListener('click', closeDrawer);
+      document.getElementById('mbnMenuBtn')?.addEventListener('click', e => { e.preventDefault(); openDrawer(); });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+      if (mq.addEventListener) mq.addEventListener('change', () => closeDrawer());
+      else window.addEventListener('resize', () => { if (!isMobile()) closeDrawer(); });
+      sidebar?.querySelectorAll('.sidebar-link').forEach(a => a.addEventListener('click', () => { if (isMobile()) closeDrawer(); }));
+
+      // Collapsible groups (state persisted). The group holding the current
+      // page is always expanded so navigation context is never hidden.
+      sidebar?.querySelectorAll('.sidebar-group-toggle').forEach(btn => {
+        const group = btn.closest('.sidebar-group');
+        const key = 'ng.sidebar.group.' + (group.dataset.group || '');
+        const isActiveGroup = group.classList.contains('is-active-group');
+        let saved = null;
+        try { saved = localStorage.getItem(key); } catch (e) {}
+        if (isActiveGroup) group.classList.add('open');
+        else if (saved === '0') group.classList.remove('open');
+        btn.setAttribute('aria-expanded', group.classList.contains('open') ? 'true' : 'false');
+
+        btn.addEventListener('click', () => {
+          // Icons-only mode: expanding a group restores the full sidebar.
+          if (wrapper.classList.contains('sidebar-collapsed') && !isMobile()) {
+            setCollapsed(false);
+            return;
+          }
+          const open = group.classList.toggle('open');
+          btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+          try { localStorage.setItem(key, open ? '1' : '0'); } catch (e) {}
+        });
+      });
+    })();
+
     function getCsrfToken() {
         const meta = document.querySelector('meta[name="<?= csrf_header() ?>"]');
         return meta ? meta.getAttribute('content') : '';
@@ -451,11 +659,6 @@
             'X-Requested-With': 'XMLHttpRequest'
         };
     }
-    document.getElementById('sidebarOpen')?.addEventListener('click', handleSidebarToggleClick);
-    document.getElementById('sidebarToggle')?.addEventListener('click', handleSidebarToggleClick);
-    document.getElementById('sidebarBackdrop')?.addEventListener('click', closeMobileSidebar);
-    document.getElementById('mbnMenuBtn')?.addEventListener('click', e => { e.preventDefault(); openMobileSidebar(); });
-    document.querySelectorAll('#sidebar .sidebar-link').forEach(a => a.addEventListener('click', () => { if (isMobileNav()) closeMobileSidebar(); }));
     // Mark all notifications read
     document.getElementById('markAllRead')?.addEventListener('click', e => {
       e.preventDefault();
@@ -467,7 +670,7 @@
       });
     });
 
-    // Live notification bell — poll every 25s, render list, badge, and
+    // Live notification bell  poll every 25s, render list, badge, and
     // beep once when new notifications arrive since the last check.
     let notifSeenIds = null;
     function timeAgo(iso) {

@@ -1,0 +1,563 @@
+/* ============================================================
+   NGWebD ERP — Application Shell / Sidebar v2
+   Loaded after admin-modern.css + admin-app-theme.css so it owns
+   the sidebar geometry, the topbar and the responsive drawer.
+   ============================================================ */
+
+:root {
+  --ng-sidebar-w: 264px;
+  --ng-sidebar-w-collapsed: 78px;
+  --ng-sidebar-bg-1: #14122b;
+  --ng-sidebar-bg-2: #1b1740;
+  --ng-sidebar-bg-3: #221a4e;
+  --ng-topbar-h: 60px;
+}
+
+/* ── Shell ───────────────────────────────────────────────────── */
+#wrapper {
+  height: 100vh;
+  overflow: hidden;
+}
+
+#wrapper > .flex-grow-1 {
+  margin-left: var(--ng-sidebar-w);
+  width: calc(100% - var(--ng-sidebar-w));
+  transition: margin-left .22s ease, width .22s ease;
+}
+
+#wrapper.sidebar-collapsed > .flex-grow-1 {
+  margin-left: var(--ng-sidebar-w-collapsed);
+  width: calc(100% - var(--ng-sidebar-w-collapsed));
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+#sidebar.app-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  width: var(--ng-sidebar-w) !important;
+  min-width: var(--ng-sidebar-w) !important;
+  max-width: var(--ng-sidebar-w) !important;
+  height: 100vh;
+  max-height: 100vh;
+  z-index: 1045;
+  color: #fff;
+  background: linear-gradient(180deg, var(--ng-sidebar-bg-1) 0%, var(--ng-sidebar-bg-2) 55%, var(--ng-sidebar-bg-3) 100%);
+  border-right: 1px solid rgba(255, 255, 255, .06);
+  box-shadow: 8px 0 30px rgba(15, 23, 42, .10);
+  transition: transform .24s ease, width .22s ease, min-width .22s ease, max-width .22s ease;
+  overflow: hidden;
+}
+
+/* Brand */
+#sidebar.app-sidebar .sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  height: 72px;
+  min-height: 72px;
+  padding: 0 12px 0 16px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+
+.sidebar-brand-link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #fff;
+  text-decoration: none;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 255, 255, .08);
+  overflow: hidden;
+}
+
+.sidebar-logo img {
+  max-width: 26px;
+  max-height: 26px;
+  object-fit: contain;
+}
+
+.sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sidebar-brand-text strong {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-brand-text small {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .45);
+}
+
+.sidebar-collapse-btn,
+.sidebar-close-btn {
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .05);
+  color: rgba(255, 255, 255, .65);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.sidebar-collapse-btn:hover,
+.sidebar-close-btn:hover {
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+}
+
+/* Nav scroll area */
+.sidebar-nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 10px 10px 18px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, .18) transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar { width: 5px; }
+.sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .16); border-radius: 20px; }
+.sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, .3); }
+
+/* Groups */
+.sidebar-group { margin-bottom: 2px; }
+
+.sidebar-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, .42);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color .15s ease;
+}
+
+.sidebar-group-toggle:hover { color: rgba(255, 255, 255, .78); }
+
+.sidebar-group-toggle i {
+  font-size: 9px;
+  opacity: .75;
+  transition: transform .2s ease;
+}
+
+.sidebar-group.open .sidebar-group-toggle i { transform: rotate(180deg); }
+
+.sidebar-group-items {
+  display: none;
+  padding: 2px 0 6px;
+}
+
+.sidebar-group.open .sidebar-group-items {
+  display: block;
+  animation: ngSidebarGroupIn .16s ease;
+}
+
+@keyframes ngSidebarGroupIn {
+  from { opacity: 0; transform: translateY(-3px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Links */
+.sidebar-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 1px 0;
+  padding: 9px 11px;
+  border-radius: 9px;
+  color: rgba(255, 255, 255, .72);
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.25;
+  text-decoration: none;
+  min-width: 0;
+  transition: background .15s ease, color .15s ease;
+}
+
+.sidebar-link i {
+  width: 20px;
+  flex-shrink: 0;
+  font-size: 16px;
+  text-align: center;
+  opacity: .92;
+}
+
+.sidebar-link span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sidebar-link:hover {
+  background: rgba(255, 255, 255, .07);
+  color: #fff;
+  text-decoration: none;
+}
+
+.sidebar-link.active {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(79, 70, 229, .30);
+}
+
+.sidebar-link.active::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  width: 3px;
+  height: 20px;
+  transform: translateY(-50%);
+  border-radius: 0 3px 3px 0;
+  background: #a5b4fc;
+}
+
+.sidebar-link:focus-visible,
+.sidebar-group-toggle:focus-visible,
+.sidebar-collapse-btn:focus-visible,
+.sidebar-close-btn:focus-visible {
+  outline: 2px solid #a5b4fc;
+  outline-offset: 1px;
+}
+
+/* Footer */
+.sidebar-footer {
+  flex-shrink: 0;
+  padding: 10px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(255, 255, 255, .08);
+  background: rgba(0, 0, 0, .14);
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.sidebar-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sidebar-user-meta {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sidebar-user-meta strong {
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-meta small {
+  font-size: 10px;
+  color: rgba(255, 255, 255, .48);
+  text-transform: capitalize;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sidebar-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, .55);
+  text-decoration: none;
+}
+
+.sidebar-logout:hover {
+  background: rgba(239, 68, 68, .18);
+  color: #fca5a5;
+}
+
+/* ── Collapsed (icons-only) desktop mode ─────────────────────── */
+#wrapper.sidebar-collapsed #sidebar.app-sidebar {
+  width: var(--ng-sidebar-w-collapsed) !important;
+  min-width: var(--ng-sidebar-w-collapsed) !important;
+  max-width: var(--ng-sidebar-w-collapsed) !important;
+}
+
+#wrapper.sidebar-collapsed .sidebar-brand {
+  justify-content: center;
+  padding: 0 10px;
+}
+
+#wrapper.sidebar-collapsed .sidebar-brand-text,
+#wrapper.sidebar-collapsed .sidebar-group-toggle,
+#wrapper.sidebar-collapsed .sidebar-link span,
+#wrapper.sidebar-collapsed .sidebar-user-meta,
+#wrapper.sidebar-collapsed .sidebar-logout,
+#wrapper.sidebar-collapsed .sidebar-collapse-btn {
+  display: none !important;
+}
+
+#wrapper.sidebar-collapsed .sidebar-brand-link { justify-content: center; }
+
+#wrapper.sidebar-collapsed .sidebar-nav { padding: 10px 8px 18px; }
+
+#wrapper.sidebar-collapsed .sidebar-group-items {
+  display: block !important;
+  padding: 0;
+  animation: none;
+}
+
+#wrapper.sidebar-collapsed .sidebar-group + .sidebar-group {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, .07);
+}
+
+#wrapper.sidebar-collapsed .sidebar-link {
+  justify-content: center;
+  gap: 0;
+  padding: 11px 0;
+}
+
+#wrapper.sidebar-collapsed .sidebar-link i { width: auto; font-size: 18px; }
+
+#wrapper.sidebar-collapsed .sidebar-footer { padding: 8px; }
+
+#wrapper.sidebar-collapsed .sidebar-user { justify-content: center; }
+
+/* ── Topbar ──────────────────────────────────────────────────── */
+.app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1035 !important;
+  min-height: var(--ng-topbar-h);
+  background: #fff;
+  border-bottom: 1px solid #eef0f6 !important;
+}
+
+.sidebar-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  color: #374151;
+  font-size: 19px;
+  line-height: 1;
+  transition: background .15s ease, color .15s ease;
+}
+
+.sidebar-toggle-btn:hover { background: #f3f4f6; color: #111827; }
+
+.ng-topbar-search {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 340px;
+}
+
+.ng-topbar-search > i {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  font-size: 13px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.ng-topbar-search .form-control {
+  height: 38px;
+  padding-left: 32px;
+  border: 1px solid #e9ecf3;
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 13px;
+}
+
+.ng-topbar-search .form-control:focus {
+  background: #fff;
+  border-color: #c7d2fe;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, .12);
+}
+
+.ng-nav-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  border-radius: 10px;
+}
+
+#notifBadge { transform: translate(-35%, -20%) !important; }
+
+/* ── Backdrop (mobile) ───────────────────────────────────────── */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  display: block;
+  background: rgba(15, 23, 42, .52);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  z-index: 1055;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+}
+
+.sidebar-backdrop.show {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* The drawer only exists below the lg breakpoint. Keeping the element out of
+   the desktop layer tree also avoids an idle full-screen backdrop-filter. */
+@media (min-width: 992px) {
+  .sidebar-backdrop { display: none !important; }
+}
+
+/* ── Mobile drawer ───────────────────────────────────────────── */
+@media (max-width: 991.98px) {
+  #sidebar.app-sidebar,
+  #wrapper.sidebar-collapsed #sidebar.app-sidebar {
+    width: min(86vw, 300px) !important;
+    min-width: min(86vw, 300px) !important;
+    max-width: min(86vw, 300px) !important;
+    height: 100dvh;
+    max-height: 100dvh;
+    transform: translateX(-100%);
+    z-index: 1060;
+  }
+
+  #wrapper.sidebar-collapsed #sidebar.app-sidebar.drawer-open,
+  #sidebar.app-sidebar.drawer-open { transform: translateX(0) !important; }
+
+  #wrapper > .flex-grow-1,
+  #wrapper.sidebar-collapsed > .flex-grow-1 {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* The drawer is always full-layout, never icons-only. Use explicit
+     display values (not `revert`) so Bootstrap/UA resets cannot break it. */
+  #wrapper.sidebar-collapsed .sidebar-brand-text { display: flex !important; }
+  #wrapper.sidebar-collapsed .sidebar-group-toggle { display: flex !important; }
+  #wrapper.sidebar-collapsed .sidebar-link span { display: inline !important; }
+  #wrapper.sidebar-collapsed .sidebar-user-meta { display: flex !important; }
+  #wrapper.sidebar-collapsed .sidebar-logout { display: flex !important; }
+
+  #wrapper.sidebar-collapsed .sidebar-brand { justify-content: flex-start; padding: 0 12px 0 16px; }
+  #wrapper.sidebar-collapsed .sidebar-brand-link { justify-content: flex-start; }
+  #wrapper.sidebar-collapsed .sidebar-link { justify-content: flex-start; gap: 11px; padding: 9px 11px; }
+  #wrapper.sidebar-collapsed .sidebar-link i { width: 20px; font-size: 16px; }
+  #wrapper.sidebar-collapsed .sidebar-user { justify-content: flex-start; }
+  #wrapper.sidebar-collapsed .sidebar-group-items { display: none; }
+  #wrapper.sidebar-collapsed .sidebar-group.open .sidebar-group-items { display: block; }
+  #wrapper.sidebar-collapsed .sidebar-group + .sidebar-group { margin-top: 0; padding-top: 0; border-top: 0; }
+
+  .sidebar-collapse-btn { display: none !important; }
+
+  body.sidebar-open { overflow: hidden !important; }
+
+  .app-topbar { gap: 6px; }
+
+  .ng-topbar-search { max-width: none; }
+}
+
+/* admin-app-theme hides the toggle below 768px — we need it on phones. */
+@media (max-width: 768px) {
+  #sidebarOpen { display: inline-flex !important; }
+}
+
+@media (max-width: 575.98px) {
+  .app-topbar { padding-left: 12px !important; padding-right: 12px !important; }
+  .ng-topbar-search .form-control { font-size: 12.5px; }
+}
+
+@media (max-width: 420px) {
+  .app-topbar { gap: 4px; }
+  .app-topbar .navbar-nav { gap: 2px !important; }
+  .sidebar-toggle-btn { width: 34px; height: 34px; font-size: 17px; }
+  .ng-nav-action { height: 34px; }
+  .ng-topbar-search > i { left: 9px; }
+  .ng-topbar-search .form-control { padding-left: 28px; font-size: 12px; }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  #sidebar.app-sidebar,
+  #wrapper > .flex-grow-1,
+  .sidebar-group-items,
+  .sidebar-backdrop,
+  .sidebar-group-toggle i {
+    transition: none !important;
+    animation: none !important;
+  }
+}
