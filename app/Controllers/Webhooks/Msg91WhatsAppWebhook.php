@@ -53,7 +53,8 @@ class Msg91WhatsAppWebhook extends BaseController
             $svc = new WhatsappChatService();
             $n = function_exists('normalizeInboundWhatsAppMessage') ? normalizeInboundWhatsAppMessage($in) : null;
             if ($n === null) throw new \RuntimeException('Normalizer unavailable.');
-            log_message('info', 'MSG91 WhatsApp webhook received direction={dir} phone={phone} message_id={mid} event={event}', [
+            log_message('error', 'MSG91 WhatsApp webhook normalized: ' . json_encode($n));
+            log_message('error', 'MSG91 WhatsApp webhook received direction={dir} phone={phone} message_id={mid} event={event}', [
                 'dir' => $n['direction'],
                 'phone' => function_exists('maskPhone') ? maskPhone($n['phone_number']) : $n['phone_number'],
                 'mid' => $n['provider_message_id'] !== '' ? $n['provider_message_id'] : '(none)',
@@ -66,7 +67,7 @@ class Msg91WhatsAppWebhook extends BaseController
             $db->transRollback();
             log_message('error', 'MSG91 WhatsApp webhook failed: {message}', ['message' => $e->getMessage()]);
             // 200 (not 500): never cause provider retry storms for our errors.
-            return $this->response->setStatusCode(200)->setJSON(['success' => false, 'error' => 'Processing failed.']);
+            return $this->response->setStatusCode(200)->setJSON(['success' => false, 'error' => 'Processing failed.', 'debug' => $e->getMessage()]);
         }
 
         if ($convId === null) {

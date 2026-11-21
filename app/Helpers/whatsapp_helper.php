@@ -189,7 +189,8 @@ if (!function_exists('normalizeInboundWhatsAppMessage')) {
             $content['interactive']['button_reply']['title'] ??
             $content['interactive']['list_reply']['title'] ??
             $payload['text'] ?? $payload['body'] ??
-            $data['text'] ?? $data['body'] ?? $data['caption'] ?? ''
+            (is_array($data['text'] ?? null) ? ($data['text']['body'] ?? '') : ($data['text'] ?? '')) ??
+            $data['body'] ?? $data['caption'] ?? ''
         ));
 
         $media = trim((string) (
@@ -218,10 +219,12 @@ if (!function_exists('normalizeInboundWhatsAppMessage')) {
         $looksLikeStatus = (bool) preg_match('/\b(sent|delivered|read|failed|deleted|status|report)\b/i', $eventLower);
 
         // Media-only / interactive messages carry no text — keep them.
+        // Only treat as report if there's an actual status-like event name.
+        // Empty eventName should NOT mark as report (MSG91 inbound often lacks it).
         $isReport = $text === '' && $media === ''
             && $providerId !== ''
             && ! $isInboundEvent
-            && ($looksLikeStatus || $eventLower === '');
+            && $looksLikeStatus;
 
         $contactName = trim((string) (
             $data['customerName'] ?? $data['customer_name'] ?? $data['profile']['name']

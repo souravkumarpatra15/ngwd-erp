@@ -355,7 +355,31 @@ class Msg91WhatsAppService
      */
     protected function sendSession(string $to, string $type, array $content): array
     {
-        $message = ['type' => $type, 'content' => $content];
+        // MSG91 session API expects specific content shapes per type:
+        // text:     {type: 'text', text: {body: '...', preview_url: true}}
+        // image:    {type: 'image', image: {url: '...', caption: '...'}}
+        // video:    {type: 'video', video: {url: '...', caption: '...'}}
+        // document: {type: 'document', document: {url: '...', filename: '...', caption: '...'}}
+        // audio:    {type: 'audio', audio: {url: '...'}}
+        // interactive: {type: 'interactive', interactive: {...}}
+        $messageContent = [];
+        switch ($type) {
+            case 'text':
+                $messageContent = ['text' => ['body' => $content['text'] ?? '', 'preview_url' => $content['preview_url'] ?? true]];
+                break;
+            case 'image':
+            case 'video':
+            case 'document':
+            case 'audio':
+                $messageContent = [$type => $content];
+                break;
+            case 'interactive':
+                $messageContent = ['interactive' => $content];
+                break;
+            default:
+                $messageContent = $content;
+        }
+        $message = ['type' => $type, 'content' => $messageContent];
         return $this->postJson($this->sessionBaseUrl . '/', [
             'integrated_number' => $this->integratedNumber,
             'content_type' => $type,
