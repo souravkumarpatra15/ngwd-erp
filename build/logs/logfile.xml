@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="CLI Arguments" tests="19" assertions="47" errors="3" failures="0" skipped="0" time="0.240890">
+    <testsuite name="HealthTest" file="E:\ngwd-erp\tests\unit\HealthTest.php" tests="2" assertions="3" errors="0" failures="0" skipped="0" time="0.094890">
+      <testcase name="testIsDefinedAppPath" file="E:\ngwd-erp\tests\unit\HealthTest.php" line="12" class="HealthTest" classname="HealthTest" assertions="1" time="0.050916"/>
+      <testcase name="testBaseUrlHasBeenSet" file="E:\ngwd-erp\tests\unit\HealthTest.php" line="17" class="HealthTest" classname="HealthTest" assertions="2" time="0.043973"/>
+    </testsuite>
+    <testsuite name="Tests\Unit\Services\Msg91WhatsAppTest" file="E:\ngwd-erp\tests\unit\Services\Msg91WhatsAppTest.php" tests="14" assertions="44" errors="0" failures="0" skipped="0" time="0.041955">
+      <testcase name="testNormalizerInboundTextMessage" file="E:\ngwd-erp\tests\unit\Services\Msg91WhatsAppTest.php" line="17" class="Tests\Unit\Services\Msg91WhatsAppTest" classname="Tests.Unit.Services.Msg91WhatsAppTest" assertions="6" time="0.004495"/>
+      <testcase name="testNormalizerInboundWithMessagesArray" file="E:\ngwd-erp\tests\unit\Services\Msg91WhatsAppTest.php" line="40" class="Tests\Unit\Services\Msg91WhatsAppTest" classname="Tests.Unit.Services.Msg91WhatsAppTest" assertions="5" time="0.002304"/>
+      <testcase name="testNormalizerOutboundStatusReport" file="E:\ngwd-erp\tests\unit\Services\Msg91WhatsAppTest.php" line="66" class="Tests\Unit\Services\Msg91WhatsAppTest" classname="Tests.Unit.Services.Msg91WhatsAppTest" assertions="3" time="0.002167"/>
+      <testcase name="testNormalizerSentStatus" file="E:\ngwd-erp\tests\unit\Services\Msg91WhatsAppTest.php" line="85" class="Tests\Unit\Services\Msg91WhatsAppTest" classname="Tests.Unit.Services.Msg91WhatsAppTest" assertions="2" time="0.001997"/>
+      <testcase name="testNormalizerFailedStatus" file="E:\ngwd-erp\tests\unit\Services\Msg91WhatsAppTest.php" line="100" class="Tests\Unit\Services\Msg91WhatsAppTest" classname="Tests.Unit.Services.Msg91WhatsAppTest" assertions="2" time="0.002025"/>
+      <testcase name="testNormalizerMissingDirectionDefaultsToInboundForContent" file="E:\ngwd-erp\tests\unit\Services\Msg91WhatsAppTest.php" line="115" class="Tests\Unit\Services\Msg91WhatsAppTest" classname="Tests.Unit.Services.Msg91WhatsAppTest" assertions="2" time="0.001942"/>
+      <testcase name="testNormalizerHandlesNestedContent" file="E:\ngwd-erp\tests\unit\Services\Msg91WhatsAppTest.php" line="130" class="Tests\Unit\Services\Msg91WhatsAppTest" classname="Tests.Unit.Services.Msg91WhatsAppTest" assertions="2" time="0.001819"/>
+      <testcase name="testNormalizerHandlesImageMessage" file="E:\ngwd-erp\tests\unit\Services\Msg91WhatsAppTest.php" line="146" class="Tests\Unit\Services\Msg91WhatsAppTest" classname="Tests.Unit.Services.Msg91WhatsAppTest" assertions="4" time="0.001853"/>
+      <testcase name="testNormalizerIgnoresEmptyPayload" file="E:\ngwd-erp\tests\unit\Services\Msg91WhatsAppTest.php" line="164" class="Tests\Unit\Services\Msg91WhatsAppTest" classname="Tests.Unit.Services.Msg91WhatsAppTest" assertions="2" time="0.001931"/>
+      <testcase name="testSendSessionPayloadFormat" file="E:\ngwd-erp\tests\unit\Services\Msg91WhatsAppTest.php" line="173" class="Tests\Unit\Services\Msg91WhatsAppTest" classname="Tests.Unit.Services.Msg91WhatsAppTest" assertions="1" time="0.010195"/>
+      <testcase name="testPhoneFormatting" file="E:\ngwd-erp\tests\unit\Services\Msg91WhatsAppTest.php" line="196" class="Tests\Unit\Services\Msg91WhatsAppTest" classname="Tests.Unit.Services.Msg91WhatsAppTest" assertions="5" time="0.004055"/>
+      <testcase name="testApplyStatusCallbackWithMessageUuid" file="E:\ngwd-erp\tests\unit\Services\Msg91WhatsAppTest.php" line="220" class="Tests\Unit\Services\Msg91WhatsAppTest" classname="Tests.Unit.Services.Msg91WhatsAppTest" assertions="1" time="0.002596"/>
+      <testcase name="testWaToNormalization" file="E:\ngwd-erp\tests\unit\Services\Msg91WhatsAppTest.php" line="228" class="Tests\Unit\Services\Msg91WhatsAppTest" classname="Tests.Unit.Services.Msg91WhatsAppTest" assertions="6" time="0.002371"/>
+      <testcase name="testMaskPhone" file="E:\ngwd-erp\tests\unit\Services\Msg91WhatsAppTest.php" line="240" class="Tests\Unit\Services\Msg91WhatsAppTest" classname="Tests.Unit.Services.Msg91WhatsAppTest" assertions="3" time="0.002204"/>
+    </testsuite>
+    <testsuite name="Tests\Unit\Services\PmsAuthorizationServiceTest" file="E:\ngwd-erp\tests\unit\Services\PmsAuthorizationServiceTest.php" tests="3" assertions="0" errors="3" failures="0" skipped="0" time="0.104045">
+      <testcase name="testServiceClassCanBeConstructed" file="E:\ngwd-erp\tests\unit\Services\PmsAuthorizationServiceTest.php" line="11" class="Tests\Unit\Services\PmsAuthorizationServiceTest" classname="Tests.Unit.Services.PmsAuthorizationServiceTest" assertions="0" time="0.094247">
+        <error type="CodeIgniter\Exceptions\InvalidArgumentException">Tests\Unit\Services\PmsAuthorizationServiceTest::testServiceClassCanBeConstructed&#13;
+CodeIgniter\Exceptions\InvalidArgumentException: "tests" is not a valid database connection group.
+&#13;
+E:\ngwd-erp\vendor\codeigniter4\framework\system\Database\Config.php:70
+E:\ngwd-erp\vendor\codeigniter4\framework\system\Model.php:152
+E:\ngwd-erp\app\Services\PmsAuthorizationService.php:27
+E:\ngwd-erp\tests\unit\Services\PmsAuthorizationServiceTest.php:13</error>
+      </testcase>
+      <testcase name="testProjectMemberModelExposesMembershipLookup" file="E:\ngwd-erp\tests\unit\Services\PmsAuthorizationServiceTest.php" line="17" class="Tests\Unit\Services\PmsAuthorizationServiceTest" classname="Tests.Unit.Services.PmsAuthorizationServiceTest" assertions="0" time="0.003799">
+        <error type="CodeIgniter\Exceptions\InvalidArgumentException">Tests\Unit\Services\PmsAuthorizationServiceTest::testProjectMemberModelExposesMembershipLookup&#13;
+CodeIgniter\Exceptions\InvalidArgumentException: "tests" is not a valid database connection group.
+&#13;
+E:\ngwd-erp\vendor\codeigniter4\framework\system\Database\Config.php:70
+E:\ngwd-erp\vendor\codeigniter4\framework\system\Model.php:152
+E:\ngwd-erp\tests\unit\Services\PmsAuthorizationServiceTest.php:19</error>
+      </testcase>
+      <testcase name="testAuthorizationFailsClosedForUnknownUser" file="E:\ngwd-erp\tests\unit\Services\PmsAuthorizationServiceTest.php" line="23" class="Tests\Unit\Services\PmsAuthorizationServiceTest" classname="Tests.Unit.Services.PmsAuthorizationServiceTest" assertions="0" time="0.006000">
+        <error type="CodeIgniter\Exceptions\InvalidArgumentException">Tests\Unit\Services\PmsAuthorizationServiceTest::testAuthorizationFailsClosedForUnknownUser&#13;
+CodeIgniter\Exceptions\InvalidArgumentException: "tests" is not a valid database connection group.
+&#13;
+E:\ngwd-erp\vendor\codeigniter4\framework\system\Database\Config.php:70
+E:\ngwd-erp\vendor\codeigniter4\framework\system\Model.php:152
+E:\ngwd-erp\app\Services\PmsAuthorizationService.php:27
+E:\ngwd-erp\tests\unit\Services\PmsAuthorizationServiceTest.php:25</error>
+      </testcase>
+    </testsuite>
+  </testsuite>
+</testsuites>

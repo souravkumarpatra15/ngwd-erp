@@ -79,9 +79,17 @@ class WebhookController extends BaseController
     {
         $secret = trim((string) ((new \App\Models\SettingModel())->getSetting('whatsapp_webhook_secret') ?? ''));
         if ($secret !== '') {
-            $given = (string) ($this->request->getGet('secret') ?? $this->request->getHeaderLine('X-Webhook-Secret'));
+            // getHeaderLine() returns empty string when header is absent.
+            $given = (string) ($this->request->getGet('secret')
+                ?: $this->request->getHeaderLine('X-Webhook-Secret')
+            );
             if (! hash_equals($secret, $given)) {
                 return $this->response->setStatusCode(403)->setBody('Forbidden');
+            }
+        } else {
+            // No secret configured — reject for safety in production.
+            if (ENVIRONMENT === 'production') {
+                return $this->response->setStatusCode(403)->setBody('Webhook secret not configured.');
             }
         }
         $raw = file_get_contents('php://input');

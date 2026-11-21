@@ -120,8 +120,9 @@ class WhatsappChatService
     {
         if (! empty($res['ok'])) {
             $this->msgs->setStatus($msgId, 'sent', [
-                'provider_message_id' => $res['message_id'] ?? null,
-                'sent_at' => date('Y-m-d H:i:s'),
+                'provider_message_id' => $res['message_id'] ?? $res['message_uuid'] ?? $res['request_id'] ?? null,
+                'message_uuid'        => $res['message_uuid'] ?? null,
+                'sent_at'             => date('Y-m-d H:i:s'),
             ]);
             $this->convs->touch($convId, $preview, 'outbound', false);
             return ['ok' => true, 'message' => $this->msgs->formatRow($this->msgs->find($msgId))];
@@ -223,12 +224,19 @@ class WhatsappChatService
         $isImage = $mediaKind === 'image' && $n['media_url'] !== '';
         $text = $n['message_text'] !== '' ? $n['message_text'] : ($n['media_url'] !== '' ? '[' . ($mediaKind ?? $n['message_type']) . ']' : '');
         $newId = $this->msgs->insert([
-            'conversation_id' => (int) $conv['id'], 'provider_message_id' => $n['provider_message_id'] !== '' ? $n['provider_message_id'] : null,
-            'phone_number' => $n['phone_number'], 'direction' => 'inbound',
-            'message_type' => $isImage ? 'image' : ($mediaKind ?? $n['message_type']), 'message_text' => mb_substr($text, 0, 2000),
-            'media_url' => $n['media_url'] !== '' ? $n['media_url'] : null, 'media_type' => $mediaKind,
-            'raw_payload' => json_encode($n['raw_payload']),
-            'status' => 'received',
+            'conversation_id'   => (int) $conv['id'],
+            'provider_message_id' => $n['provider_message_id'] !== '' ? $n['provider_message_id'] : null,
+            'message_uuid'      => $n['raw_payload']['data']['message_uuid'] ?? $n['raw_payload']['message_uuid'] ?? null,
+            'phone_number'      => $n['phone_number'],
+            'direction'         => 'inbound',
+            'message_type'      => $isImage ? 'image' : ($mediaKind ?? $n['message_type']),
+            'message_text'      => mb_substr($text, 0, 2000),
+            'media_url'         => $n['media_url'] !== '' ? $n['media_url'] : null,
+            'media_type'        => $mediaKind,
+            'raw_payload'       => json_encode($n['raw_payload']),
+            'status'            => 'received',
+            'occurred_at'       => $n['occurred_at'] !== '' ? $n['occurred_at'] : null,
+            'webhook_event'     => $n['event'] !== '' ? $n['event'] : null,
         ]);
         $msgId = (int) $newId;
         if ($msgId <= 0) throw new \RuntimeException('Message insert failed.');
@@ -244,18 +252,67 @@ class WhatsappChatService
     public function applyStatusCallback(array $payload): void
     {
         $data = $payload['data'] ?? $payload;
-        $pid = (string) ($data['requestId'] ?? $data['campaignRequestId'] ?? $data['message_id'] ?? $data['uuid'] ?? '');
+
+        // MSG91 may provide the provider message ID under various fields.
+        // Try all known fields in order of specificity.
+        $pid = (string) ($data['message_uuid'] ?? $data['uuid'] ?? $data['requestId'] ?? $data['campaignRequestId'] ?? $data['message_id'] ?? $data['id'] ?? '');
         if ($pid === '') return;
+
         $m = $this->msgs->findByProviderId($pid);
         if (! $m) return; // sent outside chat (e.g. notification templates) — nothing to update
-        $s = strtolower((string) ($data['status'] ?? $data['paymentStatus'] ?? $data['reason'] ?? ''));
+
+        // Status may come from eventName or status field.
+        $event = (string) ($data['eventName'] ?? $data['event'] ?? '');
+        $eventLower = strtolower($event);
+        $statusField = strtolower((string) ($data['status'] ?? $data['paymentStatus'] ?? $data['reason'] ?? ''));
+
+        // Determine final status from eventName (preferred) or status field.
+        $finalStatus = null;
+        $statusTime = null;
         $now = date('Y-m-d H:i:s');
-        if (str_contains($s, 'read')) $this->msgs->setStatus((int) $m['id'], 'read', ['read_at' => $now]);
-        elseif (str_contains($s, 'deliver')) $this->msgs->setStatus((int) $m['id'], 'delivered', ['delivered_at' => $now]);
-        elseif (str_contains($s, 'fail') || str_contains($s, 'error') || str_contains($s, 'reject')) {
-            $this->msgs->setStatus((int) $m['id'], 'failed', ['error_message' => mb_substr($s, 0, 450)]);
-        } elseif (str_contains($s, 'sent') || str_contains($s, 'submit')) {
-            $this->msgs->setStatus((int) $m['id'], 'sent', ['sent_at' => $now]);
+        $ts = $data['ts'] ?? $data['timestamp'] ?? '';
+        if ($ts !== '' && strtotime($ts) !== false) {
+            $statusTime = date('Y-m-d H:i:s', strtotime($ts));
+        } else {
+            $statusTime = $now;
         }
+
+        if ($eventLower !== '') {
+            if (str_contains($eventLower, 'read'))           $finalStatus = 'read';
+            elseif (str_contains($eventLower, 'deliver'))    $finalStatus = 'delivered';
+            elseif (str_contains($eventLower, 'fail') || str_contains($eventLower, 'reject')) $finalStatus = 'failed';
+            elseif (str_contains($eventLower, 'sent'))       $finalStatus = 'sent';
+        } elseif ($statusField !== '') {
+            if (str_contains($statusField, 'read'))           $finalStatus = 'read';
+            elseif (str_contains($statusField, 'deliver'))    $finalStatus = 'delivered';
+            elseif (str_contains($statusField, 'fail') || str_contains($statusField, 'reject')) $finalStatus = 'failed';
+            elseif (str_contains($statusField, 'sent'))       $finalStatus = 'sent';
+        }
+
+        if ($finalStatus === null) return;
+
+        // Prevent downgrading: read > delivered > sent > failed
+        $currentStatus = $m['status'] ?? '';
+        $order = ['queued' => 0, 'sent' => 1, 'delivered' => 2, 'read' => 3, 'failed' => 4];
+        $curOrder = $order[$currentStatus] ?? -1;
+        $newOrder = $order[$finalStatus] ?? -1;
+
+        if ($newOrder <= $curOrder && $finalStatus !== 'failed') {
+            // Don't downgrade unless it's a failure
+            return;
+        }
+
+        $extra = ['error_code' => $data['errorCode'] ?? $data['error_code'] ?? null];
+        if ($finalStatus === 'read') {
+            $extra['read_at'] = $statusTime;
+        } elseif ($finalStatus === 'delivered') {
+            $extra['delivered_at'] = $statusTime;
+        } elseif ($finalStatus === 'sent') {
+            $extra['sent_at'] = $statusTime;
+        } elseif ($finalStatus === 'failed') {
+            $extra['error_message'] = mb_substr((string)($data['errorMessage'] ?? $data['error_message'] ?? $data['reason'] ?? $statusField), 0, 450);
+        }
+
+        $this->msgs->setStatus((int) $m['id'], $finalStatus, $extra);
     }
 }

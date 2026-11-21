@@ -3,7 +3,7 @@
 <div class="container-fluid">
         <div class="page-header">
             <h1><?= esc($title) ?></h1>
-            <a href="<?= base_url('admin/recruitment/createProgram') ?>" class="btn btn-primary">
+            <a href="<?= base_url('admin/recruitment/program/create') ?>" class="btn btn-primary">
                 <i class="fas fa-plus"></i> Create Internship Program
             </a>
         </div>
@@ -12,7 +12,7 @@
         <div class="alert alert-info">
             <h4>No Active Internship Programs</h4>
             <p>There are currently no active internship programs. Create a new program to start receiving applications.</p>
-            <a href="<?= base_url('admin/recruitment/createProgram') ?>" class="btn btn-secondary mt-2">Create First Program</a>
+            <a href="<?= base_url('admin/recruitment/program/create') ?>" class="btn btn-secondary mt-2">Create First Program</a>
         </div>
         <?php else: ?>
         <div class="row gutters-sm">

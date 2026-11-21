@@ -205,25 +205,40 @@ if (!function_exists('normalizeInboundWhatsAppMessage')) {
             ?? $data['id'] ?? $content['id'] ?? $content['message_id'] ?? ''
         );
 
-        // MSG91 direction "0" = inbound. Anything else with content is
-        // still stored inbound; content-less payloads are status reports.
-        $direction = (string) ($data['direction'] ?? '0');
-        $isInbound = $direction === '0' || strtolower($direction) === 'inbound' || strtolower($direction) === 'mo';
-
+        // Determine direction: MSG91 sends "direction" field in some payloads.
+        // "0" = inbound (MO), "1" = outbound (MT/status).
+        // If direction is missing, infer from eventName and content presence.
+        $rawDirection = (string) ($data['direction'] ?? '');
         $event = (string) ($data['eventName'] ?? $data['event'] ?? $in['eventName'] ?? $in['event'] ?? '');
         $eventLower = strtolower($event);
-        $isInboundEvent = $isInbound
-            || str_contains($eventLower, 'received')
-            || str_contains($eventLower, 'inbound')
-            || $eventLower === 'mo';
-        $looksLikeStatus = (bool) preg_match('/\b(sent|delivered|read|failed|deleted|status|report)\b/i', $eventLower);
+
+        // Explicit direction field takes precedence.
+        if ($rawDirection !== '') {
+            $isInbound = $rawDirection === '0' || strtolower($rawDirection) === 'inbound' || strtolower($rawDirection) === 'mo';
+        } else {
+            // No direction field — infer from event name and payload structure.
+            $isInboundEvent = str_contains($eventLower, 'received')
+                || str_contains($eventLower, 'inbound')
+                || str_contains($eventLower, 'mo')
+                || $eventLower === 'incoming_message_received';
+            $looksLikeStatus = (bool) preg_match('/(?:^|[_\s])(sent|delivered|read|failed|deleted|status|report)(?:[_\s]|$)/i', $eventLower);
+
+            // If it looks like a status report and has no message content, it's outbound.
+            // If it has message content (text/media) and no status-like event, it's inbound.
+            // Default to inbound for safety (acknowledge webhook).
+            $hasContent = $text !== '' || $media !== '';
+            if ($looksLikeStatus && !$hasContent) {
+                $isInbound = false;
+            } else {
+                $isInbound = $hasContent || $isInboundEvent || $eventLower === '';
+            }
+        }
 
         // Media-only / interactive messages carry no text — keep them.
-        // Only treat as report if there's an actual status-like event name.
-        // Empty eventName should NOT mark as report (MSG91 inbound often lacks it).
+        // Only treat as report if it's a status event without message content.
         $isReport = $text === '' && $media === ''
             && $providerId !== ''
-            && ! $isInboundEvent
+            && !$isInbound
             && $looksLikeStatus;
 
         $contactName = trim((string) (
@@ -233,7 +248,7 @@ if (!function_exists('normalizeInboundWhatsAppMessage')) {
 
         if (! $isReport && ! $isInbound && $providerId === '') {
             // Outbound echo without an id is still a real message.
-            $isInbound = $direction === '0';
+            $isInbound = $rawDirection === '0';
         }
 
         $displayText = $text;

@@ -346,54 +346,61 @@ class Msg91WhatsAppService
 
     /**
      * Session endpoint (no template, inside the 24h window).
-     * MSG91 validates the unified envelope field-by-field
-     * ("integrated number not found", then "content_type not found"),
-     * so we send the full shape: top-level integrated_number +
-     * content_type plus the to/from/message fields, with a payload
-     * wrapper mirroring the bulk endpoint. Unknown extra keys are
-     * ignored by the parser; missing ones 400.
+     * MSG91 session API documented format:
+     *   POST {session_base_url}/
+     *   {integrated_number, recipient_number, content_type, type, <type>: {...}}
+     * Auth: header authkey: <MSG91 auth key>
+     * Ref: https://docs.msg91.com/en/whatsapp/send-message-in-text
      */
     protected function sendSession(string $to, string $type, array $content): array
     {
-        // MSG91 session API expects specific content shapes per type:
-        // text:     {type: 'text', text: {body: '...', preview_url: true}}
-        // image:    {type: 'image', image: {url: '...', caption: '...'}}
-        // video:    {type: 'video', video: {url: '...', caption: '...'}}
-        // document: {type: 'document', document: {url: '...', filename: '...', caption: '...'}}
-        // audio:    {type: 'audio', audio: {url: '...'}}
-        // interactive: {type: 'interactive', interactive: {...}}
-        $messageContent = [];
+        // Build payload per MSG91 session API specification.
+        // Each message type has its own top-level field matching content_type.
+        $payload = [
+            'integrated_number' => $this->integratedNumber,
+            'recipient_number'  => $to,
+            'content_type'      => $type,
+            'type'              => $type,
+        ];
+
+        // Add type-specific content field (text, image, video, document, audio, interactive)
         switch ($type) {
             case 'text':
-                $messageContent = ['text' => ['body' => $content['text'] ?? '', 'preview_url' => $content['preview_url'] ?? true]];
+                $payload['text'] = [
+                    'body'        => $content['text'] ?? '',
+                    'preview_url' => $content['preview_url'] ?? true,
+                ];
                 break;
             case 'image':
+                $payload['image'] = [
+                    'url'      => $content['url'] ?? '',
+                    'caption'  => $content['caption'] ?? '',
+                ];
+                break;
             case 'video':
+                $payload['video'] = [
+                    'url'      => $content['url'] ?? '',
+                    'caption'  => $content['caption'] ?? '',
+                ];
+                break;
             case 'document':
+                $doc = ['url' => $content['url'] ?? ''];
+                if (!empty($content['filename'])) $doc['filename'] = $content['filename'];
+                if (!empty($content['caption']))  $doc['caption']  = $content['caption'];
+                $payload['document'] = $doc;
+                break;
             case 'audio':
-                $messageContent = [$type => $content];
+                $payload['audio'] = ['url' => $content['url'] ?? ''];
                 break;
             case 'interactive':
-                $messageContent = ['interactive' => $content];
+                $payload['interactive'] = $content;
                 break;
             default:
-                $messageContent = $content;
+                // Fallback: merge content directly
+                $payload = array_merge($payload, $content);
         }
-        $message = ['type' => $type, 'content' => $messageContent];
-        return $this->postJson($this->sessionBaseUrl . '/', [
-            'integrated_number' => $this->integratedNumber,
-            'content_type' => $type,
-            'to' => $to,
-            'recipient_number' => $to,
-            'from' => $this->integratedNumber,
-            'message' => $message,
-            'payload' => [
-                'to' => $to,
-                'recipient_number' => $to,
-                'from' => $this->integratedNumber,
-                'message' => $message,
-            ],
-        ]);
+
+        return $this->postJson($this->sessionBaseUrl . '/', $payload);
     }
 
     protected function postJson(string $url, array $body): array
@@ -438,9 +445,14 @@ class Msg91WhatsAppService
             }
             $result = [
                 'ok' => $ok,
-                'message_id' => $data['message_id'] ?? $data['request_id'] ?? null,
-                'error' => $error,
-                'response' => $data ?? $raw,
+                // MSG91 may return different identifier fields depending on endpoint and version.
+                // Capture all known ones for downstream idempotency and status matching.
+                'message_id'      => $data['message_id'] ?? $data['request_id'] ?? null,
+                'message_uuid'    => $data['message_uuid'] ?? $data['data']['message_uuid'] ?? null,
+                'request_id'      => $data['request_id'] ?? $data['data']['request_id'] ?? null,
+                'campaign_id'     => $data['campaign_id'] ?? $data['data']['campaign_id'] ?? null,
+                'error'           => $error,
+                'response'        => $data ?? $raw,
             ];
             if (!$ok) log_message('error', 'MSG91 WhatsApp API Error [' . $url . ']: ' . $result['error'] . ' | to=' . ($body['payload']['template']['to_and_components'][0]['to'][0] ?? ($body['to'] ?? '?')));
             return $result;

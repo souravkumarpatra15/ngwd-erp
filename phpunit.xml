@@ -3,6 +3,7 @@
          xsi:noNamespaceSchemaLocation="http://phpunit.changelog.org/schemas/phpunit-9.5.xsd"
          backupGlobals="false"
          cacheResult="false"
+         bootstrap="vendor/codeigniter4/framework/system/Test/bootstrap.php"
          >
     <testsuites>
         <testsuite name="NGWebD ERP">

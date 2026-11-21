@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <title>Test Documentation</title>
+        <style>
+            body {
+                text-rendering: optimizeLegibility;
+                font-family: Source SansSerif Pro, Arial, sans-serif;
+                font-variant-ligatures: common-ligatures;
+                font-kerning: normal;
+                margin-left: 2rem;
+                background-color: #fff;
+                color: #000;
+            }
+
+            body > ul > li {
+                font-size: larger;
+            }
+
+            h2 {
+                font-size: larger;
+                text-decoration-line: underline;
+                text-decoration-thickness: 2px;
+                margin: 0;
+                padding: 0.5rem 0;
+            }
+
+            ul {
+                list-style: none;
+                margin: 0 0 2rem;
+                padding: 0 0 0 1rem;
+                text-indent: -1rem;
+            }
+
+            .success:before {
+                color: #4e9a06;
+                content: '✓';
+                padding-right: 0.5rem;
+            }
+
+            .defect {
+                color: #a40000;
+            }
+
+            .defect:before {
+                color: #a40000;
+                content: '✗';
+                padding-right: 0.5rem;
+            }
+        </style>
+    </head>
+    <body>
+        <h2>Health</h2>
+        <ul>
+            <li class="success">Is defined app path</li>
+            <li class="success">Base url has been set</li>
+        </ul>
+        <h2>Msg91Whats App (Tests\Unit\Services\Msg91WhatsApp)</h2>
+        <ul>
+            <li class="success">Normalizer inbound text message</li>
+            <li class="success">Normalizer inbound with messages array</li>
+            <li class="success">Normalizer outbound status report</li>
+            <li class="success">Normalizer sent status</li>
+            <li class="success">Normalizer failed status</li>
+            <li class="success">Normalizer missing direction defaults to inbound for content</li>
+            <li class="success">Normalizer handles nested content</li>
+            <li class="success">Normalizer handles image message</li>
+            <li class="success">Normalizer ignores empty payload</li>
+            <li class="success">Send session payload format</li>
+            <li class="success">Phone formatting</li>
+            <li class="success">Apply status callback with message uuid</li>
+            <li class="success">Wa to normalization</li>
+            <li class="success">Mask phone</li>
+        </ul>
+        <h2>Pms Authorization Service (Tests\Unit\Services\PmsAuthorizationService)</h2>
+        <ul>
+            <li class="defect">Service class can be constructed</li>
+            <li class="defect">Project member model exposes membership lookup</li>
+            <li class="defect">Authorization fails closed for unknown user</li>
+        </ul>
+    </body>
+</html>

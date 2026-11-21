@@ -1,0 +1,25 @@
+Health
+ [x] Is defined app path
+ [x] Base url has been set
+
+Msg91Whats App (Tests\Unit\Services\Msg91WhatsApp)
+ [x] Normalizer inbound text message
+ [x] Normalizer inbound with messages array
+ [x] Normalizer outbound status report
+ [x] Normalizer sent status
+ [x] Normalizer failed status
+ [x] Normalizer missing direction defaults to inbound for content
+ [x] Normalizer handles nested content
+ [x] Normalizer handles image message
+ [x] Normalizer ignores empty payload
+ [x] Send session payload format
+ [x] Phone formatting
+ [x] Apply status callback with message uuid
+ [x] Wa to normalization
+ [x] Mask phone
+
+Pms Authorization Service (Tests\Unit\Services\PmsAuthorizationService)
+ [ ] Service class can be constructed
+ [ ] Project member model exposes membership lookup
+ [ ] Authorization fails closed for unknown user
+

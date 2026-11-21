@@ -14,11 +14,12 @@ class WhatsappMessageModel extends Model
     protected $updatedField  = 'updated_at';
 
     protected $allowedFields = [
-        'conversation_id', 'provider_message_id', 'phone_number', 'direction',
+        'conversation_id', 'provider_message_id', 'message_uuid', 'phone_number', 'direction',
         'message_type', 'message_text', 'template_name', 'template_params',
         'media_url', 'media_type', 'created_by', 'status',
         'error_code', 'error_message', 'raw_payload',
         'sent_at', 'delivered_at', 'read_at',
+        'occurred_at', 'webhook_event',
     ];
 
     public function history(int $conversationId, int $afterId = 0, int $limit = 200): array

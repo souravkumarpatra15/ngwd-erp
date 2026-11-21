@@ -33,9 +33,19 @@ class Msg91WhatsAppWebhook extends BaseController
             }
         }
         if ($secret !== '') {
-            $given = (string) ($this->request->getGet('secret') ?? $this->request->getHeaderLine('X-Webhook-Secret') ?? $this->request->getHeaderLine('X-MSG91-WEBHOOK-SECRET'));
+            // getHeaderLine() returns empty string (not null) when header is absent.
+            // Use ?: to treat empty string as falsy and fall through.
+            $given = (string) ($this->request->getGet('secret')
+                ?: $this->request->getHeaderLine('X-Webhook-Secret')
+                ?: $this->request->getHeaderLine('X-MSG91-WEBHOOK-SECRET')
+            );
             if (! hash_equals($secret, $given)) {
                 return $this->response->setStatusCode(403)->setJSON(['success' => false, 'error' => 'Forbidden.']);
+            }
+        } else {
+            // No secret configured — reject for safety in production.
+            if (ENVIRONMENT === 'production') {
+                return $this->response->setStatusCode(403)->setJSON(['success' => false, 'error' => 'Webhook secret not configured.']);
             }
         }
 

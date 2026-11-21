@@ -833,7 +833,28 @@ class RecruitmentController extends BaseController
 
         // Generate PDF using OfferLetterService
         $offerLetterService = new OfferLetterService();
-        $htmlContent = $offerLetterService->renderOfferLetterTemplate($letterData);
+        $escape = static fn ($value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $htmlContent = '<!doctype html><html><head><meta charset="UTF-8"><style>'
+            . 'body{font-family:Arial,sans-serif;line-height:1.5;color:#222}h1{text-align:center}'
+            . 'table{width:100%;border-collapse:collapse}td{padding:8px;border:1px solid #ccc}'
+            . '</style></head><body><h1>' . $escape($letterData['company_branding']) . '</h1>'
+            . '<h2>Internship Offer Letter</h2>'
+            . '<p><strong>Offer reference:</strong> ' . $escape($letterData['offer_reference']) . '</p>'
+            . '<p><strong>Issue date:</strong> ' . $escape($letterData['issue_date']) . '</p>'
+            . '<p>Dear ' . $escape($letterData['candidate_name']) . ',</p>'
+            . '<p>We are pleased to offer you the following internship:</p><table>'
+            . '<tr><td>Position</td><td>' . $escape($letterData['position']) . '</td></tr>'
+            . '<tr><td>Programme</td><td>' . $escape($letterData['program_name']) . '</td></tr>'
+            . '<tr><td>Duration</td><td>' . $escape($letterData['duration']) . '</td></tr>'
+            . '<tr><td>Start date</td><td>' . $escape($letterData['start_date']) . '</td></tr>'
+            . '<tr><td>End date</td><td>' . $escape($letterData['end_date']) . '</td></tr>'
+            . '<tr><td>Work mode</td><td>' . $escape($letterData['work_mode']) . '</td></tr>'
+            . '<tr><td>Weekly commitment</td><td>' . $escape($letterData['weekly_commitment']) . '</td></tr>'
+            . '</table><p><strong>Compensation:</strong> ' . $escape($letterData['compensation_disclosure']) . '</p>'
+            . '<p><strong>Learning objectives:</strong> ' . $escape($letterData['learning_objectives']) . '</p>'
+            . '<p>' . $escape($letterData['terms_conditions']) . '</p>'
+            . '<p>Sincerely,<br>' . $escape($letterData['authorized_signatory']) . '</p>'
+            . '</body></html>';
         $pdfFilename = $offerRef . '.pdf';
         $offerLetterService->generatePdf($htmlContent, $pdfFilename);
 
